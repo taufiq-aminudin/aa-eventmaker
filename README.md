@@ -21,3 +21,6 @@ Auth → Projects → Template engine → Editor → Media storage → Payment w
 
 ## Important
 Do not hard-code payment credentials or WhatsApp tokens in frontend code. Use a backend and environment secrets.
+
+## V5 navigation
+Landing navigation now uses separate Create, Templates, and Features pages.
