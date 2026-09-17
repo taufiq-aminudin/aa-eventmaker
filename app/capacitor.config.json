@@ -1,0 +1,6 @@
+{
+  "appId": "com.aaeventmaker.app",
+  "appName": "AA : Event Maker",
+  "webDir": "../web",
+  "bundledWebRuntime": false
+}
