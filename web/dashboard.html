@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — AA : Event Maker</title><link rel="stylesheet" href="dashboard.css"></head><body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="active" href="dashboard.html">Dashboard</a><a href="invitation-editor.html">Create</a><a href="templates.html">Templates</a></nav><a class="btn primary" href="index.html#create">New Project</a></header>
+<main class="container"><div class="hero-panel"><div><span class="eyebrow" style="color:#c4b5fd">MY PROJECT</span><h1 id="pname">Your Event</h1><div class="muted" id="pmeta">Create a project to get started.</div></div><a class="btn light" href="invitation-editor.html">Open Invitation Editor</a></div>
+<div class="stats"><div class="stat"><span class="muted">Invitation views</span><b>0</b></div><div class="stat"><span class="muted">RSVP confirmed</span><b>0</b></div><div class="stat"><span class="muted">Guests</span><b>0</b></div><div class="stat"><span class="muted">Setup</span><b>12%</b></div></div>
+<section class="section"><div class="section-title"><div><span class="eyebrow">WORKSPACE</span><h2>Build your event</h2></div></div><div class="grid">
+<a class="card module" href="invitation-editor.html"><div class="ico">💌</div><h3>Invitation Maker</h3><p>Choose a template, edit content, preview and publish your invitation.</p></a>
+<a class="card module" href="photo-studio.html"><div class="ico">📸</div><h3>Photo Maker</h3><p>Manage photos, backgrounds, frames and compositions.</p></a>
+<a class="card module" href="video-studio.html"><div class="ico">🎬</div><h3>Video Maker</h3><p>Create short event and social videos from your assets.</p></a>
+<a class="card module" href="design-studio.html"><div class="ico">🎨</div><h3>Design Maker</h3><p>Create posters, stories, cards and event graphics.</p></a>
+<a class="card module" href="guests.html"><div class="ico">👥</div><h3>Guest Manager</h3><p>Guest list, RSVP status, personal links and check-in.</p></a>
+<a class="card module" href="location.html"><div class="ico">📍</div><h3>Location</h3><p>Add venues, map pins and navigation details.</p></a>
+<a class="card module" href="planner.html"><div class="ico">📅</div><h3>Event Planner</h3><p>Checklist, timeline and event preparation.</p></a>
+<a class="card module" href="memories.html"><div class="ico">💾</div><h3>Memories</h3><p>Collect photos, videos and messages after the event.</p></a>
+</div></section>
+<section class="section"><div class="section-title"><div><span class="eyebrow">PUBLISH</span><h2>Invitation detail</h2></div><a class="btn dark" href="invitation-detail.html">View public page</a></div><div class="card"><strong>Current status: Draft</strong><p class="muted">Finish your invitation and publish it to create a shareable /w/[slug] link.</p></div></section>
+</main><footer><div class="brand"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></div><p>Create. Celebrate. Remember.</p></footer>
+<script>const p=JSON.parse(localStorage.getItem("aaem_project")||"null");if(p){pname.textContent=p.name;pmeta.textContent=[p.type,p.date].filter(Boolean).join(" · ")}</script></body></html>
