@@ -1,1 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="AA : Event Maker — Create. Celebrate. Remember.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>AA : Event Maker</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="AA Event Maker">
+      <span class="brand-mark">AA<span>:</span></span>
+      <span>Event Maker</span>
+    </a>
+    <nav class="desktop-nav">
+      <a href="#create">Create</a><a href="#templates">Templates</a><a href="#features">Features</a>
+    </nav>
+    <button class="btn btn-dark" onclick="openCreate()">Create Event</button>
+  </header>
 
+  <main>
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">ALL-IN-ONE EVENT CREATION PLATFORM</span>
+        <h1>Create.<br>Celebrate.<br><em>Remember.</em></h1>
+        <p>Create beautiful invitations, photos, videos, designs and event experiences from one simple platform.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="openCreate()">Start Creating</button>
+          <a class="btn btn-ghost" href="#templates">Explore Templates</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-brand">AA<span>:</span> Event Maker</div>
+            <div class="phone-title">Your moment<br><strong>starts here.</strong></div>
+            <div class="preview-photo"></div>
+            <button class="phone-button">Get Started</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-head"><span class="eyebrow">ONE PLATFORM</span><h2>Everything to make an event memorable.</h2></div>
+      <div class="feature-grid">
+        <article class="feature"><div>💌</div><h3>Invitation Maker</h3><p>Animated digital invitations with RSVP, gallery and map.</p></article>
+        <article class="feature"><div>📸</div><h3>Photo Maker</h3><p>Edit photos, backgrounds, frames and couple compositions.</p></article>
+        <article class="feature"><div>🎬</div><h3>Video Maker</h3><p>Create invitation, pre-event and social videos.</p></article>
+        <article class="feature"><div>🎨</div><h3>Design Maker</h3><p>Posters, stories, banners, cards and event assets.</p></article>
+        <article class="feature"><div>🤖</div><h3>AI Creator</h3><p>Turn an idea into a visual event concept.</p></article>
+        <article class="feature"><div>👥</div><h3>Guest Manager</h3><p>Guest lists, personal links, RSVP and QR check-in.</p></article>
+        <article class="feature"><div>📍</div><h3>Location</h3><p>Save venues, map pins and navigation links.</p></article>
+        <article class="feature"><div>💾</div><h3>Memories</h3><p>Keep photos, videos and guest messages after the event.</p></article>
+      </div>
+    </section>
+
+    <section id="templates" class="section alt">
+      <div class="section-head"><span class="eyebrow">TEMPLATE STUDIO</span><h2>Start from a style. Make it yours.</h2></div>
+      <div class="template-grid">
+        <article class="template t1"><span>Elegant</span><strong>Golden Night</strong><button onclick="useTemplate('Golden Night')">Use template</button></article>
+        <article class="template t2"><span>Nature</span><strong>Garden Bloom</strong><button onclick="useTemplate('Garden Bloom')">Use template</button></article>
+        <article class="template t3"><span>Modern</span><strong>Minimal Motion</strong><button onclick="useTemplate('Minimal Motion')">Use template</button></article>
+      </div>
+    </section>
+
+    <section id="create" class="section create-section">
+      <div>
+        <span class="eyebrow">CREATE YOUR PROJECT</span>
+        <h2>One project. Everything in one place.</h2>
+        <p>A project can contain invitation, photos, videos, designs, guests, locations, RSVP and memories.</p>
+      </div>
+      <div class="project-card">
+        <label>Event name<input id="eventName" placeholder="e.g. Ahmad & Siti Wedding"></label>
+        <label>Event type<select id="eventType"><option>Wedding</option><option>Birthday</option><option>Graduation</option><option>Corporate</option><option>Party</option><option>Custom Event</option></select></label>
+        <label>Date<input id="eventDate" type="date"></label>
+        <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+        <p id="projectResult" class="result"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="brand"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></div><p>Create. Celebrate. Remember.</p></footer>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+  <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+</body>
+</html>

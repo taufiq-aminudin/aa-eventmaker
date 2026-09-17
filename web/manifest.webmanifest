@@ -1,0 +1,12 @@
+{
+  "name":"AA : Event Maker",
+  "short_name":"AA Event Maker",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f8f9fb",
+  "theme_color":"#111827",
+  "description":"Create. Celebrate. Remember.",
+  "icons":[
+    {"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
