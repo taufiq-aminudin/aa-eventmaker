@@ -99,3 +99,20 @@ document.addEventListener('DOMContentLoaded',()=>{
  const p=project();
  if(by('createCurrent')&&p){by('createCurrent').textContent=`Editing project: ${p.name}`}
 });
+
+document.addEventListener('DOMContentLoaded',()=>{
+ const p=project();
+ const main=document.querySelector('main.container');
+ if(p && main && !document.getElementById('projectContext') && !location.pathname.endsWith('dashboard.html')){
+   const bar=document.createElement('div');bar.id='projectContext';bar.className='project-bar';
+   bar.innerHTML=`<div><small>ACTIVE PROJECT</small><strong>${esc(p.name)}</strong><small>${esc(p.type||'Event')} · ${esc(p.date||'Date not set')}</small></div><div class="project-actions"><a class="btn light" href="dashboard.html">Workspace</a><a class="btn primary" href="invitation-maker.html">Invitation</a></div>`;
+   main.prepend(bar);
+ }
+ document.querySelectorAll('input[type=file][data-preview]').forEach(input=>{
+   input.addEventListener('change',()=>{
+     const file=input.files?.[0], target=document.getElementById(input.dataset.preview);
+     if(!file||!target)return;
+     const url=URL.createObjectURL(file);target.src=url;target.style.display='block';
+   });
+ });
+});

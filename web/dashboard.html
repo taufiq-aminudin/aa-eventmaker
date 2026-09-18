@@ -1,34 +1,18 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — AA : Event Maker</title><link rel="stylesheet" href="styles.css"></head><body>
-<header class="topbar">
-  <a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a>
-  <nav class="nav">
-    <a href="index.html">Home</a><a href="create.html">Create</a><a href="templates.html">Templates</a><a href="features.html">Features</a><a href="dashboard.html">Dashboard</a>
-  </nav>
-  <a class="btn dark" href="create.html">Create Event</a>
-</header>
-<main class="container">
-<div class="hero-panel"><span class="eyebrow" style="color:#ddd6fe">PROJECT WORKSPACE</span><h1 id="pname">Your Event</h1><p id="pmeta" style="color:#e4e7ec">Create a project to begin.</p>
-<div class="actions"><a class="btn light" href="invitation-maker.html">Build Invitation →</a><a class="btn" style="background:#fff;color:#111827" href="invitation-detail.html">Preview Detail</a></div></div>
-<section class="section"><div class="stat-grid"><div class="stat"><span class="muted">Invitation views</span><b id="views">0</b></div><div class="stat"><span class="muted">Confirmed RSVP</span><b id="confirmed">0</b></div><div class="stat"><span class="muted">Guests</span><b id="guestCount">0</b></div><div class="stat"><span class="muted">Budget items</span><b id="budgetCount">0</b></div></div></section>
-<section class="section"><div class="section-title"><div><span class="eyebrow">ALL MODULES</span><h2>Build your event</h2></div></div>
-<div class="grid">
-<a class="card module" href="invitation-maker.html"><div class="ico">💌</div><h3>Invitation Maker</h3><p>Template, editor, preview, publish and share.</p></a>
-<a class="card module" href="photo-maker.html"><div class="ico">📸</div><h3>Photo Maker</h3><p>Upload, edit, compose and organize photos.</p></a>
-<a class="card module" href="video-maker.html"><div class="ico">🎬</div><h3>Video Maker</h3><p>Storyboard and event video formats.</p></a>
-<a class="card module" href="design-maker.html"><div class="ico">🎨</div><h3>Design Maker</h3><p>Poster, banner, story and event print assets.</p></a>
-<a class="card module" href="ai-creator.html"><div class="ico">🤖</div><h3>AI Creator</h3><p>Concept, copy, palette and creative assistant.</p></a>
-<a class="card module" href="guest-manager.html"><div class="ico">👥</div><h3>Guest Manager</h3><p>Guest list, RSVP, personal links and check-in.</p></a>
-<a class="card module" href="location.html"><div class="ico">📍</div><h3>Location</h3><p>Venues, map pins and directions.</p></a>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Project Dashboard — AA : Event Maker</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="app.css"></head><body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="" href="index.html">Home</a><a class="" href="create.html">Create</a><a class="" href="templates.html">Templates</a><a class="" href="features.html">Features</a><a class="active" href="dashboard.html">Dashboard</a></nav><a class="btn dark" href="create.html">Create Event</a></header><main class="container"><div id="projectBar" class="project-bar"><div><small>PROJECT</small><strong id="projectName">Your Event</strong><small id="projectMeta">Create an event to start</small></div><div class="project-actions"><a class="btn light" href="create.html">Edit Project</a><a class="btn primary" href="invitation-maker.html">Build Invitation →</a></div></div>
+<section class="hero"><div class="hero-copy"><span class="eyebrow">PROJECT WORKSPACE</span><h1 id="dashTitle">Your event, all in one place.</h1><p class="lead" id="dashLead">Invitation, creative studios, guests and event operations are connected to this project.</p><div class="actions"><a class="btn primary" href="invitation-maker.html">Continue Invitation →</a><a class="btn light" href="ai-creator.html">Open AI Creator</a></div></div></section>
+<section class="section stat-grid"><div class="stat"><span class="muted">Invitation views</span><b id="views">0</b></div><div class="stat"><span class="muted">Confirmed RSVP</span><b id="confirmed">0</b></div><div class="stat"><span class="muted">Guests</span><b id="guestCount">0</b></div><div class="stat"><span class="muted">Budget items</span><b id="budgetCount">0</b></div></section>
+<section class="section"><span class="eyebrow">CREATE & MANAGE</span><h2>Event workspace</h2><div class="grid">
+<a class="card module" href="invitation-maker.html"><div class="ico">💌</div><h3>Invitation Maker</h3><p>Templates, editor, detail, RSVP, publish and share.</p></a>
+<a class="card module" href="photo-maker.html"><div class="ico">📸</div><h3>Photo Maker</h3><p>Build and organize your event photo assets.</p></a>
+<a class="card module" href="video-maker.html"><div class="ico">🎬</div><h3>Video Maker</h3><p>Storyboard and prepare event video formats.</p></a>
+<a class="card module" href="design-maker.html"><div class="ico">🎨</div><h3>Design Maker</h3><p>Create supporting event and social assets.</p></a>
+<a class="card module" href="ai-creator.html"><div class="ico">✨</div><h3>AI Creator</h3><p>Generate creative direction from a prompt.</p></a>
+<a class="card module" href="guest-manager.html"><div class="ico">👥</div><h3>Guest Manager</h3><p>Guests, RSVP, personalized links and check-in.</p></a>
+<a class="card module" href="location.html"><div class="ico">📍</div><h3>Location</h3><p>Venue, map and navigation.</p></a>
 <a class="card module" href="event-planner.html"><div class="ico">📅</div><h3>Event Planner</h3><p>Tasks, deadlines and responsibilities.</p></a>
-<a class="card module" href="budget.html"><div class="ico">💰</div><h3>Budget</h3><p>Planned, actual and remaining costs.</p></a>
-<a class="card module" href="analytics.html"><div class="ico">📊</div><h3>Analytics</h3><p>Views, RSVP, shares and check-in overview.</p></a>
-<a class="card module" href="memories.html"><div class="ico">💾</div><h3>Memories</h3><p>Photos, videos, messages and highlights.</p></a>
-</div></section>
-<section class="section card"><span class="eyebrow">NEXT STEP</span><h2>Finish the invitation</h2><p class="muted">The complete flow is Template → Editor → Preview/Detail → Publish → Share.</p><div class="actions"><a class="btn primary" href="templates.html">1. Choose Template</a><a class="btn light" href="invitation-editor.html">2. Open Editor</a><a class="btn dark" href="invitation-detail.html">3. Open Detail</a></div></section>
-</main>
-<script>
-const p=project(); if(p){pname.textContent=p.name;pmeta.textContent=[p.type,p.date,p.time,p.location].filter(Boolean).join(' · ')}
-const gs=read(KEY.guests,[]);guestCount.textContent=gs.length;confirmed.textContent=gs.filter(x=>x.rsvp==='Confirmed').length;
-const bi=read(KEY.budget,[]);budgetCount.textContent=bi.length;const inv=invitation();views.textContent=inv?.views||0;
-</script>
-<script src="app.js"></script></body></html>
+<a class="card module" href="budget.html"><div class="ico">💰</div><h3>Budget</h3><p>Track planned versus actual spending.</p></a>
+<a class="card module" href="analytics.html"><div class="ico">📊</div><h3>Analytics</h3><p>Measure invitation and RSVP activity.</p></a>
+<a class="card module" href="memories.html"><div class="ico">🖼️</div><h3>Memories</h3><p>Preserve the event after it happens.</p></a>
+</div></section></main><script src="app.js"></script><script>
+document.addEventListener('DOMContentLoaded',()=>{const p=project();if(p){projectName.textContent=p.name;projectMeta.textContent=(p.type||'Event')+' · '+(p.date||'Date not set');dashTitle.textContent=p.name;dashLead.textContent='Your '+(p.type||'event')+' project connects every creative and event-management workspace.'}views.textContent=(invitation()?.views||0);const g=read(KEY.guests,[]);guestCount.textContent=g.length;confirmed.textContent=g.filter(x=>x.rsvp==='Confirmed').length;budgetCount.textContent=read(KEY.budget,[]).length});</script></body></html>
