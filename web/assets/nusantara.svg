@@ -1,9 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 180" role="img" aria-label="Nusantara wedding invitation visual">
-<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#edf3e8"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
-<rect width="500" height="180" fill="url(#g)"/><circle cx="30" cy="30" r="5" fill="#14532d" opacity=".25"/><circle cx="60" cy="60" r="5" fill="#14532d" opacity=".25"/><circle cx="440" cy="30" r="5" fill="#14532d" opacity=".25"/><circle cx="470" cy="60" r="5" fill="#14532d" opacity=".25"/><circle cx="30" cy="150" r="5" fill="#14532d" opacity=".25"/><circle cx="60" cy="180" r="5" fill="#14532d" opacity=".25"/><circle cx="440" cy="150" r="5" fill="#14532d" opacity=".25"/><circle cx="470" cy="180" r="5" fill="#14532d" opacity=".25"/>
-<rect x="12" y="12" width="476" height="156" rx="12" fill="none" stroke="#14532d" stroke-width="1.5" opacity=".28"/>
-<text x="250" y="63" text-anchor="middle" font-family="Georgia,serif" font-size="13" fill="#14532d" letter-spacing="3">THE WEDDING OF</text>
-<text x="250" y="101" text-anchor="middle" font-family="Georgia,serif" font-size="28" font-weight="700" fill="#14532d">YOUR NAMES</text>
-<line x1="190" y1="115" x2="310" y2="115" stroke="#14532d" opacity=".35"/>
-<text x="250" y="139" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#14532d" letter-spacing="2">DD MONTH YYYY · INDONESIA</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 300">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8eee3"/><stop offset="1" stop-color="#ffffff"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity=".12"/></filter></defs>
+<rect width="500" height="300" fill="url(#bg)"/><g fill="none" stroke="#174b31" opacity=".35" stroke-width="3"><path d="M0 145Q70 105 140 145T280 145T420 145T500 145"/><path d="M25 35h55v55H25zM420 35h55v55h-55z"/></g>
+<rect x="18" y="18" width="464" height="264" rx="16" fill="none" stroke="#174b31" opacity=".28"/>
+<g text-anchor="middle" fill="#174b31">
+<text x="250" y="92" font-family="Georgia,serif" font-size="14" letter-spacing="4">THE WEDDING OF</text>
+<text x="250" y="138" font-family="Georgia,serif" font-size="30" font-weight="700">YOUR NAMES</text>
+<line x1="195" y1="156" x2="305" y2="156" stroke="#174b31" opacity=".35"/>
+<text x="250" y="184" font-family="Arial,sans-serif" font-size="11" letter-spacing="2">DD MONTH YYYY</text>
+<text x="250" y="204" font-family="Arial,sans-serif" font-size="9" letter-spacing="1.5">INDONESIA · NUSANTARA</text>
+</g></svg>
