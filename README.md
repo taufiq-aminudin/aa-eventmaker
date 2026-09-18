@@ -1,21 +1,12 @@
-# AA : Event Maker — COMPLETE v10
+# AA : Event Maker
 
 Create. Celebrate. Remember.
 
-## Final web flow
-Create Event → Dashboard / Project Workspace → Invitation Maker → Templates → Invitation Editor → Invitation Detail → Publish / RSVP / Share
+Core architecture:
+User → Project → Invitation / Photo / Video / Design / AI / Guests / Location / Planner / Budget / Analytics / Memories.
 
-## Separate pages
-Home, Create, Templates, Features, Dashboard, Invitation Maker, Invitation Editor, Invitation Detail,
-Photo Maker, Video Maker, Design Maker, AI Creator, Guest Manager, Location, Event Planner, Budget,
-Analytics, Memories.
+The template library includes wedding concept visual starting points (garden, rustic, modern minimalist, elegant white, intimate, ballroom, adat modern, festival, monochrome, pastel, sustainable, content-friendly) and regional/cultural wedding styles.
 
-## Important
-For an existing Capacitor project, replace only `web/` with this package's `web/` folder.
-Do not delete the existing `app/android/` project or node_modules.
+Accounts and projects are stored separately on the device. Photo/video media is stored in IndexedDB. Invitation sharing exposes public invitation details only.
 
-Then run:
-`cd C:\AA-Event-Maker\app`
-`npx cap sync android`
-
-No `npm run build` is required for this static Capacitor web app.
+For the existing Capacitor Android project, replace the existing `web/` folder with this `web/` folder and run `npx cap sync android`.
