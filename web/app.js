@@ -88,5 +88,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  if(by('authUserName')){const u=currentUser();by('authUserName').textContent=u?u.name:'Guest'}
  renderGuests();renderTasks();renderBudget();updateBudgetSummary();
  const p=project(),main=document.querySelector('main.container');
- if(p&&main&&!document.getElementById('projectContext')&&!location.pathname.endsWith('dashboard.html')){const bar=document.createElement('div');bar.id='projectContext';bar.className='project-bar';bar.innerHTML=`<div><small>ACTIVE PROJECT</small><strong>${esc(p.name)}</strong><small>${esc(p.type||'Event')} · ${esc(p.date||'Date not set')}</small></div><div class="project-actions"><a class="btn light" href="dashboard.html">Workspace</a><a class="btn primary" href="invitation-maker.html">Invitation</a></div>`;main.prepend(bar)}
+ const projectPages=['invitation-maker.html','invitation-editor.html','invitation-detail.html','photo-maker.html','video-maker.html','design-maker.html','ai-creator.html','guest-manager.html','location.html','event-planner.html','budget.html','analytics.html','memories.html'];
+ const currentPage=location.pathname.split('/').pop()||'index.html';
+ if(p&&main&&projectPages.includes(currentPage)&&!document.getElementById('projectContext')){const bar=document.createElement('div');bar.id='projectContext';bar.className='project-bar';bar.innerHTML=`<div><small>ACTIVE PROJECT</small><strong>${esc(p.name)}</strong><small>${esc(p.type||'Event')} · ${esc(p.date||'Date not set')}</small></div><div class="project-actions"><a class="btn light" href="dashboard.html">Workspace</a><a class="btn primary" href="invitation-maker.html">Invitation</a></div>`;main.prepend(bar)}
 });
