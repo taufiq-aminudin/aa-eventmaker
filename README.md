@@ -1,7 +1,5 @@
-# AA : Event Maker
+# AA : Event Maker v8
 Create. Celebrate. Remember.
 
-Frontend + Capacitor Android project. Main web modules use separate HTML pages and localStorage for prototype project data.
-
-Run from app/: npm run web
-Sync Android from app/: npx cap sync android
+All major modules are separate HTML pages. The prototype stores project data in localStorage and is compatible with Capacitor.
+Flow: Create Event → Dashboard → Invitation Maker → Templates → Invitation Editor → Invitation Detail → Publish/Share.
