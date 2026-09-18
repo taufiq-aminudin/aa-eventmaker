@@ -1,33 +1,101 @@
 
-const KEY={project:'aaem_project',invitation:'aaem_invitation',template:'aaem_template',guests:'aaem_guests',planner:'aaem_planner',budget:'aaem_budget',location:'aaem_location',assets:'aaem_assets'};
-const read=(k,d=null)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const KEY={project:'aaem_project',invitation:'aaem_invitation',template:'aaem_template',guests:'aaem_guests',planner:'aaem_planner',budget:'aaem_budget',location:'aaem_location',assets:'aaem_assets',design:'aaem_design',video:'aaem_video'};
+const read=(k,d=null)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}};
 const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-const project=()=>read(KEY.project,null);
-const invitation=()=>read(KEY.invitation,null);
+const project=()=>read(KEY.project,null), invitation=()=>read(KEY.invitation,null);
+function by(id){return document.getElementById(id)}
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-function toast(msg){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:fixed;right:18px;bottom:18px;z-index:99;background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2)';document.body.appendChild(e)}e.textContent=msg;e.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.style.display='none',2300)}
-function requireProject(){if(!project()){toast('Buat project terlebih dahulu');setTimeout(()=>location.href='create.html',500);return false}return true}
+function toast(msg){let e=by('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:fixed;right:18px;bottom:18px;z-index:999;background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);font-weight:700';document.body.appendChild(e)}e.textContent=msg;e.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.style.display='none',2300)}
+function requireProject(){if(project())return true;toast('Buat project terlebih dahulu');setTimeout(()=>{window.location.href='create.html'},450);return false}
+function slugify(s){return String(s||'').toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g,'').trim().replace(/[\s_]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'my-event'}
 function createProject(){
- const name=(document.getElementById('eventName')?.value||'').trim();
- const type=document.getElementById('eventType')?.value||'Wedding';
- const date=document.getElementById('eventDate')?.value||'';
- const time=document.getElementById('eventTime')?.value||'';
- const venue=document.getElementById('eventLocation')?.value||'';
- if(!name){toast('Masukkan nama event');return}
- const p={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,type,date,time,location:venue,createdAt:new Date().toISOString()};
+ const name=(by('eventName')?.value||'').trim(), type=by('eventType')?.value||'Wedding', date=by('eventDate')?.value||'', time=by('eventTime')?.value||'', venue=(by('eventLocation')?.value||'').trim();
+ if(!name){toast('Masukkan nama event');by('eventName')?.focus();return}
+ const p={id:(crypto.randomUUID?.()||String(Date.now())),name,type,date,time,location:venue,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  write(KEY.project,p);
- write(KEY.invitation,{title:name,opening:'Together with our families, we invite you to celebrate this special moment.',date,time:time||'10:00',venue:venue||'Add your venue',slug:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'my-event',template:'Golden Night',published:false,views:0});
- window.location.href='dashboard.html';
+ const old=invitation()||{};
+ write(KEY.invitation,{...old,title:name,opening:old.opening||'Together with our families, we invite you to celebrate this special moment.',date,time:time||'10:00',venue:venue||'Add your venue',slug:old.slug||slugify(name),template:old.template||'Golden Night',published:false,views:old.views||0});
+ toast('Project berhasil dibuat');
+ setTimeout(()=>window.location.href='dashboard.html',350);
 }
-function chooseTemplate(name){write(KEY.template,name);const inv=invitation()||{};inv.template=name;write(KEY.invitation,inv);location.href='invitation-editor.html'}
-function copyLink(){navigator.clipboard?.writeText(location.href).then(()=>toast('Link berhasil disalin')).catch(()=>toast('Salin URL dari address bar'))}
-function addGuest(){if(!requireProject())return;const name=(document.getElementById('guestName')?.value||'').trim();if(!name){toast('Masukkan nama tamu');return}const a=read(KEY.guests,[]);a.push({id:Date.now(),name,phone:document.getElementById('guestPhone')?.value||'',email:document.getElementById('guestEmail')?.value||'',group:document.getElementById('guestGroup')?.value||'General',rsvp:'Pending'});write(KEY.guests,a);renderGuests();toast('Guest ditambahkan')}
-function renderGuests(){const e=document.getElementById('guestList');if(!e)return;const a=read(KEY.guests,[]);e.innerHTML=a.length?a.map((g,i)=>`<div class="list-row"><span><b>${esc(g.name)}</b><small>${esc(g.group)} · ${esc(g.phone||'No phone')}</small></span><strong>${esc(g.rsvp)}</strong></div>`).join(''):'<div class="empty">Belum ada guest.</div>'}
-function addTask(){if(!requireProject())return;const task=(document.getElementById('taskName')?.value||'').trim();if(!task){toast('Masukkan task');return}const a=read(KEY.planner,[]);a.push({task,date:document.getElementById('taskDate')?.value||'',owner:document.getElementById('taskOwner')?.value||'',status:'To do'});write(KEY.planner,a);renderTasks();toast('Task ditambahkan')}
-function renderTasks(){const e=document.getElementById('taskList');if(!e)return;const a=read(KEY.planner,[]);e.innerHTML=a.length?a.map(t=>`<div class="list-row"><span><b>${esc(t.task)}</b><small>${esc(t.date)} · ${esc(t.owner)}</small></span><strong>${esc(t.status)}</strong></div>`).join(''):'<div class="empty">Belum ada task.</div>'}
-function addBudget(){if(!requireProject())return;const cat=document.getElementById('budgetCat')?.value||'Other';const planned=Number(document.getElementById('budgetPlan')?.value||0);const actual=Number(document.getElementById('budgetActual')?.value||0);const a=read(KEY.budget,[]);a.push({category:cat,planned,actual});write(KEY.budget,a);renderBudget();toast('Budget ditambahkan')}
-function renderBudget(){const e=document.getElementById('budgetList');if(!e)return;const a=read(KEY.budget,[]);e.innerHTML=a.length?a.map(x=>`<div class="list-row"><span>${esc(x.category)}</span><strong>Rp ${x.planned.toLocaleString('id-ID')} · Rp ${x.actual.toLocaleString('id-ID')}</strong></div>`).join(''):'<div class="empty">Belum ada budget.</div>'}
-function saveInvitation(){if(!requireProject())return;const data={title:title.value.trim(),opening:opening.value.trim(),date:date.value,time:time.value,venue:venue.value.trim(),slug:slug.value.trim()||'my-event',template:template.value,published:false,views:invitation()?.views||0};write(KEY.invitation,data);saved.textContent='✓ Invitation tersimpan';setTimeout(()=>location.href='invitation-detail.html',350)}
-function submitRsvp(){const name=(document.getElementById('guest')?.value||'').trim();if(!name){toast('Masukkan nama');return}const ans=document.getElementById('answer').value;const a=read(KEY.guests,[]);const found=a.find(g=>g.name.toLowerCase()===name.toLowerCase());if(found)found.rsvp=ans.startsWith('Yes')?'Confirmed':'Declined';else a.push({id:Date.now(),name,phone:'',group:'Guest',rsvp:ans.startsWith('Yes')?'Confirmed':'Declined'});write(KEY.guests,a);document.getElementById('r').textContent='✓ RSVP berhasil dicatat.';document.getElementById('r').className='notice'}
-function publishInvitation(){const inv=invitation();if(!inv)return;if(!inv.published){inv.published=true;inv.views=(inv.views||0)+1;write(KEY.invitation,inv)}toast('Invitation published');setTimeout(()=>location.href='invitation-detail.html',400)}
-document.addEventListener('DOMContentLoaded',()=>{renderGuests();renderTasks();renderBudget()})
+function chooseTemplate(name){
+ if(!requireProject())return;
+ const inv=invitation()||{}; write(KEY.template,name); write(KEY.invitation,{...inv,template:name});
+ window.location.href='invitation-editor.html';
+}
+function copyLink(){
+ const url=window.location.href;
+ if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>toast('Link berhasil disalin')).catch(()=>toast('Salin URL dari address bar'));
+ else toast('Salin URL dari address bar');
+}
+function saveInvitation(){
+ if(!requireProject())return;
+ const data={...(invitation()||{}),title:(by('title')?.value||'').trim(),opening:(by('opening')?.value||'').trim(),date:by('date')?.value||'',time:by('time')?.value||'10:00',venue:(by('venue')?.value||'').trim(),slug:slugify(by('slug')?.value||''),template:by('template')?.value||'Golden Night'};
+ if(!data.title){toast('Isi judul invitation');return}
+ write(KEY.invitation,data);
+ const saved=by('saved');if(saved)saved.textContent='✓ Invitation tersimpan';
+ setTimeout(()=>window.location.href='invitation-detail.html',350);
+}
+function publishInvitation(){
+ if(!requireProject())return;
+ const inv=invitation();if(!inv)return;
+ write(KEY.invitation,{...inv,published:true,views:(inv.views||0)+1});
+ toast('Invitation published');
+ setTimeout(()=>window.location.href='invitation-detail.html',400);
+}
+function addGuest(){
+ if(!requireProject())return;
+ const name=(by('guestName')?.value||'').trim();if(!name){toast('Masukkan nama tamu');return}
+ const a=read(KEY.guests,[]);a.push({id:Date.now(),name,phone:by('guestPhone')?.value||'',email:by('guestEmail')?.value||'',group:by('guestGroup')?.value||'General',rsvp:'Pending'});write(KEY.guests,a);renderGuests();['guestName','guestPhone','guestEmail'].forEach(id=>{if(by(id))by(id).value=''});toast('Guest ditambahkan')
+}
+function renderGuests(){
+ const e=by('guestList');if(!e)return;const a=read(KEY.guests,[]);
+ e.innerHTML=a.length?a.map(g=>`<div class="list-row"><span><b>${esc(g.name)}</b><small>${esc(g.group)} · ${esc(g.phone||'No phone')} · ${esc(g.email||'No email')}</small></span><strong>${esc(g.rsvp)}</strong></div>`).join(''):'<div class="empty">Belum ada guest.</div>';
+}
+function addTask(){
+ if(!requireProject())return;const task=(by('taskName')?.value||'').trim();if(!task){toast('Masukkan task');return}
+ const a=read(KEY.planner,[]);a.push({id:Date.now(),task,date:by('taskDate')?.value||'',owner:by('taskOwner')?.value||'',status:'To do'});write(KEY.planner,a);renderTasks();if(by('taskName'))by('taskName').value='';toast('Task ditambahkan')
+}
+function renderTasks(){
+ const e=by('taskList');if(!e)return;const a=read(KEY.planner,[]);
+ e.innerHTML=a.length?a.map(t=>`<div class="list-row"><span><b>${esc(t.task)}</b><small>${esc(t.date||'No deadline')} · ${esc(t.owner||'Unassigned')}</small></span><strong>${esc(t.status)}</strong></div>`).join(''):'<div class="empty">Belum ada task.</div>';
+}
+function addBudget(){
+ if(!requireProject())return;const planned=Number(by('budgetPlan')?.value||0),actual=Number(by('budgetActual')?.value||0),cat=by('budgetCat')?.value||'Other';
+ const a=read(KEY.budget,[]);a.push({id:Date.now(),category:cat,planned,actual});write(KEY.budget,a);renderBudget();updateBudgetSummary();toast('Budget ditambahkan')
+}
+function renderBudget(){
+ const e=by('budgetList');if(!e)return;const a=read(KEY.budget,[]);
+ e.innerHTML=a.length?a.map(x=>`<div class="list-row"><span><b>${esc(x.category)}</b></span><strong>Rp ${Number(x.planned).toLocaleString('id-ID')} · Rp ${Number(x.actual).toLocaleString('id-ID')}</strong></div>`).join(''):'<div class="empty">Belum ada budget.</div>';
+}
+function updateBudgetSummary(){
+ const a=read(KEY.budget,[]),p=a.reduce((s,x)=>s+Number(x.planned||0),0),r=a.reduce((s,x)=>s+Number(x.actual||0),0);
+ if(by('totalPlan'))by('totalPlan').textContent='Rp '+p.toLocaleString('id-ID');if(by('totalActual'))by('totalActual').textContent='Rp '+r.toLocaleString('id-ID');if(by('remaining'))by('remaining').textContent='Rp '+(p-r).toLocaleString('id-ID');
+}
+function submitRsvp(){
+ const name=(by('guest')?.value||'').trim();if(!name){toast('Masukkan nama');return}
+ const ans=by('answer')?.value||'', status=ans.startsWith('Yes')?'Confirmed':ans.startsWith('Sorry')?'Declined':'Maybe', a=read(KEY.guests,[]);
+ const found=a.find(g=>g.name.toLowerCase()===name.toLowerCase());
+ if(found)found.rsvp=status;else a.push({id:Date.now(),name,phone:'',email:'',group:'Guest',rsvp:status});
+ write(KEY.guests,a);if(by('r')){by('r').textContent='✓ RSVP berhasil dicatat.';by('r').className='notice'}toast('RSVP tersimpan')
+}
+function saveLocation(){
+ if(!requireProject())return;write(KEY.location,{name:(by('locName')?.value||'').trim(),address:(by('locAddress')?.value||'').trim(),url:(by('locUrl')?.value||'').trim()});
+ if(by('locSaved'))by('locSaved').textContent='✓ Location tersimpan';toast('Location tersimpan')
+}
+function generateConcept(){
+ const p=(by('aiPrompt')?.value||'').trim();if(!p){toast('Masukkan prompt');return}
+ const e=by('aiResult');if(!e)return;
+ e.innerHTML=`<span class="eyebrow">AI DRAFT</span><h2>Creative direction</h2><p>${esc(p)}</p><div class="list"><div class="list-row"><span>Theme</span><strong>Elegant celebration</strong></div><div class="list-row"><span>Palette</span><strong>Plum · Rose · Ivory</strong></div><div class="list-row"><span>Typography</span><strong>Editorial Serif + Clean Sans</strong></div></div><div class="actions"><a class="btn primary" href="invitation-editor.html">Use for Invitation →</a></div>`;
+}
+function saveStudio(kind){
+ if(!requireProject())return;
+ const key=kind==='photo'?KEY.assets:kind==='video'?KEY.video:KEY.design;
+ const data={...(read(key,{})||{}),updatedAt:new Date().toISOString(),notes:(by(kind+'Notes')?.value||'').trim()};
+ write(key,data);toast(kind[0].toUpperCase()+kind.slice(1)+' workspace tersimpan')
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ renderGuests();renderTasks();renderBudget();updateBudgetSummary();
+ const p=project();
+ if(by('createCurrent')&&p){by('createCurrent').textContent=`Editing project: ${p.name}`}
+});

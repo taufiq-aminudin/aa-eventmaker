@@ -1,8 +1,96 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Templates — AA : Event Maker</title><link rel="stylesheet" href="styles.css"></head><body>
-<header class="topbar">
-  <a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a>
-  <nav class="nav">
-    <a href="index.html">Home</a><a href="create.html">Create</a><a href="templates.html">Templates</a><a href="features.html">Features</a><a href="dashboard.html">Dashboard</a>
-  </nav>
-  <a class="btn dark" href="create.html">Create Event</a>
-</header><main class="container"><div class="page-actions"><a class="back" href="index.html">← Home</a></div><span class="eyebrow">TEMPLATE GALLERY</span><h1>Choose your starting point.</h1><p class="lead">Pilih template lalu lanjut langsung ke Invitation Editor.</p><div class="chips section"><span class="chip active">All</span><span class="chip">Wedding</span><span class="chip">Birthday</span><span class="chip">Baby</span><span class="chip">Corporate</span><span class="chip">Graduation</span></div><section class="section grid"><article class="card template-card"><div class="template-cover" style="background:#312e81">Golden Night</div><div class="template-body"><span class="eyebrow">WEDDING</span><h3>Golden Night</h3><p class="muted">A cinematic invitation with elegant night mood.</p><button class="btn primary" onclick="chooseTemplate('Golden Night')">Use Template →</button></div></article><article class="card template-card"><div class="template-cover" style="background:#166534">Garden Bloom</div><div class="template-body"><span class="eyebrow">WEDDING</span><h3>Garden Bloom</h3><p class="muted">Soft floral invitation for a romantic celebration.</p><button class="btn primary" onclick="chooseTemplate('Garden Bloom')">Use Template →</button></div></article><article class="card template-card"><div class="template-cover" style="background:#0f172a">Minimal Motion</div><div class="template-body"><span class="eyebrow">CORPORATE</span><h3>Minimal Motion</h3><p class="muted">Clean modern layout for professional events.</p><button class="btn primary" onclick="chooseTemplate('Minimal Motion')">Use Template →</button></div></article><article class="card template-card"><div class="template-cover" style="background:#9d174d">Birthday Pop</div><div class="template-body"><span class="eyebrow">BIRTHDAY</span><h3>Birthday Pop</h3><p class="muted">Playful colorful birthday invitation.</p><button class="btn primary" onclick="chooseTemplate('Birthday Pop')">Use Template →</button></div></article><article class="card template-card"><div class="template-cover" style="background:#0369a1">Baby Story</div><div class="template-body"><span class="eyebrow">BABY</span><h3>Baby Story</h3><p class="muted">Warm family-focused baby celebration.</p><button class="btn primary" onclick="chooseTemplate('Baby Story')">Use Template →</button></div></article><article class="card template-card"><div class="template-cover" style="background:#7c2d12">Graduation</div><div class="template-body"><span class="eyebrow">GRADUATION</span><h3>Graduation</h3><p class="muted">Modern achievement and celebration template.</p><button class="btn primary" onclick="chooseTemplate('Graduation')">Use Template →</button></div></article></section></main><script src="app.js"></script></body></html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wedding Templates — AA : Event Maker</title><link rel="stylesheet" href="styles.css">
+<style>.template-filters{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.template-filter{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer}.template-filter.active{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6}.template-count{color:var(--muted);font-weight:700}</style></head><body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a>
+<nav class="nav"><a href="index.html">Home</a><a href="create.html">Create</a><a class="active" href="templates.html">Templates</a><a href="features.html">Features</a><a href="dashboard.html">Dashboard</a></nav>
+<a class="btn dark" href="create.html">Create Event</a></header>
+<main class="container"><div class="page-actions"><a class="back" href="index.html">← Home</a></div>
+<span class="eyebrow">WEDDING TEMPLATE LIBRARY</span><h1>Wedding templates from Indonesia to the world.</h1>
+<p class="lead">Mulai dari <b>Sunda Halus, Jawa Tengah, Solo, Jogja, Bali</b> hingga gaya pernikahan dari berbagai kawasan dunia. Semua dapat disesuaikan di Invitation Editor.</p>
+<div class="template-filters">
+<button class="template-filter active" data-filter="all">All</button><button class="template-filter" data-filter="Indonesia">Indonesia</button>
+<button class="template-filter" data-filter="Southeast Asia">Southeast Asia</button><button class="template-filter" data-filter="Asia">Asia</button>
+<button class="template-filter" data-filter="Middle East">Middle East</button><button class="template-filter" data-filter="Europe">Europe</button>
+<button class="template-filter" data-filter="Africa">Africa</button><button class="template-filter" data-filter="Americas">Americas</button>
+<button class="template-filter" data-filter="Oceania">Oceania</button><button class="template-filter" data-filter="Global">Global</button></div>
+<div class="template-count"><span id="count">24</span> wedding templates</div>
+<section class="section grid" id="templateGrid"><article class="card template-card" data-region="Indonesia · Sunda" style="overflow:hidden">
+<div class="template-cover" style="background:#7b3f63">Sunda Halus</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · SUNDA</span><h3>Sunda Halus</h3>
+<p class="muted">Romantic Sundanese-inspired elegance with soft botanical details and refined traditional atmosphere.</p><button type="button" class="btn primary" onclick="chooseTemplate('Sunda Halus')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Central Java" style="overflow:hidden">
+<div class="template-cover" style="background:#6b3f2a">Jawa Tengah</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · CENTRAL JAVA</span><h3>Jawa Tengah</h3>
+<p class="muted">Refined Central Javanese heritage direction with graceful traditional ornament and warm ceremonial mood.</p><button type="button" class="btn primary" onclick="chooseTemplate('Jawa Tengah')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Surakarta" style="overflow:hidden">
+<div class="template-cover" style="background:#5b3426">Solo Heritage</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · SURAKARTA</span><h3>Solo Heritage</h3>
+<p class="muted">Classic Solo-inspired heritage with polished courtly details and understated luxury.</p><button type="button" class="btn primary" onclick="chooseTemplate('Solo Heritage')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Yogyakarta" style="overflow:hidden">
+<div class="template-cover" style="background:#4a3b2a">Jogja Royal</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · YOGYAKARTA</span><h3>Jogja Royal</h3>
+<p class="muted">Elegant Yogyakarta-inspired heritage direction with refined classical ornament.</p><button type="button" class="btn primary" onclick="chooseTemplate('Jogja Royal')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Bali" style="overflow:hidden">
+<div class="template-cover" style="background:#9a3412">Bali Ayu</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · BALI</span><h3>Bali Ayu</h3>
+<p class="muted">Celebration design inspired by Balinese visual warmth, nature and ceremonial elegance.</p><button type="button" class="btn primary" onclick="chooseTemplate('Bali Ayu')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Nusantara" style="overflow:hidden">
+<div class="template-cover" style="background:#14532d">Nusantara</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · NUSANTARA</span><h3>Nusantara</h3>
+<p class="muted">Contemporary Indonesian wedding combining regional motifs in a modern premium layout.</p><button type="button" class="btn primary" onclick="chooseTemplate('Nusantara')">Use Template →</button></div></article><article class="card template-card" data-region="Indonesia · Indonesia" style="overflow:hidden">
+<div class="template-cover" style="background:#312e81">Modern Indonesian</div>
+<div class="template-body"><span class="eyebrow">INDONESIA · INDONESIA</span><h3>Modern Indonesian</h3>
+<p class="muted">Clean modern wedding invitation with subtle Indonesian character and flexible styling.</p><button type="button" class="btn primary" onclick="chooseTemplate('Modern Indonesian')">Use Template →</button></div></article><article class="card template-card" data-region="Southeast Asia · Malay" style="overflow:hidden">
+<div class="template-cover" style="background:#065f46">Malay Elegance</div>
+<div class="template-body"><span class="eyebrow">SOUTHEAST ASIA · MALAY</span><h3>Malay Elegance</h3>
+<p class="muted">Elegant Malay-inspired ceremonial layout with graceful floral and geometric accents.</p><button type="button" class="btn primary" onclick="chooseTemplate('Malay Elegance')">Use Template →</button></div></article><article class="card template-card" data-region="Asia · Chinese" style="overflow:hidden">
+<div class="template-cover" style="background:#9f1239">Chinese Modern</div>
+<div class="template-body"><span class="eyebrow">ASIA · CHINESE</span><h3>Chinese Modern</h3>
+<p class="muted">Modern Chinese wedding direction with refined festive details and editorial typography.</p><button type="button" class="btn primary" onclick="chooseTemplate('Chinese Modern')">Use Template →</button></div></article><article class="card template-card" data-region="Asia · Indian" style="overflow:hidden">
+<div class="template-cover" style="background:#9a3412">Indian Celebration</div>
+<div class="template-body"><span class="eyebrow">ASIA · INDIAN</span><h3>Indian Celebration</h3>
+<p class="muted">Rich celebratory wedding direction with ornamental detail and ceremonial energy.</p><button type="button" class="btn primary" onclick="chooseTemplate('Indian Celebration')">Use Template →</button></div></article><article class="card template-card" data-region="Asia · Japanese" style="overflow:hidden">
+<div class="template-cover" style="background:#334155">Japanese Minimal</div>
+<div class="template-body"><span class="eyebrow">ASIA · JAPANESE</span><h3>Japanese Minimal</h3>
+<p class="muted">Quiet minimal wedding invitation inspired by Japanese restraint, balance and natural texture.</p><button type="button" class="btn primary" onclick="chooseTemplate('Japanese Minimal')">Use Template →</button></div></article><article class="card template-card" data-region="Asia · Korean" style="overflow:hidden">
+<div class="template-cover" style="background:#475569">Korean Modern</div>
+<div class="template-body"><span class="eyebrow">ASIA · KOREAN</span><h3>Korean Modern</h3>
+<p class="muted">Modern Korean wedding aesthetic with clean spacing, soft neutrals and elegant typography.</p><button type="button" class="btn primary" onclick="chooseTemplate('Korean Modern')">Use Template →</button></div></article><article class="card template-card" data-region="Middle East · Arabic" style="overflow:hidden">
+<div class="template-cover" style="background:#7c2d12">Arabic Elegance</div>
+<div class="template-body"><span class="eyebrow">MIDDLE EAST · ARABIC</span><h3>Arabic Elegance</h3>
+<p class="muted">Elegant Arabic wedding direction with sophisticated ornament and premium editorial composition.</p><button type="button" class="btn primary" onclick="chooseTemplate('Arabic Elegance')">Use Template →</button></div></article><article class="card template-card" data-region="Middle East · Persian" style="overflow:hidden">
+<div class="template-cover" style="background:#166534">Persian Garden</div>
+<div class="template-body"><span class="eyebrow">MIDDLE EAST · PERSIAN</span><h3>Persian Garden</h3>
+<p class="muted">Garden-inspired Persian direction with floral geometry and poetic visual balance.</p><button type="button" class="btn primary" onclick="chooseTemplate('Persian Garden')">Use Template →</button></div></article><article class="card template-card" data-region="Europe · French" style="overflow:hidden">
+<div class="template-cover" style="background:#701a75">French Romance</div>
+<div class="template-body"><span class="eyebrow">EUROPE · FRENCH</span><h3>French Romance</h3>
+<p class="muted">Editorial romantic invitation with refined French-inspired typography and delicate details.</p><button type="button" class="btn primary" onclick="chooseTemplate('French Romance')">Use Template →</button></div></article><article class="card template-card" data-region="Europe · Italian" style="overflow:hidden">
+<div class="template-cover" style="background:#365314">Italian Villa</div>
+<div class="template-body"><span class="eyebrow">EUROPE · ITALIAN</span><h3>Italian Villa</h3>
+<p class="muted">Elegant villa-inspired wedding direction with timeless editorial composition.</p><button type="button" class="btn primary" onclick="chooseTemplate('Italian Villa')">Use Template →</button></div></article><article class="card template-card" data-region="Europe · British" style="overflow:hidden">
+<div class="template-cover" style="background:#1e293b">British Classic</div>
+<div class="template-body"><span class="eyebrow">EUROPE · BRITISH</span><h3>British Classic</h3>
+<p class="muted">Classic formal invitation with restrained typography and heritage-inspired structure.</p><button type="button" class="btn primary" onclick="chooseTemplate('British Classic')">Use Template →</button></div></article><article class="card template-card" data-region="Europe · Nordic" style="overflow:hidden">
+<div class="template-cover" style="background:#334155">Nordic Minimal</div>
+<div class="template-body"><span class="eyebrow">EUROPE · NORDIC</span><h3>Nordic Minimal</h3>
+<p class="muted">Clean Nordic wedding layout with calm spacing, natural tones and minimal ornament.</p><button type="button" class="btn primary" onclick="chooseTemplate('Nordic Minimal')">Use Template →</button></div></article><article class="card template-card" data-region="Africa · Global" style="overflow:hidden">
+<div class="template-cover" style="background:#7c2d12">African Celebration</div>
+<div class="template-body"><span class="eyebrow">AFRICA · GLOBAL</span><h3>African Celebration</h3>
+<p class="muted">Contemporary African-inspired celebration direction emphasizing pattern, warmth and joyful energy.</p><button type="button" class="btn primary" onclick="chooseTemplate('African Celebration')">Use Template →</button></div></article><article class="card template-card" data-region="Americas · Latin America" style="overflow:hidden">
+<div class="template-cover" style="background:#9f1239">Latin Romance</div>
+<div class="template-body"><span class="eyebrow">AMERICAS · LATIN AMERICA</span><h3>Latin Romance</h3>
+<p class="muted">Warm romantic wedding direction with expressive typography and celebratory character.</p><button type="button" class="btn primary" onclick="chooseTemplate('Latin Romance')">Use Template →</button></div></article><article class="card template-card" data-region="Americas · USA" style="overflow:hidden">
+<div class="template-cover" style="background:#172554">American Classic</div>
+<div class="template-body"><span class="eyebrow">AMERICAS · USA</span><h3>American Classic</h3>
+<p class="muted">Classic formal wedding invitation with modern editorial structure.</p><button type="button" class="btn primary" onclick="chooseTemplate('American Classic')">Use Template →</button></div></article><article class="card template-card" data-region="Americas · Brazil" style="overflow:hidden">
+<div class="template-cover" style="background:#166534">Brazilian Tropical</div>
+<div class="template-body"><span class="eyebrow">AMERICAS · BRAZIL</span><h3>Brazilian Tropical</h3>
+<p class="muted">Fresh tropical wedding direction with lively botanical composition.</p><button type="button" class="btn primary" onclick="chooseTemplate('Brazilian Tropical')">Use Template →</button></div></article><article class="card template-card" data-region="Oceania · Global" style="overflow:hidden">
+<div class="template-cover" style="background:#0369a1">Oceanic Beach</div>
+<div class="template-body"><span class="eyebrow">OCEANIA · GLOBAL</span><h3>Oceanic Beach</h3>
+<p class="muted">Airy destination wedding design inspired by ocean, sand and relaxed celebration.</p><button type="button" class="btn primary" onclick="chooseTemplate('Oceanic Beach')">Use Template →</button></div></article><article class="card template-card" data-region="Global" style="overflow:hidden">
+<div class="template-cover" style="background:#111827">International Classic</div>
+<div class="template-body"><span class="eyebrow">GLOBAL</span><h3>International Classic</h3>
+<p class="muted">A globally neutral premium wedding invitation for international couples and destinations.</p><button type="button" class="btn primary" onclick="chooseTemplate('International Classic')">Use Template →</button></div></article></section></main>
+<script src="app.js"></script><script>
+document.addEventListener('DOMContentLoaded',function(){
+ const buttons=Array.from(document.querySelectorAll('.template-filter')),cards=Array.from(document.querySelectorAll('.template-card')),count=document.getElementById('count');
+ function filter(region){let shown=0;cards.forEach(function(card){const r=card.dataset.region||'';const show=region==='all'||r===region||r.indexOf(region+' ·')===0;card.style.display=show?'block':'none';if(show)shown++});count.textContent=shown}
+ buttons.forEach(function(b){b.addEventListener('click',function(){buttons.forEach(function(x){x.classList.remove('active')});b.classList.add('active');filter(b.dataset.filter)})});
+});
+</script></body></html>
