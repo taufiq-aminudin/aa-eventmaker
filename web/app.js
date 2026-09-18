@@ -12,12 +12,12 @@ function createProject(){
  const type=document.getElementById('eventType')?.value||'Wedding';
  const date=document.getElementById('eventDate')?.value||'';
  const time=document.getElementById('eventTime')?.value||'';
- const location=document.getElementById('eventLocation')?.value||'';
+ const venue=document.getElementById('eventLocation')?.value||'';
  if(!name){toast('Masukkan nama event');return}
- const p={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,type,date,time,location,createdAt:new Date().toISOString()};
+ const p={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,type,date,time,location:venue,createdAt:new Date().toISOString()};
  write(KEY.project,p);
- write(KEY.invitation,{title:name,opening:'Together with our families, we invite you to celebrate this special moment.',date,time:time||'10:00',venue:location||'Add your venue',slug:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'my-event',template:'Golden Night',published:false,views:0});
- location.href='dashboard.html';
+ write(KEY.invitation,{title:name,opening:'Together with our families, we invite you to celebrate this special moment.',date,time:time||'10:00',venue:venue||'Add your venue',slug:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'my-event',template:'Golden Night',published:false,views:0});
+ window.location.href='dashboard.html';
 }
 function chooseTemplate(name){write(KEY.template,name);const inv=invitation()||{};inv.template=name;write(KEY.invitation,inv);location.href='invitation-editor.html'}
 function copyLink(){navigator.clipboard?.writeText(location.href).then(()=>toast('Link berhasil disalin')).catch(()=>toast('Salin URL dari address bar'))}
