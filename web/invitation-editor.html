@@ -18,7 +18,7 @@
 document.addEventListener('DOMContentLoaded',()=>{
  const inv=invitation()||{}, p=project()||{};
  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??''};
- set('template',inv.template||'Golden Night');set('title',inv.title||p.name||'');set('opening',inv.opening||'Together with our families, we invite you to celebrate this special moment.');
+ set('template',inv.template||'Golden Night'); const tv=document.getElementById('templateVisual'); if(tv){const fn=(inv.template||'Golden Night').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.svg'; tv.src='assets/'+fn;}set('title',inv.title||p.name||'');set('opening',inv.opening||'Together with our families, we invite you to celebrate this special moment.');
  set('date',inv.date||p.date||'');set('time',inv.time||p.time||'10:00');set('venue',inv.venue||p.location||'');set('slug',inv.slug||slugify(p.name||'my-event'));
  const sync=()=>{const g=id=>document.getElementById(id);if(g('pvTitle'))g('pvTitle').textContent=g('title').value||'Your Event';if(g('pvOpening'))g('pvOpening').textContent=g('opening').value||'';if(g('pvVenue'))g('pvVenue').textContent=g('venue').value||'';if(g('pvDate'))g('pvDate').textContent=(g('date').value||'Your date')+' · '+(g('time').value||'10:00')};
  ['title','opening','date','time','venue'].forEach(id=>document.getElementById(id)?.addEventListener('input',sync));sync();
