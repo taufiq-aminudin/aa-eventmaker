@@ -1,5 +1,25 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Photo Maker — AA : Event Maker</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="app.css"></head><body><header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="" href="index.html">Home</a><a class="" href="create.html">Create</a><a class="" href="templates.html">Templates</a><a class="" href="features.html">Features</a><a class="" href="dashboard.html">Dashboard</a></nav><a class="btn dark" href="create.html">Create Event</a></header><main class="container"><div class="page-actions"><a class="back" href="dashboard.html">← Project Workspace</a><span class="pill">📸 PHOTO STUDIO</span></div><span class="eyebrow">PHOTO STUDIO</span><h1>Photo Maker</h1><p class="lead">A creative workspace connected directly to your event project.</p>
-<section class="studio-grid section"><section class="card"><div class="dropzone"><div><div class="drop-icon">📸</div><h2>Bring your media here</h2><p class="muted">Upload a file to preview it in this project.</p><label class="btn primary" for="photoUpload">Choose File</label><input id="photoUpload" type="file" accept="image/*,video/*" data-preview="photoPreview"><img id="photoPreview" style="display:none;max-width:100%;max-height:280px;margin:20px auto 0;border-radius:16px" alt="Selected preview"></div></div></section>
-<section class="card"><span class="eyebrow">TOOLS</span><h2>Creative controls</h2><div class="tool-grid"><div class="tool"><b>Enhance</b><span class="muted">Brightness, sharpness and cleanup direction.</span></div><div class="tool"><b>Background</b><span class="muted">Remove or replace background.</span></div><div class="tool"><b>Frame</b><span class="muted">Apply invitation and social frames.</span></div><div class="tool"><b>Crop</b><span class="muted">Prepare 1:1, 4:5, 9:16 and 16:9 assets.</span></div><div class="tool"><b>Collage</b><span class="muted">Combine multiple photos.</span></div><div class="tool"><b>Couple Composer</b><span class="muted">Build a two-person composition.</span></div></div></section></section>
-<section class="card section"><span class="eyebrow">PROJECT NOTES</span><h2>Keep the creative direction with the event.</h2><div class="form"><label>Workspace notes<textarea id="photoNotes" placeholder="Concept, visual direction, sizes, assets, copy, references..."></textarea></label><button type="button" class="btn primary" onclick="saveStudio('photo')">Save to Project →</button></div></section>
-</main><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>Photo Maker — AA : Event Maker</title>
+<link rel="stylesheet" href="styles.css"></head>
+<body class="" data-active="">
+<div id="masterHeader"></div>
+
+<main class="container"><div class="page-top"><a class="back" href="dashboard.html">← Project Workspace</a><span class="pill">📸 Photo Studio</span></div><span class="eyebrow">PHOTO MAKER</span><h1>Create the event photo library.</h1><p class="lead">Upload media into the active Project. Files persist on this device for this account and Project.</p>
+<section class="split section"><section class="card"><div class="dropzone"><div><div class="drop-icon">📸</div><h2>Upload photos</h2><p class="muted">Choose one or more image files.</p><label class="btn primary" for="photoUpload">Choose Photos</label><input id="photoUpload" type="file" multiple accept="image/*"></div></div></section>
+<section class="card"><span class="eyebrow">QUICK EDIT</span><h2>Preview controls</h2><div class="tool-grid"><div class="tool"><b>Enhance</b><span class="muted">Brightness + contrast.</span><button class="btn small light" onclick="photoEnhance()">Apply</button></div><div class="tool"><b>Frame</b><span class="muted">Event frame.</span><button class="btn small light" onclick="photoFrame()">Apply</button></div><div class="tool"><b>Crop</b><span class="muted">Toggle square / portrait.</span><button class="btn small light" onclick="photoCrop()">Toggle</button></div><div class="tool"><b>Reset</b><span class="muted">Reset preview.</span><button class="btn small light" onclick="photoReset()">Reset</button></div></div></section></section>
+<section class="card section"><span class="eyebrow">WORKING PREVIEW</span><img id="photoWorkPreview" style="display:none;width:100%;max-height:480px;object-fit:contain;border-radius:18px;background:#f2f4f7" alt="Photo working preview"></section>
+<section class="card section"><span class="eyebrow">PROJECT MEDIA</span><h2>Photos</h2><div id="photoGallery" class="gallery"><div class="empty">No photos yet.</div></div></section>
+</main>
+<script>
+let photoPreviewURL='';
+document.getElementById('photoUpload').addEventListener('change',async function(){const f=this.files?.[0];if(f){photoPreviewURL=URL.createObjectURL(f);const i=document.getElementById('photoWorkPreview');i.src=photoPreviewURL;i.style.display='block';photoReset()}await uploadMedia(this,'photo','photoGallery')});
+function photoEnhance(){const i=by('photoWorkPreview');if(i.src)i.style.filter='brightness(1.12) contrast(1.08) saturate(1.04)'}
+function photoFrame(){const i=by('photoWorkPreview');if(i.src){i.style.border='12px solid #fff';i.style.boxShadow='0 0 0 2px #c4b5fd,0 15px 35px rgba(16,24,40,.14)'}}
+function photoCrop(){const i=by('photoWorkPreview');if(i.src)i.style.aspectRatio=i.style.aspectRatio==='1 / 1'?'4 / 5':'1 / 1'}
+function photoReset(){const i=by('photoWorkPreview');if(i.src){i.style.filter='none';i.style.border='0';i.style.boxShadow='none';i.style.aspectRatio='auto'}}
+document.addEventListener('DOMContentLoaded',()=>renderMedia('photo','photoGallery'));
+</script>
+
+<div id="masterFooter"></div>
+<script src="app.js"></script></body></html>

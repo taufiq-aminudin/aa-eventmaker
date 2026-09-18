@@ -1,3 +1,14 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Creator — AA : Event Maker</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="app.css"></head><body>
-<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="" href="index.html">Home</a><a class="" href="create.html">Create</a><a class="" href="templates.html">Templates</a><a class="" href="features.html">Features</a><a class="" href="dashboard.html">Dashboard</a></nav><a class="btn dark" href="create.html">Create Event</a></header><main class="container"><div class="page-actions"><a class="back" href="dashboard.html">← Dashboard</a></div><span class="eyebrow">AI ASSISTANT</span><h1>AI Creator</h1><p class="lead">AI membantu membuat konsep, copy, palette, typography, photo instructions dan video storyboard.</p><section class="card section"><div class="form"><label>What do you want to create?<textarea id="aiPrompt" placeholder="Contoh: buat konsep wedding garden elegan untuk Your Names"></textarea></label><button class="btn primary" onclick="generateConcept()">Generate Concept →</button></div><div id="aiResult" class="card" style="margin-top:16px"><div class="empty">Hasil AI akan muncul di sini.</div></div></section>
-<section class="section grid"></section></main><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>AI Creator — AA : Event Maker</title>
+<link rel="stylesheet" href="styles.css"></head>
+<body class="" data-active="">
+<div id="masterHeader"></div>
+
+<main class="container"><div class="page-top"><a class="back" href="dashboard.html">← Project Workspace</a><span class="pill">✨ AI Assistant</span></div><span class="eyebrow">AI CREATOR</span><h1>Creative assistant for the Project.</h1><p class="lead">Generate a structured creative brief you can reuse in Invitation, Photo, Video and Design workspaces.</p>
+<section class="card section"><div class="form"><label>Prompt<textarea id="aiPrompt" placeholder="Example: create a modern, warm direction for a family celebration"></textarea></label><button class="btn primary" onclick="generateConcept()">Generate Brief →</button></div><div id="aiResult" class="card" style="margin-top:18px"><div class="empty">Your project-specific brief will appear here.</div></div></section>
+<section class="grid section"><button class="card module" onclick="by('aiPrompt').value='Create an invitation concept';generateConcept()"><div class="ico">💌</div><h3>Invitation Concept</h3><p>Theme, copy and visual direction.</p></button><button class="card module" onclick="by('aiPrompt').value='Create a photo direction';generateConcept()"><div class="ico">📸</div><h3>Photo Direction</h3><p>Shot and treatment direction.</p></button><button class="card module" onclick="by('aiPrompt').value='Create a video storyboard';generateConcept()"><div class="ico">🎬</div><h3>Video Storyboard</h3><p>Short event video structure.</p></button></section>
+</main>
+
+<div id="masterFooter"></div>
+<script src="app.js"></script></body></html>

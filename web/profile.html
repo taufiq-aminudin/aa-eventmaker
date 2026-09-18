@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>Profile — AA : Event Maker</title>
+<link rel="stylesheet" href="styles.css"></head>
+<body class="" data-active="">
+<div id="masterHeader"></div>
+
+<main class="container"><div class="page-top"><a class="back" href="dashboard.html">← Project Workspace</a><span class="pill">Account</span></div><span class="eyebrow">PROFILE</span><h1>Your account, your workspace.</h1><p class="lead">Update your display name and avatar. Each Project keeps its own event data and media.</p>
+<section class="card section profile-card"><div><div class="avatar-large" id="profileAvatarFallback">A</div><img id="profileAvatar" class="avatar-large" style="display:none" alt="Profile avatar"><label class="btn primary" style="width:100%;margin-top:14px" for="avatarUpload">Update Avatar</label><input id="avatarUpload" type="file" accept="image/*" style="display:none" onchange="handleAvatar(this)"></div><div class="form"><label>Name<input id="profileName" autocomplete="name"></label><label>Email<input id="profileEmail" disabled></label><button class="btn primary" onclick="saveProfile()">Save Profile →</button><div class="notice">Signup automatically logs you in. The account and its Project data are kept separate on this device.</div></div></section>
+<section class="card section"><span class="eyebrow">YOUR DATA</span><h2>Current workspace</h2><div class="stat-grid"><div class="stat"><span>Projects</span><b id="projectCount">0</b></div><div class="stat"><span>Guests</span><b id="guestCount">0</b></div><div class="stat"><span>Budget items</span><b id="budgetCount">0</b></div><div class="stat"><span>Invitation views</span><b id="views">0</b></div></div></section></main>
+<script>document.addEventListener('DOMContentLoaded',()=>{const u=currentUser();if(u){profileName.value=u.name;profileEmail.value=u.email;projectCount.textContent=projects().length}updateAvatarUI()});</script>
+
+<div id="masterFooter"></div>
+<script src="app.js"></script></body></html>
