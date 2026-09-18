@@ -1,5 +1,5 @@
 {
   "appId": "id.my.aaeventmaker",
   "appName": "EventMaker",
-  "webDir": "dist"
+  "webDir": "web"
 }

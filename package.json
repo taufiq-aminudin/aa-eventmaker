@@ -1,20 +1,18 @@
 {
-<<<<<<< HEAD
+  "name": "aa-event-maker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AA : Event Maker - static web app + Capacitor Android wrapper",
+  "scripts": {
+    "build": "echo \"Static site in /web - no build step required\"",
+    "test": "node scripts/check-links.js",
+    "start": "npx --yes serve web"
+  },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "html5-qrcode": "^2.3.8",
     "qrcode.react": "^4.2.0"
-=======
-  "name": "aa-event-maker",
-  "version": "1.0.0",
-  "private": true,
-  "description": "AA : Event Maker — static web app + Capacitor Android wrapper",
-  "scripts": {
-    "build": "echo \"Static site in /web — no build step required\"",
-    "test": "node scripts/check-links.js",
-    "start": "npx --yes serve web"
->>>>>>> 87a05b20a8d1770e8552fad94763099b5ec709cb
   }
 }
