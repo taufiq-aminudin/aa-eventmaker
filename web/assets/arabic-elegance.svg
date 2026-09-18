@@ -3,7 +3,7 @@
 <rect width="500" height="180" fill="url(#g)"/><g fill="none" stroke="#7c2d12" stroke-width="2" opacity=".45"><path d="M20 65q35-70 70 0q-35-25-70 0M410 65q35-70 70 0q-35-25-70 0"/></g>
 <rect x="12" y="12" width="476" height="156" rx="12" fill="none" stroke="#7c2d12" stroke-width="1.5" opacity=".28"/>
 <text x="250" y="63" text-anchor="middle" font-family="Georgia,serif" font-size="13" fill="#7c2d12" letter-spacing="3">THE WEDDING OF</text>
-<text x="250" y="101" text-anchor="middle" font-family="Georgia,serif" font-size="28" font-weight="700" fill="#7c2d12">SITI &amp; AGUS</text>
+<text x="250" y="101" text-anchor="middle" font-family="Georgia,serif" font-size="28" font-weight="700" fill="#7c2d12">YOUR NAMES</text>
 <line x1="190" y1="115" x2="310" y2="115" stroke="#7c2d12" opacity=".35"/>
-<text x="250" y="139" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#7c2d12" letter-spacing="2">10 FEBRUARY 2026 · ARABIC</text>
+<text x="250" y="139" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#7c2d12" letter-spacing="2">DD MONTH YYYY · ARABIC</text>
 </svg>
