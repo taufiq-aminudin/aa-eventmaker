@@ -1,0 +1,17 @@
+{
+  "name": "aa-event-maker-app",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "web": "python -m http.server 8080 --directory web",
+    "sync": "npx cap sync",
+    "android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/android": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}

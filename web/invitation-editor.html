@@ -1,0 +1,20 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitation Editor — AA : Event Maker</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="app.css"></head><body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="" href="index.html">Home</a><a class="" href="create.html">Create</a><a class="" href="templates.html">Templates</a><a class="" href="features.html">Features</a><a class="" href="dashboard.html">Dashboard</a></nav><a class="btn dark" href="create.html">Create Event</a></header>
+<main class="container"><div class="page-actions"><a class="back" href="invitation-maker.html">← Invitation Maker</a></div><span class="eyebrow">CUSTOMIZE</span><h1>Invitation Editor</h1><p class="lead">Edit content sekarang. Preview dan detail menggunakan data yang sama.</p>
+<div class="workspace section"><section class="card sidebar-card"><div class="form">
+<label>Template<select id="template"><option>Golden Night</option><option>Garden Bloom</option><option>Minimal Motion</option><option>Birthday Pop</option><option>Baby Story</option><option>Graduation</option></select></label>
+<label>Event title<input id="title" value="Siti & Agus"></label><label>Opening message<textarea id="opening">Together with our families, we invite you to celebrate this special moment.</textarea></label>
+<label>Date<input id="date" type="date"></label><label>Time<input id="time" type="time" value="10:00"></label><label>Venue<input id="venue" value="Grand Garden Venue"></label>
+<label>Public slug<input id="slug" value="siti-agus"></label>
+<button type="button" class="btn primary" onclick="saveInvitation()">Save & Open Detail →</button><span id="saved" class="muted"></span><a class="btn light" href="invitation-detail.html">Open Detail</a></div></section>
+<section class="preview-box"><div><span>YOU ARE INVITED</span><h2 id="pvTitle">Siti & Agus</h2><p id="pvOpening">Together with our families, we invite you to celebrate this special moment.</p><p id="pvDate">Your date · 10:00</p><p id="pvVenue">Grand Garden Venue</p><div class="actions" style="justify-content:center"><a class="btn light" href="invitation-detail.html">Preview Detail</a></div></div></section></div></main>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const inv=invitation()||{}, p=project()||{};
+ const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??''};
+ set('template',inv.template||'Golden Night'); const tv=document.getElementById('templateVisual'); if(tv){const fn=(inv.template||'Golden Night').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.svg'; tv.src='assets/'+fn;}set('title',inv.title||p.name||'');set('opening',inv.opening||'Together with our families, we invite you to celebrate this special moment.');
+ set('date',inv.date||p.date||'');set('time',inv.time||p.time||'10:00');set('venue',inv.venue||p.location||'');set('slug',inv.slug||slugify(p.name||'my-event'));
+ const sync=()=>{const g=id=>document.getElementById(id);if(g('pvTitle'))g('pvTitle').textContent=g('title').value||'Your Event';if(g('pvOpening'))g('pvOpening').textContent=g('opening').value||'';if(g('pvVenue'))g('pvVenue').textContent=g('venue').value||'';if(g('pvDate'))g('pvDate').textContent=(g('date').value||'Your date')+' · '+(g('time').value||'10:00')};
+ ['title','opening','date','time','venue'].forEach(id=>document.getElementById(id)?.addEventListener('input',sync));sync();
+});
+</script></body></html>

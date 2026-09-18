@@ -1,0 +1,16 @@
+{
+  "name": "aa-event-maker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ../web",
+    "android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/core": "^7.4.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.4"
+  }
+}

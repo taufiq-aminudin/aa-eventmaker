@@ -1,0 +1,23 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitation Detail — AA : Event Maker</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="app.css"></head><body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a class="" href="index.html">Home</a><a class="" href="create.html">Create</a><a class="" href="templates.html">Templates</a><a class="" href="features.html">Features</a><a class="" href="dashboard.html">Dashboard</a></nav><a class="btn dark" href="create.html">Create Event</a></header>
+<main class="public">
+<section class="cover"><div><span>YOU ARE INVITED</span><h1 id="title">Siti & Agus</h1><p id="opening">Together with our families, we invite you to celebrate this special moment.</p><p id="date">Your date · 10:00</p><div class="actions" style="justify-content:center"><button class="btn light" onclick="document.getElementById('rsvp').scrollIntoView()">RSVP</button><button class="btn light" onclick="copyLink()">Copy Link</button><button class="btn light" onclick="publishInvitation()">Publish</button></div></div></section>
+<section class="public-section"><span class="eyebrow">COUNTDOWN</span><h2 id="countdown">Your special day</h2><div class="stat-grid"><div class="stat"><span class="muted">Days</span><b id="cdDays">—</b></div><div class="stat"><span class="muted">Hours</span><b id="cdHours">—</b></div><div class="stat"><span class="muted">Minutes</span><b id="cdMinutes">—</b></div><div class="stat"><span class="muted">Seconds</span><b id="cdSeconds">—</b></div></div></section>
+<section class="public-section"><span class="eyebrow">THE EVENT</span><h2>Celebration Details</h2><div class="list"><div class="list-row"><span>Date</span><strong id="d1">Your date</strong></div><div class="list-row"><span>Time</span><strong id="d2">10:00</strong></div><div class="list-row"><span>Venue</span><strong id="venue">Grand Garden Venue</strong></div></div></section>
+<section class="public-section"><span class="eyebrow">LOCATION</span><h2>Find the venue</h2><div class="map">📍</div><a id="direction" class="btn dark" style="margin-top:14px;display:none" target="_blank" rel="noopener">Get Directions</a></section>
+<section class="public-section"><span class="eyebrow">RSVP</span><h2 id="rsvp">Will you join us?</h2><div class="rsvp"><input id="guest" class="field" placeholder="Your name"><select id="answer" class="field"><option>Yes, I will attend</option><option>Sorry, I cannot attend</option><option>Maybe</option></select><select id="pax" class="field"><option>1 guest</option><option>2 guests</option><option>3 guests</option><option>4 guests</option></select><button class="btn primary" onclick="submitRsvp()">Confirm RSVP</button><p id="r"></p></div></section>
+<section class="public-section"><span class="eyebrow">GALLERY</span><h2>Event moments</h2><div class="grid"><div class="card">📸 Photo 01</div><div class="card">📸 Photo 02</div><div class="card">🎬 Video</div></div></section>
+<section class="public-section"><div class="actions"><a class="btn dark" href="dashboard.html">Back to Dashboard</a><a class="btn light" href="invitation-editor.html">Edit Invitation</a></div></section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const d=invitation()||{}, p=project()||{}, $=id=>document.getElementById(id);
+ $('title').textContent=d.title||p.name||'Your Event';$('opening').textContent=d.opening||'';
+ const dateText=d.date?new Date(d.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}):'Your date';
+ $('date').textContent=dateText+' · '+(d.time||'10:00');$('d1').textContent=dateText;$('d2').textContent=d.time||'10:00';$('venue').textContent=d.venue||p.location||'Add your venue';
+ const loc=read(KEY.location,null);if(loc?.url){$('direction').href=loc.url;$('direction').style.display='inline-flex'}
+ const target=d.date?new Date(d.date+'T'+(d.time||'00:00')):null;
+ function tick(){if(!target)return;let s=Math.max(0,target-new Date())/1000;$('cdDays').textContent=Math.floor(s/86400);$('cdHours').textContent=Math.floor(s%86400/3600);$('cdMinutes').textContent=Math.floor(s%3600/60);$('cdSeconds').textContent=Math.floor(s%60)}
+ tick();setInterval(tick,1000);
+});
+</script></body></html>

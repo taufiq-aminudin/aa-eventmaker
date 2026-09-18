@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EventMaker</string>
+    <string name="title_activity_main">EventMaker</string>
+    <string name="package_name">id.my.aaeventmaker</string>
+    <string name="custom_url_scheme">id.my.aaeventmaker</string>
+</resources>

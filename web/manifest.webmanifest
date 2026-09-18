@@ -1,0 +1,15 @@
+{
+  "name": "AA : Event Maker",
+  "short_name": "AA Event Maker",
+  "start_url": "index.html",
+  "display": "standalone",
+  "theme_color": "#111827",
+  "background_color": "#f7f8fc",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
