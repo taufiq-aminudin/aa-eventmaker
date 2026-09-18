@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "AA : Event Maker",
   "short_name": "AA Event Maker",
   "start_url": "index.html",
@@ -11,5 +12,16 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
+=======
+  "name":"AA : Event Maker",
+  "short_name":"AA Event Maker",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f8f9fb",
+  "theme_color":"#111827",
+  "description":"Create. Celebrate. Remember.",
+  "icons":[
+    {"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+>>>>>>> 87a05b20a8d1770e8552fad94763099b5ec709cb
   ]
 }

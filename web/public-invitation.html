@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>Invitation — AA : Event Maker</title>
+<link rel="stylesheet" href="styles.css"></head>
+<body class="public" data-active="">
+<div id="masterHeader"></div>
+
+<main class="public"><section class="public-cover"><div class="public-inner"><img id="publicVisual" style="width:min(680px,100%);border-radius:22px;box-shadow:0 20px 60px rgba(16,24,40,.14);margin-bottom:24px" alt="Invitation preview"><span class="eyebrow">YOU ARE INVITED</span><h1 id="publicTitle">Your Event</h1><p id="publicGuest" class="muted"></p><p id="publicOpening" class="lead" style="margin:auto"></p><p id="publicDate"></p><p id="publicVenue"></p><div class="actions" style="justify-content:center"><button class="btn light" onclick="copyCurrentLink()">Copy Link</button><a class="btn dark" href="index.html">AA : Event Maker</a></div></div></section>
+<section class="public-section"><div class="public-box"><span class="eyebrow">EVENT DETAILS</span><h2>Celebration</h2><div class="list"><div class="list-row"><span>Date</span><strong id="pdDate">—</strong></div><div class="list-row"><span>Time</span><strong id="pdTime">—</strong></div><div class="list-row"><span>Venue</span><strong id="pdVenue">—</strong></div></div></div></section>
+<section class="public-section"><div class="public-box"><span class="eyebrow">RSVP</span><h2>Will you join us?</h2><div class="form"><label>Your name<input id="guest" placeholder="Your name"></label><label>Attendance<select id="answer"><option>Yes, I will attend</option><option>Sorry, I cannot attend</option><option>Maybe</option></select></label><label>Guests<select id="pax"><option>1 guest</option><option>2 guests</option><option>3 guests</option><option>4 guests</option></select></label><button class="btn primary" onclick="submitRsvp()">Confirm RSVP</button><p id="r"></p></div><p class="muted" style="margin-top:12px">The invitation link contains public invitation details only. Centralized RSVP syncing requires the online backend.</p></div></section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+ const d=openSharedInvitation();if(!d){publicTitle.textContent='Invitation not found';return}
+ publicTitle.textContent=d.title||'Your Event';publicGuest.textContent=d.guest?('For '+d.guest):'';publicOpening.textContent=d.opening||'';publicDate.textContent=d.date||'';publicVenue.textContent=d.venue||'';
+ pdDate.textContent=d.date||'—';pdTime.textContent=d.time||'—';pdVenue.textContent=d.venue||'—';
+ const img=document.getElementById('publicVisual');img.src=templateAsset(d.template||'International Classic');img.onerror=function(){img.style.display='none'}
+});
+</script>
+
+<div id="masterFooter"></div>
+<script src="app.js"></script></body></html>

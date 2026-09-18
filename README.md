@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AA : Event Maker — Starter
 
 Lightweight mobile-first web/PWA plus Android-ready Capacitor wrapper.
@@ -21,3 +22,17 @@ Auth → Projects → Template engine → Editor → Media storage → Payment w
 
 ## Important
 Do not hard-code payment credentials or WhatsApp tokens in frontend code. Use a backend and environment secrets.
+=======
+# AA : Event Maker
+
+Create. Celebrate. Remember.
+
+Core architecture:
+User → Project → Invitation / Photo / Video / Design / AI / Guests / Location / Planner / Budget / Analytics / Memories.
+
+The template library includes wedding concept visual starting points (garden, rustic, modern minimalist, elegant white, intimate, ballroom, adat modern, festival, monochrome, pastel, sustainable, content-friendly) and regional/cultural wedding styles.
+
+Accounts and projects are stored separately on the device. Photo/video media is stored in IndexedDB. Invitation sharing exposes public invitation details only.
+
+For the existing Capacitor Android project, replace the existing `web/` folder with this `web/` folder and run `npx cap sync android`.
+>>>>>>> 87a05b20a8d1770e8552fad94763099b5ec709cb

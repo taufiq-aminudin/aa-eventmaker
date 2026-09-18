@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 300">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5e7ef"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+<rect width="500" height="300" fill="url(#g)"/><g stroke="#7c3157" opacity=".36" stroke-width="2"><path d="M0 85Q125 175 250 85T500 85"/><path d="M30 95l15 18 15-18 15 18 15-18M400 95l15 18 15-18 15 18 15-18"/></g><g fill="#7c3157" opacity=".2"><circle cx="90" cy="135" r="9"/><circle cx="250" cy="155" r="9"/><circle cx="410" cy="135" r="9"/></g>
+<rect x="15" y="15" width="470" height="270" rx="19" fill="none" stroke="#7c3157" opacity=".22"/>
+<g text-anchor="middle" fill="#7c3157">
+<text x="250" y="92" font-family="Arial,sans-serif" font-size="10" font-weight="700" letter-spacing="3">WEDDING CONCEPT</text>
+<text x="250" y="138" font-family="Georgia,serif" font-size="26" font-weight="700">WEDDING FESTIVAL</text>
+<line x1="195" y1="155" x2="305" y2="155" stroke="#7c3157" opacity=".3"/>
+<text x="250" y="182" font-family="Georgia,serif" font-size="15">YOUR NAMES</text>
+<text x="250" y="207" font-family="Arial,sans-serif" font-size="9" letter-spacing="2">DD MONTH YYYY</text>
+<text x="250" y="226" font-family="Arial,sans-serif" font-size="8" letter-spacing="1.3">FESTIVAL</text>
+</g></svg>
