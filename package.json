@@ -1,0 +1,11 @@
+{
+  "name": "aa-event-maker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AA : Event Maker — static web app + Capacitor Android wrapper",
+  "scripts": {
+    "build": "echo \"Static site in /web — no build step required\"",
+    "test": "node scripts/check-links.js",
+    "start": "npx --yes serve web"
+  }
+}
