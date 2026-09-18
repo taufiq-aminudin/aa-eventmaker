@@ -1,1 +1,32 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Event — AA : Event Maker</title><link rel="stylesheet" href="workspace.css"></head><body><header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><nav class="nav"><a href="dashboard.html">Dashboard</a><a class="active" href="create.html">Create Event</a><a href="templates.html">Templates</a></nav></header><main class="container"><span class="eyebrow">NEW PROJECT</span><h1>Create your event</h1><p class="lead">Satu project menjadi pusat untuk invitation, photo, video, design, guests, location, planner, budget dan memories.</p><div class="split section"><section class="card"><div class="form"><label>Event name<input id="eventName" placeholder="Contoh: Taufiq & Siti Wedding"></label><label>Event type<select id="eventType"><option>Wedding</option><option>Engagement</option><option>Birthday</option><option>Baby</option><option>Graduation</option><option>Anniversary</option><option>Party</option><option>Conference</option><option>Seminar</option><option>Corporate</option><option>Product Launch</option><option>Festival</option><option>Community</option><option>Custom Event</option></select></label><label>Event date<input id="eventDate" type="date"></label><button class="btn primary" onclick="createProject()">Create Project →</button></div></section><section class="card"><span class="eyebrow">AFTER CREATE</span><h2>Your workspace</h2><div class="list"><div class="list-row"><span>💌 Invitation</span><strong>Ready</strong></div><div class="list-row"><span>📸 Photo & 🎬 Video</span><strong>Ready</strong></div><div class="list-row"><span>👥 Guests & RSVP</span><strong>Ready</strong></div><div class="list-row"><span>📍 Location & 📅 Planner</span><strong>Ready</strong></div><div class="list-row"><span>💰 Budget & 💾 Memories</span><strong>Ready</strong></div></div></section></div></main></body></html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Event — AA : Event Maker</title><link rel="stylesheet" href="styles.css"></head><body>
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a>
+  <nav class="nav">
+    <a href="index.html">Home</a><a href="create.html">Create</a><a href="templates.html">Templates</a><a href="features.html">Features</a><a href="dashboard.html">Dashboard</a>
+  </nav>
+  <a class="btn dark" href="create.html">Create Event</a>
+</header>
+<main class="container">
+<div class="page-actions"><a class="back" href="index.html">← Home</a></div>
+<span class="eyebrow">NEW PROJECT</span><h1>Create your event</h1>
+<p class="lead">Buat satu project sebagai pusat invitation, photo, video, design, guests, location, planner, budget, analytics dan memories.</p>
+<div class="split section">
+<section class="card"><div class="form">
+<label>Event name<input id="eventName" placeholder="Contoh: Siti & Agus Wedding"></label>
+<label>Event type<select id="eventType"><option>Wedding</option><option>Engagement</option><option>Birthday</option><option>Baby</option><option>Graduation</option><option>Anniversary</option><option>Party</option><option>Conference</option><option>Seminar</option><option>Corporate</option><option>Product Launch</option><option>Festival</option><option>Community</option><option>Private</option><option>Custom Event</option></select></label>
+<label>Event date<input id="eventDate" type="date"></label>
+<label>Event time<input id="eventTime" type="time" value="10:00"></label>
+<label>Location / venue<input id="eventLocation" placeholder="Grand Garden Venue"></label>
+<button class="btn primary" onclick="createProject()">Create Project →</button>
+</div></section>
+<section class="card"><span class="eyebrow">AFTER CREATE</span><h2>Your complete workspace</h2>
+<div class="list">
+<div class="list-row"><span>💌 Invitation</span><strong>Template → Editor → Detail</strong></div>
+<div class="list-row"><span>📸 Photo / 🎬 Video / 🎨 Design</span><strong>Studio</strong></div>
+<div class="list-row"><span>🤖 AI Creator</span><strong>Assistant</strong></div>
+<div class="list-row"><span>👥 Guests / 📍 Location</span><strong>Event data</strong></div>
+<div class="list-row"><span>📅 Planner / 💰 Budget</span><strong>Planning</strong></div>
+<div class="list-row"><span>📊 Analytics / 💾 Memories</span><strong>After event</strong></div>
+</div></section></div>
+</main>
+<script src="app.js"></script></body></html>
