@@ -5,11 +5,11 @@
 <meta name="description" content="AA : Event Maker — semua tools event dalam satu platform.">
 <title>Features — AA : Event Maker</title>
 <link rel="stylesheet" href="workspace.css">
-</head>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#111827"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"></head>
 <body>
 <header class="topbar">
-  <a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a>
-  <nav class="nav"><a href="index.html">Home</a><a href="create.html">Create</a><a href="templates.html">Templates</a><a class="active" href="features.html">Features</a><a href="dashboard.html">Dashboard</a><a href="profile.html" id="navProfileLink">Profile</a></nav>
+  <a class="brand" href="index.html"><span class="brand-mark">AA<span>:</span></span><span>Event Maker</span></a><button class="menu-btn" type="button" aria-label="Buka menu" aria-controls="siteNav" aria-expanded="false" onclick="var t=this.closest('.topbar');var o=t.classList.toggle('nav-open');this.setAttribute('aria-expanded',o);this.setAttribute('aria-label',o?'Tutup menu':'Buka menu')"><span></span><span></span><span></span></button>
+  <nav class="nav" id="siteNav"><a href="index.html">Home</a><a href="create.html">Create</a><a href="templates.html">Templates</a><a class="active" href="features.html">Features</a><a href="dashboard.html">Dashboard</a></nav>
   <a class="btn btn-dark" href="create.html">Create Event</a>
 </header>
 <main class="container">
@@ -30,5 +30,5 @@
     <a class="card" href="memories.html"><h2>💾 Memories</h2><p>Simpan foto, video, pesan tamu, dan kenangan setelah event.</p></a>
   </section>
 </main>
-</body>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script></body>
 </html>

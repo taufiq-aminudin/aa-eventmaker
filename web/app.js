@@ -9,9 +9,7 @@ const LS = {
   location: 'aaEventMakerLocation',
   template: 'aaEventMakerTemplate',
   memories: 'aaEventMakerMemories',
-  analytics: 'aaEventMakerAnalytics',
-  accounts: 'aaEventMakerAccounts',
-  session: 'aaEventMakerSession'
+  analytics: 'aaEventMakerAnalytics'
 };
 
 function readLS(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch(e){ return fallback } }
@@ -81,87 +79,3 @@ function toast(msg){
 function copyLink(){
   navigator.clipboard?.writeText(location.href).then(()=>toast('Link berhasil disalin')).catch(()=>toast('Salin URL dari address bar'));
 }
-
-/* Accounts — local-device only, no real backend (matches README: "Accounts and projects are stored separately on the device") */
-function getAccounts(){ return readLS(LS.accounts, []) }
-function saveAccounts(list){ writeLS(LS.accounts, list) }
-function currentUser(){ return readLS(LS.session, null) }
-function setSession(email){ writeLS(LS.session, email) }
-
-function hashPass(pw){ // simple non-cryptographic local check, not real security
-  let h=0; for(let i=0;i<pw.length;i++){ h=(h*31 + pw.charCodeAt(i))|0 } return String(h)
-}
-
-function signup(){
-  const name=(document.getElementById('signupName')?.value||'').trim();
-  const email=(document.getElementById('signupEmail')?.value||'').trim().toLowerCase();
-  const pass=document.getElementById('signupPassword')?.value||'';
-  const confirm=document.getElementById('signupConfirm')?.value||'';
-  if(!name||!email){ toast('Lengkapi nama dan email'); return }
-  if(pass.length<6){ toast('Password minimal 6 karakter'); return }
-  if(pass!==confirm){ toast('Konfirmasi password tidak cocok'); return }
-  const accounts=getAccounts();
-  if(accounts.some(a=>a.email===email)){ toast('Email sudah terdaftar, silakan login'); return }
-  accounts.push({ email, name, pass:hashPass(pass), createdAt:new Date().toISOString() });
-  saveAccounts(accounts);
-  setSession(email);
-  toast('Akun berhasil dibuat');
-  setTimeout(()=>location.href='profile.html',350);
-}
-
-function login(){
-  const email=(document.getElementById('loginEmail')?.value||'').trim().toLowerCase();
-  const pass=document.getElementById('loginPassword')?.value||'';
-  const account=getAccounts().find(a=>a.email===email);
-  if(!account || account.pass!==hashPass(pass)){ toast('Email atau password salah'); return }
-  setSession(email);
-  toast('Berhasil login');
-  setTimeout(()=>location.href='dashboard.html',350);
-}
-
-function logout(){
-  setSession(null);
-  toast('Berhasil logout');
-  setTimeout(()=>location.href='index.html',350);
-}
-
-function saveProfile(){
-  const email=currentUser();
-  if(!email){ location.href='login.html'; return }
-  const accounts=getAccounts();
-  const idx=accounts.findIndex(a=>a.email===email);
-  if(idx<0) return;
-  accounts[idx].name=(document.getElementById('profileName')?.value||accounts[idx].name).trim();
-  saveAccounts(accounts);
-  toast('Profil tersimpan');
-}
-
-function handleAvatar(input){
-  const file=input.files?.[0];
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const email=currentUser();
-    if(email){
-      const accounts=getAccounts();
-      const idx=accounts.findIndex(a=>a.email===email);
-      if(idx>=0){ accounts[idx].avatar=reader.result; saveAccounts(accounts) }
-    }
-    updateAvatarUI();
-  };
-  reader.readAsDataURL(file);
-}
-
-function updateAvatarUI(){
-  const email=currentUser();
-  const account=email ? getAccounts().find(a=>a.email===email) : null;
-  const img=document.getElementById('profileAvatar');
-  const fallback=document.getElementById('profileAvatarFallback');
-  if(account?.avatar && img){ img.src=account.avatar; img.style.display='block'; if(fallback) fallback.style.display='none' }
-  else if(fallback && account){ fallback.textContent=(account.name||'A').charAt(0).toUpperCase() }
-}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  const link=document.getElementById('navProfileLink');
-  if(link){ link.textContent = currentUser() ? 'Profile' : 'Login'; if(!currentUser()) link.setAttribute('href','login.html') }
-});
