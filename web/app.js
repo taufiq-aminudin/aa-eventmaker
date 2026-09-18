@@ -9,7 +9,9 @@ const LS = {
   location: 'aaEventMakerLocation',
   template: 'aaEventMakerTemplate',
   memories: 'aaEventMakerMemories',
-  analytics: 'aaEventMakerAnalytics'
+  analytics: 'aaEventMakerAnalytics',
+  accounts: 'aaEventMakerAccounts',
+  session: 'aaEventMakerSession'
 };
 
 function readLS(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch(e){ return fallback } }
@@ -79,3 +81,111 @@ function toast(msg){
 function copyLink(){
   navigator.clipboard?.writeText(location.href).then(()=>toast('Link berhasil disalin')).catch(()=>toast('Salin URL dari address bar'));
 }
+
+/* Accounts — local-device only, no real backend (matches README: "Accounts and projects are stored separately on the device") */
+function getAccounts(){ return readLS(LS.accounts, []) }
+function saveAccounts(list){ writeLS(LS.accounts, list) }
+function currentUser(){ return readLS(LS.session, null) }
+function setSession(email){ writeLS(LS.session, email) }
+
+function hashPass(pw){ // simple non-cryptographic local check, not real security
+  let h=0; for(let i=0;i<pw.length;i++){ h=(h*31 + pw.charCodeAt(i))|0 } return String(h)
+}
+
+function signup(){
+  const name=(document.getElementById('signupName')?.value||'').trim();
+  const email=(document.getElementById('signupEmail')?.value||'').trim().toLowerCase();
+  const pass=document.getElementById('signupPassword')?.value||'';
+  const confirm=document.getElementById('signupConfirm')?.value||'';
+  if(!name||!email){ toast('Lengkapi nama dan email'); return }
+  if(pass.length<6){ toast('Password minimal 6 karakter'); return }
+  if(pass!==confirm){ toast('Konfirmasi password tidak cocok'); return }
+  const accounts=getAccounts();
+  if(accounts.some(a=>a.email===email)){ toast('Email sudah terdaftar, silakan login'); return }
+  accounts.push({ email, name, pass:hashPass(pass), createdAt:new Date().toISOString() });
+  saveAccounts(accounts);
+  setSession(email);
+  toast('Akun berhasil dibuat');
+  setTimeout(()=>location.href='profile.html',350);
+}
+
+function login(){
+  const email=(document.getElementById('loginEmail')?.value||'').trim().toLowerCase();
+  const pass=document.getElementById('loginPassword')?.value||'';
+  const account=getAccounts().find(a=>a.email===email);
+  if(!account || account.pass!==hashPass(pass)){ toast('Email atau password salah'); return }
+  setSession(email);
+  toast('Berhasil login');
+  setTimeout(()=>location.href='dashboard.html',350);
+}
+
+function logout(){
+  setSession(null);
+  toast('Berhasil logout');
+  setTimeout(()=>location.href='index.html',350);
+}
+
+function saveProfile(){
+  const email=currentUser();
+  if(!email){ location.href='login.html'; return }
+  const accounts=getAccounts();
+  const idx=accounts.findIndex(a=>a.email===email);
+  if(idx<0) return;
+  accounts[idx].name=(document.getElementById('profileName')?.value||accounts[idx].name).trim();
+  saveAccounts(accounts);
+  toast('Profil tersimpan');
+}
+
+function handleAvatar(input){
+  const file=input.files?.[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const email=currentUser();
+    if(email){
+      const accounts=getAccounts();
+      const idx=accounts.findIndex(a=>a.email===email);
+      if(idx>=0){ accounts[idx].avatar=reader.result; saveAccounts(accounts) }
+    }
+    updateAvatarUI();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateAvatarUI(){
+  const email=currentUser();
+  const account=email ? getAccounts().find(a=>a.email===email) : null;
+  const img=document.getElementById('profileAvatar');
+  const fallback=document.getElementById('profileAvatarFallback');
+  if(account?.avatar && img){ img.src=account.avatar; img.style.display='block'; if(fallback) fallback.style.display='none' }
+  else if(fallback && account){ fallback.textContent=(account.name||'A').charAt(0).toUpperCase() }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const link=document.getElementById('navProfileLink');
+  if(link){ link.textContent = currentUser() ? 'Profile' : 'Login'; if(!currentUser()) link.setAttribute('href','login.html') }
+});
+
+/* Mobile navigation — turns the header's <nav> into a hamburger menu below ~850px */
+function initMobileNav(){
+  const header=document.querySelector('header.topbar');
+  const nav=header?.querySelector('nav');
+  if(!header||!nav||header.querySelector('.nav-toggle')) return;
+
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.className='nav-toggle';
+  btn.setAttribute('aria-label','Buka menu');
+  btn.setAttribute('aria-expanded','false');
+  btn.innerHTML='<span></span><span></span><span></span>';
+  header.insertBefore(btn, nav);
+
+  function closeNav(){ header.classList.remove('nav-open'); btn.setAttribute('aria-expanded','false') }
+  function openNav(){ header.classList.add('nav-open'); btn.setAttribute('aria-expanded','true') }
+
+  btn.addEventListener('click',()=> header.classList.contains('nav-open') ? closeNav() : openNav());
+  nav.addEventListener('click', e=>{ if(e.target.tagName==='A') closeNav() });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeNav() });
+  document.addEventListener('click', e=>{ if(header.classList.contains('nav-open') && !header.contains(e.target)) closeNav() });
+}
+document.addEventListener('DOMContentLoaded', initMobileNav);
