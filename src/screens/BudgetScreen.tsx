@@ -14,9 +14,17 @@ import {
 import { useEvent } from '../context/EventContext';
 import { BudgetItem } from '../types';
 import { BudgetSpendingTrends } from '../components/BudgetSpendingTrends';
+import { CurrencySwitcher } from '../components/CurrencySwitcher';
 
 export const BudgetScreen: React.FC = () => {
-  const { budgets, addBudgetItem, updateBudgetItem, deleteBudgetItem } = useEvent();
+  const {
+    budgets,
+    addBudgetItem,
+    updateBudgetItem,
+    deleteBudgetItem,
+    currency,
+    formatCost,
+  } = useEvent();
 
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
@@ -38,10 +46,6 @@ export const BudgetScreen: React.FC = () => {
   // Clamped percentages for visual bar rendering (0 to 100)
   const visualSpentWidth = Math.min(100, Math.max(0, spentPercentage));
   const visualRemainingWidth = isSurplus ? Math.max(0, Math.min(100, remainingPercentage)) : 0;
-
-  const formatRupiah = (num: number) => {
-    return 'Rp ' + num.toLocaleString('id-ID');
-  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,20 +85,25 @@ export const BudgetScreen: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingItem(null);
-            setCategory('');
-            setPlanned(0);
-            setActual(0);
-            setNotes('');
-            setShowModal(true);
-          }}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Item Biaya</span>
-        </button>
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Currency Switcher Dropdown */}
+          <CurrencySwitcher />
+
+          <button
+            onClick={() => {
+              setEditingItem(null);
+              setCategory('');
+              setPlanned(0);
+              setActual(0);
+              setNotes('');
+              setShowModal(true);
+            }}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Item Biaya</span>
+          </button>
+        </div>
       </div>
 
       {/* 3 Metric Cards */}
@@ -105,7 +114,7 @@ export const BudgetScreen: React.FC = () => {
               Total Rencana Anggaran
             </div>
             <div className="text-xl sm:text-2xl font-extrabold text-slate-900">
-              {formatRupiah(totalPlanned)}
+              {formatCost(totalPlanned)}
             </div>
           </div>
           <div className="text-[11px] text-slate-400 mt-2">Plafon estimasi awal total acara</div>
@@ -117,7 +126,7 @@ export const BudgetScreen: React.FC = () => {
               Total Realisasi Biaya
             </div>
             <div className="text-xl sm:text-2xl font-extrabold text-emerald-700">
-              {formatRupiah(totalActual)}
+              {formatCost(totalActual)}
             </div>
           </div>
           <div className="text-[11px] text-slate-500 mt-2 flex items-center justify-between">
@@ -138,7 +147,7 @@ export const BudgetScreen: React.FC = () => {
                 isSurplus ? 'text-blue-600' : 'text-rose-600'
               }`}
             >
-              {isSurplus ? formatRupiah(remainingBudget) : `-${formatRupiah(Math.abs(remainingBudget))}`}
+              {isSurplus ? formatCost(remainingBudget) : `-${formatCost(Math.abs(remainingBudget))}`}
             </div>
           </div>
           <div className="mt-2">
@@ -203,12 +212,12 @@ export const BudgetScreen: React.FC = () => {
             ) : isSurplus ? (
               <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Sisa Tersedia: {remainingPercentage.toFixed(1)}% ({formatRupiah(remainingBudget)})</span>
+                <span>Sisa Tersedia: {remainingPercentage.toFixed(1)}% ({formatCost(remainingBudget)})</span>
               </span>
             ) : (
               <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                 <AlertCircle className="w-3.5 h-3.5" />
-                <span>Overbudget: Melebihi Plafon {formatRupiah(Math.abs(remainingBudget))}</span>
+                <span>Overbudget: Melebihi Plafon {formatCost(Math.abs(remainingBudget))}</span>
               </span>
             )}
           </div>
@@ -219,7 +228,7 @@ export const BudgetScreen: React.FC = () => {
           <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
             <div className="flex items-center space-x-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-600" />
-              <span>Terpakai: {totalPlanned > 0 ? spentPercentage.toFixed(1) : 0}% ({formatRupiah(totalActual)})</span>
+              <span>Terpakai: {totalPlanned > 0 ? spentPercentage.toFixed(1) : 0}% ({formatCost(totalActual)})</span>
             </div>
             <div className="flex items-center space-x-2">
               <span
@@ -229,8 +238,8 @@ export const BudgetScreen: React.FC = () => {
               />
               <span className={isSurplus ? 'text-blue-700' : 'text-rose-700'}>
                 {isSurplus
-                  ? `Sisa Anggaran: ${remainingPercentage.toFixed(1)}% (${formatRupiah(remainingBudget)})`
-                  : `Kelebihan Biaya: +${formatRupiah(Math.abs(remainingBudget))}`}
+                  ? `Sisa Anggaran: ${remainingPercentage.toFixed(1)}% (${formatCost(remainingBudget)})`
+                  : `Kelebihan Biaya: +${formatCost(Math.abs(remainingBudget))}`}
               </span>
             </div>
           </div>
@@ -244,16 +253,16 @@ export const BudgetScreen: React.FC = () => {
             ) : isSurplus ? (
               <>
                 {/* Spent portion */}
-                <div
+                 <div
                   className="h-full bg-emerald-600 transition-all duration-500 ease-out"
                   style={{ width: `${visualSpentWidth}%` }}
-                  title={`Terpakai: ${spentPercentage.toFixed(1)}% (${formatRupiah(totalActual)})`}
+                  title={`Terpakai: ${spentPercentage.toFixed(1)}% (${formatCost(totalActual)})`}
                 />
                 {/* Remaining portion */}
                 <div
                   className="h-full bg-blue-600 transition-all duration-500 ease-out"
                   style={{ width: `${visualRemainingWidth}%` }}
-                  title={`Sisa Anggaran: ${remainingPercentage.toFixed(1)}% (${formatRupiah(remainingBudget)})`}
+                  title={`Sisa Anggaran: ${remainingPercentage.toFixed(1)}% (${formatCost(remainingBudget)})`}
                 />
               </>
             ) : (
@@ -262,13 +271,13 @@ export const BudgetScreen: React.FC = () => {
                 <div
                   className="h-full bg-emerald-600"
                   style={{ width: `${(totalPlanned / totalActual) * 100}%` }}
-                  title={`Plafon Rencana: ${formatRupiah(totalPlanned)}`}
+                  title={`Plafon Rencana: ${formatCost(totalPlanned)}`}
                 />
                 {/* Deficit / Exceeded portion */}
                 <div
                   className="h-full bg-rose-500"
                   style={{ width: `${((totalActual - totalPlanned) / totalActual) * 100}%` }}
-                  title={`Defisit / Melebihi Plafon: ${formatRupiah(Math.abs(remainingBudget))}`}
+                  title={`Defisit / Melebihi Plafon: ${formatCost(Math.abs(remainingBudget))}`}
                 />
               </>
             )}
@@ -279,13 +288,13 @@ export const BudgetScreen: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
             <div className="text-[11px] font-medium text-slate-500">Kapasitas Plafon Rencana</div>
-            <div className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(totalPlanned)}</div>
+            <div className="text-sm font-bold text-slate-800 mt-0.5">{formatCost(totalPlanned)}</div>
             <div className="text-[10px] text-slate-400 mt-0.5">100% dasar alokasi</div>
           </div>
 
           <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/60">
             <div className="text-[11px] font-medium text-emerald-800">Realisasi yang Dikeluarkan</div>
-            <div className="text-sm font-bold text-emerald-900 mt-0.5">{formatRupiah(totalActual)}</div>
+            <div className="text-sm font-bold text-emerald-900 mt-0.5">{formatCost(totalActual)}</div>
             <div className="text-[10px] text-emerald-700 mt-0.5">
               {totalPlanned > 0 ? spentPercentage.toFixed(1) : 0}% dari total rencana
             </div>
@@ -310,7 +319,7 @@ export const BudgetScreen: React.FC = () => {
                 isSurplus ? 'text-blue-950' : 'text-rose-950'
               }`}
             >
-              {isSurplus ? formatRupiah(remainingBudget) : `-${formatRupiah(Math.abs(remainingBudget))}`}
+              {isSurplus ? formatCost(remainingBudget) : `-${formatCost(Math.abs(remainingBudget))}`}
             </div>
             <div
               className={`text-[10px] mt-0.5 ${
@@ -385,11 +394,11 @@ export const BudgetScreen: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-right font-medium text-slate-700">
-                        {formatRupiah(item.plannedAmount)}
+                        {formatCost(item.plannedAmount)}
                       </td>
 
                       <td className="py-3 px-4 text-right font-bold text-emerald-700">
-                        {formatRupiah(item.actualAmount)}
+                        {formatCost(item.actualAmount)}
                       </td>
 
                       <td
@@ -397,7 +406,7 @@ export const BudgetScreen: React.FC = () => {
                           diff >= 0 ? 'text-blue-600' : 'text-rose-600'
                         }`}
                       >
-                        {diff >= 0 ? `+${formatRupiah(diff)}` : `-${formatRupiah(Math.abs(diff))}`}
+                        {diff >= 0 ? `+${formatCost(diff)}` : `-${formatCost(Math.abs(diff))}`}
                       </td>
 
                       <td className="py-3 px-4 text-slate-500 max-w-xs truncate">{item.notes}</td>
@@ -500,6 +509,11 @@ export const BudgetScreen: React.FC = () => {
                       onChange={(e) => setPlanned(Number(e.target.value))}
                       className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
                     />
+                    {planned > 0 && currency !== 'IDR' && (
+                      <span className="text-[10px] text-emerald-700 font-medium block mt-1">
+                        ≈ {formatCost(planned)}
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -514,6 +528,11 @@ export const BudgetScreen: React.FC = () => {
                       onChange={(e) => setActual(Number(e.target.value))}
                       className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
                     />
+                    {actual > 0 && currency !== 'IDR' && (
+                      <span className="text-[10px] text-emerald-700 font-medium block mt-1">
+                        ≈ {formatCost(actual)}
+                      </span>
+                    )}
                   </div>
                 </div>
 

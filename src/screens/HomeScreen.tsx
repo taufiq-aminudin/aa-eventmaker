@@ -27,6 +27,7 @@ export const HomeScreen: React.FC = () => {
     setActiveTab,
     setShowPublicPreview,
     setShowQrCheckinModal,
+    formatCost,
   } = useEvent();
 
   // Metrics Calculations
@@ -47,10 +48,6 @@ export const HomeScreen: React.FC = () => {
   const completedTasks = tasks.filter((t) => t.isCompleted).length;
   const taskPercentage =
     tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
-
-  const formatRupiah = (num: number) => {
-    return 'Rp ' + num.toLocaleString('id-ID');
-  };
 
   const featureCards = [
     {
@@ -87,7 +84,7 @@ export const HomeScreen: React.FC = () => {
       desc: 'Kalkulator estimasi vs realisasi pengeluaran seluruh vendor acara.',
       icon: Wallet,
       color: 'from-emerald-500 to-teal-600',
-      badge: formatRupiah(totalActualBudget),
+      badge: formatCost(totalActualBudget),
     },
     {
       id: 5,
@@ -207,11 +204,11 @@ export const HomeScreen: React.FC = () => {
           </div>
           <div className="flex items-baseline space-x-2">
             <span className="text-xl sm:text-2xl font-extrabold text-slate-900">
-              {formatRupiah(totalActualBudget)}
+              {formatCost(totalActualBudget)}
             </span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-slate-600 border-t border-slate-100 pt-2.5">
-            <span>Rencana: {formatRupiah(totalPlannedBudget)}</span>
+            <span>Rencana: {formatCost(totalPlannedBudget)}</span>
             <span
               className={`font-bold ${
                 budgetPercentage <= 100 ? 'text-emerald-600' : 'text-rose-600'

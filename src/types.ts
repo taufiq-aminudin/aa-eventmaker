@@ -1,3 +1,17 @@
+export type UserRole = 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST';
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  avatar?: string;
+  organizationName?: string;
+  associatedEventId?: string;
+  createdAt: number;
+}
+
 export type EventType =
   | 'Wedding'
   | 'Birthday'
@@ -57,6 +71,18 @@ export interface TaskItem {
   dueDate: string;
   assignee: string;
   isCompleted: boolean;
+}
+
+export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'GBP' | 'AUD' | 'JPY';
+
+export interface CurrencyConfig {
+  code: CurrencyCode;
+  symbol: string;
+  name: string;
+  flag: string;
+  rateAgainstIdr: number;
+  locale: string;
+  decimalPlaces: number;
 }
 
 export interface BudgetItem {

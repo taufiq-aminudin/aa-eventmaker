@@ -6,6 +6,7 @@ import {
   TaskItem,
   BudgetItem,
   WeeklyExpenseRecord,
+  CurrencyCode,
   VenueLocation,
   MemoryItem,
   TemplateItem,
@@ -18,6 +19,8 @@ import {
   CampaignStatus,
   AutoReminderRule,
   EventType,
+  UserRole,
+  AppUser,
 } from '../types';
 import {
   INITIAL_PROJECT,
@@ -35,9 +38,10 @@ import {
   INITIAL_AI_CONCEPT,
 } from '../data/initialData';
 import { filterGuestsByTarget } from '../utils/templateEngine';
+import { formatCurrency, formatCurrencyShort, getCurrencyConfig } from '../utils/currency';
 
 interface EventContextType {
-  // Navigation
+  // Navigation & View Modals
   activeTab: number;
   setActiveTab: (tab: number) => void;
   showPublicPreview: boolean;
@@ -48,6 +52,28 @@ interface EventContextType {
   setSelectedGuestForPass: (guest: Guest | null) => void;
   toastMessage: string | null;
   showToast: (msg: string) => void;
+
+  // Auth, Roles & Public Portal
+  currentUser: AppUser | null;
+  activeRole: UserRole;
+  isAuthenticated: boolean;
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
+  authModalMode: 'login' | 'register' | 'registered_success';
+  setAuthModalMode: (mode: 'login' | 'register' | 'registered_success') => void;
+  showPublicLanding: boolean;
+  setShowPublicLanding: (show: boolean) => void;
+  lastRegisteredUser: AppUser | null;
+  login: (email: string, role?: UserRole) => boolean;
+  register: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    role: UserRole;
+    organizationName?: string;
+  }) => AppUser;
+  logout: () => void;
+  switchRole: (role: UserRole) => void;
 
   // Project
   currentProject: EventProject;
@@ -106,6 +132,15 @@ interface EventContextType {
   }) => void;
   deleteWeeklyExpense: (id: string) => void;
 
+  // Currency Switcher
+  currency: CurrencyCode;
+  setCurrency: (c: CurrencyCode) => void;
+  formatCost: (
+    amountInIdr: number,
+    options?: { showDecimals?: boolean; includeCode?: boolean }
+  ) => string;
+  formatCostShort: (amountInIdr: number) => string;
+
   // Locations & Memories
   locations: VenueLocation[];
   addLocation: (name: string, type: string, address: string, time: string, mapUrl: string) => void;
@@ -144,6 +179,47 @@ interface EventContextType {
   generateAiConcept: (prompt: string) => void;
 }
 
+export const DEFAULT_USERS: Record<UserRole, AppUser> = {
+  ORGANIZER: {
+    id: 'user_eo_01',
+    name: 'Dimas & Sinta Wedding Organizer',
+    email: 'organizer@aa-eventmaker.com',
+    phone: '+6281234567890',
+    role: 'ORGANIZER',
+    organizationName: 'Pratama Event & Wedding Planner',
+    associatedEventId: 'proj-1',
+    createdAt: 1715000000000,
+  },
+  CLIENT: {
+    id: 'user_client_01',
+    name: 'Dimas & Sinta (Calon Pengantin)',
+    email: 'klien@aa-eventmaker.com',
+    phone: '+6281987654321',
+    role: 'CLIENT',
+    associatedEventId: 'proj-1',
+    createdAt: 1716000000000,
+  },
+  VENDOR: {
+    id: 'user_vendor_01',
+    name: 'Mahkota Fotografi & Catering',
+    email: 'vendor@aa-eventmaker.com',
+    phone: '+6285712345678',
+    role: 'VENDOR',
+    organizationName: 'Mahkota Wedding Artistry & Culinary',
+    associatedEventId: 'proj-1',
+    createdAt: 1715500000000,
+  },
+  GUEST: {
+    id: 'user_guest_01',
+    name: 'Bpk. Hendra Gunawan & Partner',
+    email: 'tamu@aa-eventmaker.com',
+    phone: '+6281398765432',
+    role: 'GUEST',
+    associatedEventId: 'proj-1',
+    createdAt: 1717000000000,
+  },
+};
+
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -153,11 +229,92 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedGuestForPass, setSelectedGuestForPass] = useState<Guest | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Auth & Roles State
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    const saved = localStorage.getItem('aa_current_user');
+    return saved ? JSON.parse(saved) : DEFAULT_USERS.ORGANIZER;
+  });
+
+  const [activeRole, setActiveRole] = useState<UserRole>(() => {
+    const saved = localStorage.getItem('aa_active_role') as UserRole | null;
+    return saved || 'ORGANIZER';
+  });
+
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'registered_success'>('login');
+  const [showPublicLanding, setShowPublicLanding] = useState<boolean>(false);
+  const [lastRegisteredUser, setLastRegisteredUser] = useState<AppUser | null>(null);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((cur) => (cur === msg ? null : cur));
     }, 4000);
+  };
+
+  const login = (email: string, role?: UserRole): boolean => {
+    const targetRole = role || 'ORGANIZER';
+    const matchedUser: AppUser = DEFAULT_USERS[targetRole] || {
+      id: `usr_${Date.now()}`,
+      name: email.split('@')[0],
+      email,
+      phone: '+6281234567890',
+      role: targetRole,
+      createdAt: Date.now(),
+    };
+
+    setCurrentUser(matchedUser);
+    setActiveRole(targetRole);
+    localStorage.setItem('aa_current_user', JSON.stringify(matchedUser));
+    localStorage.setItem('aa_active_role', targetRole);
+    setShowAuthModal(false);
+    setShowPublicLanding(false);
+    showToast(`Selamat datang kembali, ${matchedUser.name}!`);
+    return true;
+  };
+
+  const register = (data: {
+    name: string;
+    email: string;
+    phone: string;
+    role: UserRole;
+    organizationName?: string;
+  }): AppUser => {
+    const newUser: AppUser = {
+      id: `usr_${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      organizationName: data.organizationName,
+      associatedEventId: currentProject.id,
+      createdAt: Date.now(),
+    };
+
+    setCurrentUser(newUser);
+    setActiveRole(newUser.role);
+    setLastRegisteredUser(newUser);
+    localStorage.setItem('aa_current_user', JSON.stringify(newUser));
+    localStorage.setItem('aa_active_role', newUser.role);
+    setAuthModalMode('registered_success');
+    showToast(`Pendaftaran berhasil! Akun ${newUser.role} Anda telah aktif.`);
+    return newUser;
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('aa_current_user');
+    showToast('Sesi telah diakhiri. Silakan login kembali.');
+  };
+
+  const switchRole = (newRole: UserRole) => {
+    setActiveRole(newRole);
+    localStorage.setItem('aa_active_role', newRole);
+    if (DEFAULT_USERS[newRole]) {
+      setCurrentUser(DEFAULT_USERS[newRole]);
+      localStorage.setItem('aa_current_user', JSON.stringify(DEFAULT_USERS[newRole]));
+    }
+    showToast(`Beralih ke Dashboard ${newRole}`);
   };
 
   // State with LocalStorage fallback
@@ -224,6 +381,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [aiConcept, setAiConcept] = useState<AiConceptResult>(() => {
     const saved = localStorage.getItem('aa_ai_concept');
     return saved ? JSON.parse(saved) : INITIAL_AI_CONCEPT;
+  });
+
+  const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
+    const saved = localStorage.getItem('aa_selected_currency');
+    return (saved as CurrencyCode) || 'IDR';
   });
 
   // Sync to localStorage
@@ -534,6 +696,24 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteWeeklyExpense = (id: string) => {
     setWeeklyExpenses((prev) => prev.filter((w) => w.id !== id));
     showToast('Catatan pengeluaran mingguan dihapus.');
+  };
+
+  const setCurrency = (c: CurrencyCode) => {
+    setCurrencyState(c);
+    localStorage.setItem('aa_selected_currency', c);
+    const cfg = getCurrencyConfig(c);
+    showToast(`Format mata uang diubah ke ${cfg.name} (${cfg.code} ${cfg.symbol})`);
+  };
+
+  const formatCost = (
+    amountInIdr: number,
+    options?: { showDecimals?: boolean; includeCode?: boolean }
+  ) => {
+    return formatCurrency(amountInIdr, currency, options);
+  };
+
+  const formatCostShort = (amountInIdr: number) => {
+    return formatCurrencyShort(amountInIdr, currency);
   };
 
   // Locations & Memories
@@ -868,6 +1048,22 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toastMessage,
         showToast,
 
+        // Auth & Roles
+        currentUser,
+        activeRole,
+        isAuthenticated: !!currentUser,
+        showAuthModal,
+        setShowAuthModal,
+        authModalMode,
+        setAuthModalMode,
+        showPublicLanding,
+        setShowPublicLanding,
+        lastRegisteredUser,
+        login,
+        register,
+        logout,
+        switchRole,
+
         currentProject,
         projects,
         selectProject,
@@ -899,6 +1095,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         weeklyExpenses,
         addWeeklyExpense,
         deleteWeeklyExpense,
+        currency,
+        setCurrency,
+        formatCost,
+        formatCostShort,
 
         locations,
         addLocation,

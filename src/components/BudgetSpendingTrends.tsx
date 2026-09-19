@@ -26,19 +26,20 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { useEvent } from '../context/EventContext';
+import { convertFromIdr, getCurrencyConfig } from '../utils/currency';
 
 interface CustomTooltipProps {
   active?: boolean;
   payload?: any[];
   label?: string;
-  formatRupiah: (num: number) => string;
+  formatCost: (num: number) => string;
 }
 
 const CustomChartTooltip: React.FC<CustomTooltipProps> = ({
   active,
   payload,
   label,
-  formatRupiah,
+  formatCost,
 }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -54,14 +55,16 @@ const CustomChartTooltip: React.FC<CustomTooltipProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block" />
               <span>Pengeluaran Minggu Ini:</span>
             </span>
-            <span className="font-bold">{formatRupiah(data.amount)}</span>
+            <span className="font-bold">{formatCost(data.rawAmount ?? data.amount)}</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-blue-700">
             <span className="flex items-center space-x-1">
               <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
               <span>Akumulasi Total:</span>
             </span>
-            <span className="font-bold">{formatRupiah(data.cumulativeTotal)}</span>
+            <span className="font-bold">
+              {formatCost(data.rawCumulativeTotal ?? data.cumulativeTotal)}
+            </span>
           </div>
         </div>
         {data.note && (
@@ -76,7 +79,15 @@ const CustomChartTooltip: React.FC<CustomTooltipProps> = ({
 };
 
 export const BudgetSpendingTrends: React.FC = () => {
-  const { weeklyExpenses, addWeeklyExpense, deleteWeeklyExpense, budgets } = useEvent();
+  const {
+    weeklyExpenses,
+    addWeeklyExpense,
+    deleteWeeklyExpense,
+    budgets,
+    currency,
+    formatCost,
+    formatCostShort,
+  } = useEvent();
 
   const [viewMode, setViewMode] = useState<'combined' | 'graph' | 'list'>('combined');
   const [chartType, setChartType] = useState<'cumulative' | 'weekly'>('cumulative');
@@ -89,32 +100,21 @@ export const BudgetSpendingTrends: React.FC = () => {
   const [note, setNote] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  const formatRupiah = (num: number) => {
-    return 'Rp ' + num.toLocaleString('id-ID');
-  };
-
-  const formatRupiahShort = (num: number) => {
-    if (num >= 1000000000) {
-      return (num / 1000000000).toFixed(1) + ' M';
-    }
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + ' Jt';
-    }
-    return (num / 1000).toFixed(0) + ' Rb';
-  };
-
-  // Compute cumulative spending over time
+  // Compute cumulative spending over time, converting values for natural chart scaling
   const processedChartData = useMemo(() => {
     let runningTotal = 0;
     return weeklyExpenses.map((exp) => {
       runningTotal += exp.amount;
       return {
         ...exp,
-        cumulativeTotal: runningTotal,
+        rawAmount: exp.amount,
+        rawCumulativeTotal: runningTotal,
+        amount: Number(convertFromIdr(exp.amount, currency).toFixed(2)),
+        cumulativeTotal: Number(convertFromIdr(runningTotal, currency).toFixed(2)),
         displayLabel: `${exp.weekLabel}`,
       };
     });
-  }, [weeklyExpenses]);
+  }, [weeklyExpenses, currency]);
 
   const totalSpentHistorical = useMemo(() => {
     return weeklyExpenses.reduce((acc, curr) => acc + curr.amount, 0);
@@ -234,7 +234,7 @@ export const BudgetSpendingTrends: React.FC = () => {
             Total Historis Tercatat
           </div>
           <div className="text-base sm:text-lg font-bold text-slate-900 mt-1">
-            {formatRupiah(totalSpentHistorical)}
+            {formatCost(totalSpentHistorical)}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
             {weeklyExpenses.length} periode pencairan mingguan
@@ -246,7 +246,7 @@ export const BudgetSpendingTrends: React.FC = () => {
             Rata-Rata Mingguan
           </div>
           <div className="text-base sm:text-lg font-bold text-emerald-700 mt-1">
-            {formatRupiah(averageWeeklySpend)}
+            {formatCost(averageWeeklySpend)}
           </div>
           <div className="text-[10px] text-emerald-600 mt-0.5">Laju pengeluaran per minggu</div>
         </div>
@@ -256,7 +256,7 @@ export const BudgetSpendingTrends: React.FC = () => {
             Puncak Pengeluaran Tertinggi
           </div>
           <div className="text-base sm:text-lg font-bold text-blue-700 mt-1">
-            {formatRupiah(peakWeeklySpend.amount)}
+            {formatCost(peakWeeklySpend.amount)}
           </div>
           <div className="text-[10px] text-blue-600 mt-0.5">
             Terjadi pada {peakWeeklySpend.weekLabel}
@@ -349,16 +349,23 @@ export const BudgetSpendingTrends: React.FC = () => {
                       fontSize={11}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={formatRupiahShort}
+                      tickFormatter={(val) => {
+                        const cfg = getCurrencyConfig(currency);
+                        const abs = Math.abs(val);
+                        if (abs >= 1000000000) return `${cfg.symbol}${(val / 1000000000).toFixed(1)}B`;
+                        if (abs >= 1000000) return `${cfg.symbol}${(val / 1000000).toFixed(1)}M`;
+                        if (abs >= 1000) return `${cfg.symbol}${(val / 1000).toFixed(0)}k`;
+                        return `${cfg.symbol}${val}`;
+                      }}
                     />
                     <Tooltip
-                      content={<CustomChartTooltip formatRupiah={formatRupiah} />}
+                      content={<CustomChartTooltip formatCost={formatCost} />}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
                       formatter={(val) => {
-                        if (val === 'cumulativeTotal') return 'Akumulasi Total Pengeluaran (Rp)';
-                        if (val === 'amount') return 'Pengeluaran Minggu Bersangkutan (Rp)';
+                        if (val === 'cumulativeTotal') return `Akumulasi Total Pengeluaran (${currency})`;
+                        if (val === 'amount') return `Pengeluaran Minggu Bersangkutan (${currency})`;
                         return val;
                       }}
                     />
@@ -403,15 +410,22 @@ export const BudgetSpendingTrends: React.FC = () => {
                       fontSize={11}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={formatRupiahShort}
+                      tickFormatter={(val) => {
+                        const cfg = getCurrencyConfig(currency);
+                        const abs = Math.abs(val);
+                        if (abs >= 1000000000) return `${cfg.symbol}${(val / 1000000000).toFixed(1)}B`;
+                        if (abs >= 1000000) return `${cfg.symbol}${(val / 1000000).toFixed(1)}M`;
+                        if (abs >= 1000) return `${cfg.symbol}${(val / 1000).toFixed(0)}k`;
+                        return `${cfg.symbol}${val}`;
+                      }}
                     />
                     <Tooltip
-                      content={<CustomChartTooltip formatRupiah={formatRupiah} />}
+                      content={<CustomChartTooltip formatCost={formatCost} />}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
                       formatter={(val) => {
-                        if (val === 'amount') return 'Nominal Pengeluaran Minggu Ini (Rp)';
+                        if (val === 'amount') return `Nominal Pengeluaran Minggu Ini (${currency})`;
                         return val;
                       }}
                     />
@@ -496,10 +510,10 @@ export const BudgetSpendingTrends: React.FC = () => {
                         <div className="text-left sm:text-right">
                           <div className="text-xs font-bold text-emerald-700 flex items-center sm:justify-end space-x-1">
                             <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>+{formatRupiah(item.amount)}</span>
+                            <span>+{formatCost(item.rawAmount)}</span>
                           </div>
                           <div className="text-[10px] text-slate-400 mt-0.5">
-                            Akumulasi: {formatRupiah(item.cumulativeTotal)}
+                            Akumulasi: {formatCost(item.rawCumulativeTotal)}
                           </div>
                         </div>
 
@@ -605,7 +619,7 @@ export const BudgetSpendingTrends: React.FC = () => {
                   />
                   {amount > 0 && (
                     <div className="text-[11px] text-emerald-700 font-medium mt-1">
-                      {formatRupiah(amount)}
+                      {formatCost(amount)}
                     </div>
                   )}
                 </div>
