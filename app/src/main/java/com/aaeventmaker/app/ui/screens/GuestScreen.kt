@@ -24,13 +24,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaeventmaker.app.data.EventRepository
 import com.aaeventmaker.app.data.Guest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import com.aaeventmaker.app.ui.components.CameraBarcodeScannerView
 import com.aaeventmaker.app.ui.components.SectionHeader
 import com.aaeventmaker.app.ui.components.StatusBadge
 import com.aaeventmaker.app.ui.theme.*
@@ -42,12 +50,16 @@ fun GuestScreen(
     initialOpenScanner: Boolean = false
 ) {
     val guests by EventRepository.guests.collectAsState()
+    val invitation by EventRepository.invitation.collectAsState()
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
 
     var selectedGuestForPass by remember { mutableStateOf<Guest?>(null) }
+    var selectedGuestForWebSim by remember { mutableStateOf<Guest?>(null) }
+    var showBatchQrDialog by remember { mutableStateOf(false) }
     var showAddGuestDialog by remember { mutableStateOf(false) }
     var showScannerDialog by remember { mutableStateOf(initialOpenScanner) }
 
@@ -60,7 +72,8 @@ fun GuestScreen(
     val filteredGuests = guests.filter { guest ->
         val matchesSearch = guest.name.contains(searchQuery, ignoreCase = true) ||
                 guest.phone.contains(searchQuery) ||
-                guest.tableNumber.contains(searchQuery, ignoreCase = true)
+                guest.tableNumber.contains(searchQuery, ignoreCase = true) ||
+                guest.checkInCode.contains(searchQuery, ignoreCase = true)
 
         val matchesFilter = when (selectedFilter) {
             "All" -> true
@@ -96,25 +109,40 @@ fun GuestScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Header & Terminal Scanner Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Daftar Tamu & E-Pass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Total: ${guests.size} Undangan ($totalPax Pax)", style = MaterialTheme.typography.bodySmall, color = MutedText)
-                }
-
-                Button(
-                    onClick = { showScannerDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = InkDark),
-                    shape = RoundedCornerShape(12.dp)
+            // Header & Action Buttons
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Buku Tamu / Scan")
+                    Column {
+                        Text("Daftar Tamu & E-Pass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("Total: ${guests.size} Undangan ($totalPax Pax) • Link Unik Aktif", style = MaterialTheme.typography.bodySmall, color = MutedText)
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(
+                            onClick = { showBatchQrDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Hub Link & QR", fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = { showScannerDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = InkDark),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Scan QR", fontSize = 12.sp)
+                        }
+                    }
                 }
             }
 
@@ -130,7 +158,7 @@ fun GuestScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -139,13 +167,18 @@ fun GuestScreen(
                     }
                     Divider(modifier = Modifier.height(36.dp).width(1.dp))
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Sudah Check-In", style = MaterialTheme.typography.labelSmall, color = MutedText)
+                        Text("Sudah Hadir", style = MaterialTheme.typography.labelSmall, color = MutedText)
                         Text("$checkedInCount Tamu", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PurplePrimary)
                     }
                     Divider(modifier = Modifier.height(36.dp).width(1.dp))
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Pending", style = MaterialTheme.typography.labelSmall, color = MutedText)
                         Text("${guests.count { it.rsvpStatus == "Pending" }} Tamu", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = GoldAccent)
+                    }
+                    Divider(modifier = Modifier.height(36.dp).width(1.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Link QR Unik", style = MaterialTheme.typography.labelSmall, color = MutedText)
+                        Text("${guests.size}/${guests.size}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PurplePrimary)
                     }
                 }
             }
@@ -204,7 +237,14 @@ fun GuestScreen(
                     items(filteredGuests) { guest ->
                         GuestItemCard(
                             guest = guest,
+                            invitationSlug = invitation.slug,
                             onViewPass = { selectedGuestForPass = guest },
+                            onPreviewWeb = { selectedGuestForWebSim = guest },
+                            onCopyLink = {
+                                val link = guest.getCheckInUrl(invitation.slug)
+                                clipboardManager.setText(AnnotatedString(link))
+                                Toast.makeText(context, "Tautan untuk ${guest.name} disalin!", Toast.LENGTH_SHORT).show()
+                            },
                             onCheckIn = {
                                 EventRepository.checkInGuest(guest.id)
                                 vibrateDevice(context)
@@ -217,88 +257,43 @@ fun GuestScreen(
         }
     }
 
-    // E-Pass QR Ticket Dialog
+    // QR Code Generator & Unique Link Dialog
     if (selectedGuestForPass != null) {
-        val guest = selectedGuestForPass!!
-        val qrPayload = remember(guest.id) {
-            "{\"id\":\"${guest.id}\",\"name\":\"${guest.name}\",\"pax\":${guest.pax},\"type\":\"EVENT_PASS\"}"
-        }
-        val qrImageBitmap = remember(qrPayload) {
-            QrCodeUtil.generateQrImageBitmap(qrPayload, 400)
-        }
-
-        AlertDialog(
-            onDismissRequest = { selectedGuestForPass = null },
-            title = {
-                Text("E-Pass Check-In", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), fontWeight = FontWeight.Bold)
+        GuestQrGeneratorDialog(
+            guest = selectedGuestForPass!!,
+            invitation = invitation,
+            onDismiss = { selectedGuestForPass = null },
+            onCheckIn = { guestId ->
+                EventRepository.checkInGuest(guestId)
+                vibrateDevice(context)
             },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = PurpleLight
-                    ) {
-                        Text(
-                            text = "OFFICIAL EVENT PASS",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = PurplePrimary
-                        )
-                    }
+            onPreviewWebLink = { guestToPreview ->
+                selectedGuestForWebSim = guestToPreview
+            }
+        )
+    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(guest.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    Text("Kuota: ${guest.pax} Orang • Meja: ${guest.tableNumber}", style = MaterialTheme.typography.bodyMedium, color = MutedText)
+    // Mobile Web Check-In Simulator Dialog
+    if (selectedGuestForWebSim != null) {
+        GuestMobileWebCheckInDialog(
+            guest = selectedGuestForWebSim!!,
+            invitation = invitation,
+            onDismiss = { selectedGuestForWebSim = null },
+            onConfirmCheckIn = { guestId ->
+                EventRepository.checkInGuest(guestId)
+                vibrateDevice(context)
+            }
+        )
+    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        Image(
-                            bitmap = qrImageBitmap,
-                            contentDescription = "QR Code E-Pass",
-                            modifier = Modifier
-                                .size(200.dp)
-                                .padding(12.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "Tunjukkan QR Code ini kepada resepsionis saat tiba di lokasi acara untuk registrasi instan.",
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        color = MutedText
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (!guest.isCheckedIn) {
-                            EventRepository.checkInGuest(guest.id)
-                            vibrateDevice(context)
-                            Toast.makeText(context, "${guest.name} tercatat check-in!", Toast.LENGTH_SHORT).show()
-                        }
-                        selectedGuestForPass = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (guest.isCheckedIn) EmeraldSuccess else PurplePrimary)
-                ) {
-                    Text(if (guest.isCheckedIn) "Sudah Check-In ✓" else "Check-In Sekarang")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedGuestForPass = null }) {
-                    Text("Tutup")
-                }
+    // Batch QR & Links Hub Dialog
+    if (showBatchQrDialog) {
+        BatchQrLinksDialog(
+            guests = guests,
+            invitation = invitation,
+            onDismiss = { showBatchQrDialog = false },
+            onSelectGuest = { guest ->
+                selectedGuestForPass = guest
             }
         )
     }
@@ -307,6 +302,7 @@ fun GuestScreen(
     if (showScannerDialog) {
         CheckInScannerDialog(
             guests = guests,
+            invitationSlug = invitation.slug,
             onDismiss = { showScannerDialog = false },
             onCheckIn = { guestId ->
                 val checked = EventRepository.checkInGuest(guestId)
@@ -420,7 +416,10 @@ fun GuestScreen(
 @Composable
 fun GuestItemCard(
     guest: Guest,
+    invitationSlug: String,
     onViewPass: () -> Unit,
+    onPreviewWeb: () -> Unit,
+    onCopyLink: () -> Unit,
     onCheckIn: () -> Unit
 ) {
     Card(
@@ -458,7 +457,24 @@ fun GuestItemCard(
                     Text("Meja ${guest.tableNumber}", style = MaterialTheme.typography.bodySmall, color = MutedText)
                 }
 
-                StatusBadge(status = guest.rsvpStatus)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFEDE9FE)
+                    ) {
+                        Text(
+                            text = guest.checkInCode,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PurplePrimary
+                        )
+                    }
+                    StatusBadge(status = guest.rsvpStatus)
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -475,7 +491,7 @@ fun GuestItemCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Divider()
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -484,23 +500,36 @@ fun GuestItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (guest.isCheckedIn) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldSuccess, modifier = Modifier.size(16.dp))
-                        Text("Check-In: ${guest.checkInTime ?: "Tercatat"}", style = MaterialTheme.typography.labelSmall, color = EmeraldSuccess, fontWeight = FontWeight.Bold)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (guest.isCheckedIn) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldSuccess, modifier = Modifier.size(16.dp))
+                            Text("Hadir: ${guest.checkInTime ?: "OK"}", style = MaterialTheme.typography.labelSmall, color = EmeraldSuccess, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = onCheckIn,
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Check-In", fontSize = 12.sp)
+                        }
                     }
-                } else {
-                    OutlinedButton(
-                        onClick = onCheckIn,
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+
+                    // Quick copy link icon button
+                    IconButton(
+                        onClick = onCopyLink,
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Check-In", fontSize = 12.sp)
+                        Icon(Icons.Default.Link, contentDescription = "Salin Link", tint = PurplePrimary, modifier = Modifier.size(18.dp))
                     }
                 }
 
@@ -512,7 +541,7 @@ fun GuestItemCard(
                 ) {
                     Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("E-Pass QR", fontSize = 12.sp)
+                    Text("QR & Link Pass", fontSize = 12.sp)
                 }
             }
         }
@@ -522,52 +551,228 @@ fun GuestItemCard(
 @Composable
 fun CheckInScannerDialog(
     guests: List<Guest>,
+    invitationSlug: String,
     onDismiss: () -> Unit,
     onCheckIn: (String) -> Guest?
 ) {
+    val context = LocalContext.current
     var manualInput by remember { mutableStateOf("") }
     var scanSuccessGuest by remember { mutableStateOf<Guest?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var activeTab by remember { mutableStateOf(0) } // 0: Live Kamera, 1: Input / Simulasi Manual
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (!isGranted) {
+            Toast.makeText(context, "Izin kamera diperlukan untuk memindai QR secara langsung", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun processCheckIn(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isNotBlank()) {
+            val extractedIdOrCode = QrCodeUtil.extractGuestCodeOrId(trimmed)
+            val matched = guests.find {
+                it.checkInCode.equals(extractedIdOrCode, ignoreCase = true) ||
+                        it.id.equals(extractedIdOrCode, ignoreCase = true) ||
+                        it.name.contains(trimmed, ignoreCase = true) ||
+                        (it.phone.isNotBlank() && trimmed.contains(it.phone))
+            }
+            if (matched != null) {
+                val checked = onCheckIn(matched.id)
+                scanSuccessGuest = checked
+                errorMsg = null
+                manualInput = ""
+            } else {
+                errorMsg = "QR Link / Kode Check-In tidak dikenali atau tamu tidak terdaftar: '$trimmed'"
+                scanSuccessGuest = null
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = PurplePrimary)
-                Text("Buku Tamu & Scan QR", fontWeight = FontWeight.Bold)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = PurplePrimary)
+                    Text("QR Scanner Resepsionis", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Tutup", tint = MutedText, modifier = Modifier.size(18.dp))
+                }
             }
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    "Simulasi Scanner Resepsionis: Masukkan nama atau scan payload QR E-Pass tamu.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MutedText
-                )
-
-                // Simulated Scanner Frame
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(130.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF0F172A))
-                        .border(1.dp, Color(0xFF334155), RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
+                // Tab switch: Kamera Langsung vs Input Cepat / Manual
+                TabRow(
+                    selectedTabIndex = activeTab,
+                    containerColor = Color(0xFFF1F5F9),
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp))
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.CenterFocusWeak, contentDescription = null, tint = PurpleLight, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Area Pemindaian QR Kamera Aktif", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+                    Tab(
+                        selected = activeTab == 0,
+                        onClick = { activeTab = 0 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text("Kamera Live", fontSize = 13.sp)
+                            }
+                        }
+                    )
+                    Tab(
+                        selected = activeTab == 1,
+                        onClick = { activeTab = 1 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text("Input / Uji Coba", fontSize = 13.sp)
+                            }
+                        }
+                    )
+                }
+
+                if (activeTab == 0) {
+                    // Camera Live Scanning View
+                    if (hasCameraPermission) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(210.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                        ) {
+                            CameraBarcodeScannerView(
+                                modifier = Modifier.fillMaxSize(),
+                                onBarcodeScanned = { rawBarcode ->
+                                    processCheckIn(rawBarcode)
+                                }
+                            )
+                        }
+                        Text(
+                            "Arahkan kamera ke QR Code undangan tamu untuk check-in instan.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MutedText,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        // Permission Request Card
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF5FF)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDDD6FE)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = null,
+                                    tint = PurplePrimary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Text(
+                                    "Izin Kamera Diperlukan",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = InkDark
+                                )
+                                Text(
+                                    "Izinkan akses kamera untuk mengaktifkan pemindai barcode/QR code otomatis.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MutedText,
+                                    textAlign = TextAlign.Center
+                                )
+                                Button(
+                                    onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Aktifkan Akses Kamera")
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Manual Input & Quick Test simulation chips
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Ketik nama tamu, nomor kode check-in, atau paste tautan QR E-Pass tamu.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MutedText
+                        )
+
+                        // Quick Testing Simulation Chips
+                        if (guests.isNotEmpty()) {
+                            Text("Klik untuk simulasi scan tamu:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                items(guests.take(4)) { guestItem ->
+                                    AssistChip(
+                                        onClick = {
+                                            val sampleUrl = guestItem.getCheckInUrl(invitationSlug)
+                                            manualInput = sampleUrl
+                                            processCheckIn(sampleUrl)
+                                        },
+                                        label = { Text("${guestItem.name.take(10)} (${guestItem.checkInCode})", fontSize = 10.sp) },
+                                        leadingIcon = { Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(12.dp)) }
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = manualInput,
+                            onValueChange = { manualInput = it },
+                            label = { Text("Nama / Kode / URL E-Pass") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Button(
+                            onClick = { processCheckIn(manualInput) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Verifikasi & Check-In Tamu")
+                        }
                     }
                 }
 
+                // Scan Success Banner
                 if (scanSuccessGuest != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -575,20 +780,38 @@ fun CheckInScannerDialog(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFF16A34A), CircleShape),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text("✓ BERHASIL CHECK-IN", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF166534))
-                                Text(scanSuccessGuest!!.checkInTime ?: "", style = MaterialTheme.typography.labelSmall, color = Color(0xFF166534))
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
-                            Text(scanSuccessGuest!!.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = InkDark)
-                            Text("Jumlah: ${scanSuccessGuest!!.pax} Pax • Meja: ${scanSuccessGuest!!.tableNumber}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF166534))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("BERHASIL CHECK-IN", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF166534))
+                                    Text(scanSuccessGuest!!.checkInTime ?: "Sekarang", style = MaterialTheme.typography.labelSmall, color = Color(0xFF166534), fontWeight = FontWeight.Bold)
+                                }
+                                Text(scanSuccessGuest!!.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = InkDark)
+                                Text("Jumlah: ${scanSuccessGuest!!.pax} Pax • Meja: ${scanSuccessGuest!!.tableNumber}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF166534))
+                                Text("Kode: ${scanSuccessGuest!!.checkInCode} (${scanSuccessGuest!!.group})", fontSize = 11.sp, color = Color(0xFF166534), fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 }
 
+                // Error Message
                 if (errorMsg != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -596,44 +819,19 @@ fun CheckInScannerDialog(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = errorMsg!!,
-                            color = Color(0xFF991B1B),
+                        Row(
                             modifier = Modifier.padding(10.dp),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                OutlinedTextField(
-                    value = manualInput,
-                    onValueChange = { manualInput = it },
-                    label = { Text("Ketik Nama / Kode Tamu") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Button(
-                    onClick = {
-                        if (manualInput.isNotBlank()) {
-                            val matched = guests.find {
-                                it.name.contains(manualInput.trim(), ignoreCase = true) || it.id.contains(manualInput.trim())
-                            }
-                            if (matched != null) {
-                                val checked = onCheckIn(matched.id)
-                                scanSuccessGuest = checked
-                                errorMsg = null
-                                manualInput = ""
-                            } else {
-                                errorMsg = "Tamu tidak ditemukan dalam daftar acara."
-                                scanSuccessGuest = null
-                            }
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
+                            Text(
+                                text = errorMsg!!,
+                                color = Color(0xFF991B1B),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
-                ) {
-                    Text("Verifikasi & Check-In Tamu")
+                    }
                 }
             }
         },

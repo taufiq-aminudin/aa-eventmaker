@@ -1,5 +1,7 @@
 package com.aaeventmaker.app.data
 
+import com.aaeventmaker.app.R
+
 object SampleData {
 
     val TEMPLATES = listOf(
@@ -80,45 +82,162 @@ object SampleData {
     val INSPIRATIONS = listOf(
         InspirationItem(
             id = "insp-1",
-            title = "Minimalist Outdoor Sunset",
+            title = "Fine Art Golden Hour Couple Portrait",
             category = "Dresses",
-            description = "Inspirasi gaun pengantin simpel dengan konsep alam terbuka saat golden hour",
-            gradientColors = listOf(0xFF3B1E08, 0xFFB45309, 0xFFFDE68A)
+            description = "Potret pengantin modern dengan busana kebaya berpadu beskap kontemporer, pencahayaan alami golden hour hangat.",
+            gradientColors = listOf(0xFF3B1E08, 0xFFB45309, 0xFFFDE68A),
+            drawableRes = R.drawable.img_wedding_photo_template
         ),
         InspirationItem(
             id = "insp-2",
-            title = "Pernikahan Adat Sunda Modern",
-            category = "Dresses",
-            description = "Siger Sunda klasik berpadu dengan aksen kebaya modern berpayet lembut",
-            gradientColors = listOf(0xFF134E4A, 0xFF0D9488, 0xFF99F6E4)
+            title = "Rustic Modern Floral Stage & Arch",
+            category = "Flowers",
+            description = "Dekorasi pelaminan dedaunan eucalyptus aromatik, anggrek putih, mawar peach, dan pendar fairy lights romantis.",
+            gradientColors = listOf(0xFF14532D, 0xFF16A34A, 0xFFBBF7D0),
+            drawableRes = R.drawable.img_photo_decor_template
         ),
         InspirationItem(
             id = "insp-3",
-            title = "Rustic Greenery Arch",
-            category = "Flowers",
-            description = "Dekorasi pelaminan dedaunan eucalyptus aromatik dan mawar putih segar",
-            gradientColors = listOf(0xFF14532D, 0xFF16A34A, 0xFFBBF7D0)
+            title = "Akrilik Welcome Signage & Calligraphy",
+            category = "Design",
+            description = "Papan selamat datang transparan dengan kaligrafi foil emas, easel kayu gelap dan rangkaian bunga segar.",
+            gradientColors = listOf(0xFF78350F, 0xFFD97706, 0xFFFEF3C7),
+            drawableRes = R.drawable.img_design_sign_template
         ),
         InspirationItem(
             id = "insp-4",
             title = "Gold & Diamond Solitaire",
             category = "Rings",
-            description = "Pilihan cincin tunangan elegan bertahtakan berlian potongan brilliant",
+            description = "Pilihan cincin tunangan elegan bertahtakan berlian potongan brilliant dan ring box beludru mewah.",
             gradientColors = listOf(0xFF78350F, 0xFFD97706, 0xFFFEF3C7)
         ),
         InspirationItem(
             id = "insp-5",
             title = "Classic Tiered Naked Cake",
             category = "Cakes",
-            description = "Kue pengantin 3 tingkat bertabur buah berry dan edible flowers",
+            description = "Kue pengantin 3 tingkat bertabur buah berry segar, edible flowers dan aksen lelehan salted caramel.",
             gradientColors = listOf(0xFF831843, 0xFFBE185D, 0xFFFCE7F3)
         ),
         InspirationItem(
             id = "insp-6",
             title = "Foil-Pressed Monogram Invitation",
             category = "Invitations",
-            description = "Kertas bertekstur linen dengan cetak foil emas timbul dan segel lilin",
+            description = "Kertas bertekstur linen tebal dengan cetak foil emas timbul, ribbon sutra dan wax seal stempel cap lilin.",
             gradientColors = listOf(0xFF1E1B4B, 0xFF4F46E5, 0xFFC7D2FE)
+        )
+    )
+
+    val PHOTO_PRESETS = listOf(
+        PhotoPresetItem(
+            id = "preset_warm_film",
+            name = "Warm 35mm Film",
+            toneTag = "Cinematic Grain",
+            temp = "+12 (Warm)",
+            tint = "+4 (Magenta)",
+            exposure = "+0.25 EV",
+            contrast = "+15",
+            highlights = "-20",
+            shadows = "+25",
+            tintColorHex = 0x2CFFA726,
+            tintAlpha = 0.14f,
+            description = "Estetika analog bernuansa hangat dengan highlight halus dan kontras film klasik."
+        ),
+        PhotoPresetItem(
+            id = "preset_golden_hour",
+            name = "Golden Amber Glow",
+            toneTag = "Sunset Mood",
+            temp = "+22 (Golden)",
+            tint = "+8",
+            exposure = "+0.35 EV",
+            contrast = "+20",
+            highlights = "-35",
+            shadows = "+30",
+            tintColorHex = 0x33FFB300,
+            tintAlpha = 0.20f,
+            description = "Menonjolkan kilau emas senja dan warna kulit yang bercahaya alami (radiant glow)."
+        ),
+        PhotoPresetItem(
+            id = "preset_clean_editorial",
+            name = "Clean Editorial Pastel",
+            toneTag = "Vogue & Harpers",
+            temp = "-4 (Cool Clean)",
+            tint = "+2",
+            exposure = "+0.40 EV",
+            contrast = "-5 (Soft)",
+            highlights = "-15",
+            shadows = "+40",
+            tintColorHex = 0x1E81D4FA,
+            tintAlpha = 0.08f,
+            description = "Tone bersih modern dengan bayangan terang dan warna floral yang lembut natural."
+        ),
+        PhotoPresetItem(
+            id = "preset_teal_orange",
+            name = "Teal & Warm Bronze",
+            toneTag = "Hollywood Drama",
+            temp = "+6",
+            tint = "-10 (Teal Shadows)",
+            exposure = "+0.10 EV",
+            contrast = "+30",
+            highlights = "-40",
+            shadows = "+10",
+            tintColorHex = 0x2B00838F,
+            tintAlpha = 0.16f,
+            description = "Gradasi warna sinematik Hollywood kontras tinggi dengan bayangan teal dan kulit perunggu."
+        ),
+        PhotoPresetItem(
+            id = "preset_monochrome_royal",
+            name = "Royal B&W Timeless",
+            toneTag = "Classic Monochrome",
+            temp = "0",
+            tint = "0",
+            exposure = "+0.20 EV",
+            contrast = "+45",
+            highlights = "-10",
+            shadows = "+15",
+            tintColorHex = 0x55212121,
+            tintAlpha = 0.45f,
+            description = "Hitam putih sakral berkarakter mendalam yang menonjolkan emosi dan detail gaun."
+        )
+    )
+
+    val VIDEO_TEMPLATES = listOf(
+        VideoTemplateItem(
+            id = "vid_reels_teaser",
+            title = "Teaser Reels & TikTok 9:16",
+            format = "9:16 Vertikal Fullscreen",
+            duration = "30 Detik",
+            bpm = "118 BPM",
+            musicStyle = "Acoustic Pop Romance / Indie Strings",
+            description = "Transisi cepat berirama beat musik, sangat cocok untuk teaser akad nikah, pamer kebaya, dan detail cincin.",
+            drawableRes = R.drawable.img_video_reels_template,
+            cameraGear = "Sony A7S III / Canon R5 + 50mm f/1.2 & Gimbal RS3",
+            colorLut = "Warm Kodak Portra 400 LUT",
+            sceneBeats = listOf(
+                VideoSceneBeat("00:00 - 00:04", "Opening macro shot cincin nikah & sepatu pengantin", "Close Up / Macro", "Slow Zoom In"),
+                VideoSceneBeat("00:04 - 00:10", "Bride makeup reveal & sentuhan paes adat Sunda", "Medium Shot", "Whip Pan Transition"),
+                VideoSceneBeat("00:10 - 00:18", "First look & tatapan intim kedua mempelai di taman", "Over-The-Shoulder", "Lens Flare Burn"),
+                VideoSceneBeat("00:18 - 00:25", "Momen sakral ijab qabul & senyum haru keluarga", "Slow Motion 60fps", "Smooth Crossfade"),
+                VideoSceneBeat("00:25 - 00:30", "Jalan bersama di lorong lampu fairy lights & confetti", "Wide Tracking Shot", "Fade Out to Title")
+            )
+        ),
+        VideoTemplateItem(
+            id = "vid_cinematic_film",
+            title = "Cinematic Wedding Highlight 16:9",
+            format = "16:9 Widescreen Cinema",
+            duration = "3 - 5 Menit",
+            bpm = "75 - 90 BPM",
+            musicStyle = "Cinematic Orchestral & Emotional Piano",
+            description = "Dokumentasi sinematik bergaya film layar lebar yang merekam seluruh emosi prosesi dari akad hingga resepsi megah.",
+            drawableRes = R.drawable.img_video_cinema_template,
+            cameraGear = "FX3 / RED Komodo + Anamorphic 35mm & 85mm Prime",
+            colorLut = "Arri Alexa Teal & Amber Cinema Grade",
+            sceneBeats = listOf(
+                VideoSceneBeat("00:00 - 00:45", "Suasana pagi venue, dedaunan berembun & dekorasi pelaminan", "Wide Establishing & Drone", "Ambient Fade"),
+                VideoSceneBeat("00:45 - 01:30", "Prosesi sungkeman mohon restu orang tua penuh haru", "Low Angle Portrait", "Soft Dissolve"),
+                VideoSceneBeat("01:30 - 02:45", "Ijab qabul dengan audio janji suci jernih tanpa noise", "Multi-Cam Two-Shot", "Beat-synced Cut"),
+                VideoSceneBeat("02:45 - 04:15", "Grand entrance resepsi ballroom & dansa pertama (first dance)", "Gimbal 360 Rotation", "Light Leak Flare"),
+                VideoSceneBeat("04:15 - 05:00", "Lempar buket bunga, kebersamaan sahabat & kembang api", "Slow Motion 120fps", "Cinematic Dip to Black")
+            )
         )
     )
 

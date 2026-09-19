@@ -121,11 +121,20 @@ object EventRepository {
         return updated
     }
 
-    fun checkInByQrPayload(payload: String): Pair<Boolean, String> {
-        // format: JSON or id
-        val guest = _guests.value.find { g ->
-            payload.contains(g.id) || (g.name.isNotEmpty() && payload.contains(g.name, ignoreCase = true))
+    fun findGuestByCodeOrIdentifier(identifier: String): Guest? {
+        val clean = identifier.trim()
+        return _guests.value.find { g ->
+            g.checkInCode.equals(clean, ignoreCase = true) ||
+                    g.id.equals(clean, ignoreCase = true) ||
+                    clean.contains("code=${g.checkInCode}", ignoreCase = true) ||
+                    clean.contains("id=${g.id}", ignoreCase = true) ||
+                    (clean.length >= 3 && g.name.contains(clean, ignoreCase = true)) ||
+                    (g.phone.isNotBlank() && clean.contains(g.phone))
         }
+    }
+
+    fun checkInByQrPayload(payload: String): Pair<Boolean, String> {
+        val guest = findGuestByCodeOrIdentifier(payload)
         return if (guest != null) {
             if (guest.isCheckedIn) {
                 Pair(true, "${guest.name} sudah check-in sebelumnya (${guest.checkInTime}).")
@@ -134,7 +143,7 @@ object EventRepository {
                 Pair(true, "Berhasil Check-In: ${guest.name} (${guest.pax} Pax) • Meja: ${guest.tableNumber}")
             }
         } else {
-            Pair(false, "QR E-Pass tidak dikenali atau tamu tidak terdaftar.")
+            Pair(false, "QR Link / Kode Check-In tidak dikenali atau tamu tidak terdaftar.")
         }
     }
 
