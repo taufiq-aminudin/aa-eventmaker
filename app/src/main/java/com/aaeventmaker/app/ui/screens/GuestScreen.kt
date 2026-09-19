@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaeventmaker.app.data.EventRepository
@@ -62,6 +65,12 @@ fun GuestScreen(
     var showBatchQrDialog by remember { mutableStateOf(false) }
     var showAddGuestDialog by remember { mutableStateOf(false) }
     var showScannerDialog by remember { mutableStateOf(initialOpenScanner) }
+    var showEmailCampaignDialog by remember { mutableStateOf(false) }
+    var selectedGuestForEmail by remember { mutableStateOf<Guest?>(null) }
+    var emailCampaignInitialTab by remember { mutableStateOf(0) }
+
+    val autoRsvpConfig by EventRepository.autoRsvpConfig.collectAsState()
+    val currentProject by EventRepository.currentProject.collectAsState()
 
     val totalPax = guests.sumOf { it.pax }
     val confirmedPax = guests.filter { it.rsvpStatus.equals("Confirmed", ignoreCase = true) }.sumOf { it.pax }
@@ -120,28 +129,51 @@ fun GuestScreen(
                         Text("Daftar Tamu & E-Pass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text("Total: ${guests.size} Undangan ($totalPax Pax) • Link Unik Aktif", style = MaterialTheme.typography.bodySmall, color = MutedText)
                     }
+                }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(
-                            onClick = { showBatchQrDialog = true },
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Hub Link & QR", fontSize = 12.sp)
-                        }
+                Spacer(modifier = Modifier.height(10.dp))
 
-                        Button(
-                            onClick = { showScannerDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = InkDark),
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Scan QR", fontSize = 12.sp)
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            selectedGuestForEmail = null
+                            showEmailCampaignDialog = true
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFFF3E8FF), contentColor = PurplePrimary),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Email & RSVP", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    FilledTonalButton(
+                        onClick = { showBatchQrDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Hub Link & QR", fontSize = 11.sp)
+                    }
+
+                    Button(
+                        onClick = { showScannerDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = InkDark),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Scan QR", fontSize = 11.sp)
                     }
                 }
             }
@@ -183,7 +215,159 @@ fun GuestScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Automated RSVP Reminder Status Banner & Trigger Widget
+            val pendingGuests = remember(guests) {
+                guests.filter {
+                    it.rsvpStatus.equals("Pending", ignoreCase = true) ||
+                    it.rsvpStatus.equals("Maybe", ignoreCase = true) ||
+                    it.rsvpStatus.isBlank()
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (pendingGuests.isNotEmpty()) Color(0xFFFAF5FF) else Color(0xFFF8FAFC)
+                ),
+                border = BorderStroke(
+                    1.2.dp,
+                    if (pendingGuests.isNotEmpty()) Color(0xFFD8B4FE) else Color(0xFFE2E8F0)
+                )
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (autoRsvpConfig.isEnabled) PurplePrimary else Color(0xFF94A3B8)
+                            ) {
+                                Icon(
+                                    Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .padding(5.dp)
+                                        .size(16.dp)
+                                )
+                            }
+
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        "Otomatisasi Pengingat RSVP",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = InkDark
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (autoRsvpConfig.isEnabled) Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+                                    ) {
+                                        Text(
+                                            text = if (autoRsvpConfig.isEnabled) "Aktif" else "Jeda",
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (autoRsvpConfig.isEnabled) Color(0xFF166534) else Color(0xFF64748B)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    if (pendingGuests.isNotEmpty())
+                                        "${pendingGuests.size} tamu belum konfirmasi RSVP"
+                                    else
+                                        "Semua tamu telah konfirmasi RSVP!",
+                                    fontSize = 11.sp,
+                                    color = if (pendingGuests.isNotEmpty()) Color(0xFF7C3AED) else EmeraldSuccess,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // Trigger Now Action Button
+                        Button(
+                            onClick = {
+                                if (pendingGuests.isNotEmpty()) {
+                                    val (count, names) = EventRepository.triggerPendingRsvpRemindersNow(
+                                        triggerSource = "Quick Trigger Guest Screen"
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        "⚡ Auto-reminder berhasil dikirim ke $count tamu: ${names.joinToString(", ")}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, "Semua tamu sudah konfirmasi kehadiran!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (pendingGuests.isNotEmpty()) PurplePrimary else Color(0xFF94A3B8)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (pendingGuests.isNotEmpty()) "Trigger (${pendingGuests.size})" else "RSVP Lengkap",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Schedule, contentDescription = null, tint = MutedText, modifier = Modifier.size(12.dp))
+                            Text(
+                                "Jadwal: H-7, H-3, H-1 • Dikecualikan otomatis setelah RSVP",
+                                fontSize = 10.sp,
+                                color = MutedText
+                            )
+                        }
+
+                        TextButton(
+                            onClick = {
+                                selectedGuestForEmail = null
+                                emailCampaignInitialTab = 0
+                                showEmailCampaignDialog = true
+                            },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        ) {
+                            Text("Atur Jadwal", fontSize = 11.sp, color = PurplePrimary, fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(12.dp), tint = PurplePrimary)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Search Bar
             OutlinedTextField(
@@ -249,6 +433,16 @@ fun GuestScreen(
                                 EventRepository.checkInGuest(guest.id)
                                 vibrateDevice(context)
                                 Toast.makeText(context, "${guest.name} berhasil check-in!", Toast.LENGTH_SHORT).show()
+                            },
+                            onSendEmail = {
+                                selectedGuestForEmail = guest
+                                emailCampaignInitialTab = 1
+                                showEmailCampaignDialog = true
+                            },
+                            onNudgeRsvp = {
+                                selectedGuestForEmail = guest
+                                emailCampaignInitialTab = 0
+                                showEmailCampaignDialog = true
                             }
                         )
                     }
@@ -308,6 +502,21 @@ fun GuestScreen(
                 val checked = EventRepository.checkInGuest(guestId)
                 vibrateDevice(context)
                 checked
+            }
+        )
+    }
+
+    // Email Template Engine & Scheduling Dialog
+    if (showEmailCampaignDialog) {
+        GuestEmailCampaignDialog(
+            guests = guests,
+            invitation = invitation,
+            project = currentProject,
+            initialGuest = selectedGuestForEmail,
+            initialTab = emailCampaignInitialTab,
+            onDismiss = {
+                showEmailCampaignDialog = false
+                selectedGuestForEmail = null
             }
         )
     }
@@ -420,8 +629,14 @@ fun GuestItemCard(
     onViewPass: () -> Unit,
     onPreviewWeb: () -> Unit,
     onCopyLink: () -> Unit,
-    onCheckIn: () -> Unit
+    onCheckIn: () -> Unit,
+    onSendEmail: () -> Unit = {},
+    onNudgeRsvp: () -> Unit = {}
 ) {
+    val isPendingRsvp = guest.rsvpStatus.equals("Pending", ignoreCase = true) ||
+            guest.rsvpStatus.equals("Maybe", ignoreCase = true) ||
+            guest.rsvpStatus.isBlank()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -491,6 +706,42 @@ fun GuestItemCard(
                 }
             }
 
+            // Pending RSVP Alert Bar
+            if (isPendingRsvp) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFFFFBEB),
+                    border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(13.dp))
+                            Text("Menunggu konfirmasi RSVP", fontSize = 11.sp, color = Color(0xFF92400E), fontWeight = FontWeight.Medium)
+                        }
+
+                        TextButton(
+                            onClick = onNudgeRsvp,
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Kirim Pengingat", fontSize = 11.sp, color = Color(0xFFB45309), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
             Divider()
             Spacer(modifier = Modifier.height(8.dp))
@@ -530,6 +781,14 @@ fun GuestItemCard(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(Icons.Default.Link, contentDescription = "Salin Link", tint = PurplePrimary, modifier = Modifier.size(18.dp))
+                    }
+
+                    // Quick Email Draft/Send button
+                    IconButton(
+                        onClick = onSendEmail,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Email, contentDescription = "Draf & Kirim Email", tint = PurplePrimary, modifier = Modifier.size(18.dp))
                     }
                 }
 

@@ -241,7 +241,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     title = "RSVP TAMU",
                     value = "$confirmedPax / $totalPax",
-                    subtitle = "$checkedInCount Check-In",
+                    subtitle = "${guests.count { it.rsvpStatus == "Pending" || it.rsvpStatus == "Maybe" }} Belum RSVP",
                     icon = Icons.Default.People,
                     iconTint = PurplePrimary
                 )
@@ -253,6 +253,70 @@ fun HomeScreen(
                     icon = Icons.Default.CheckCircle,
                     iconTint = EmeraldSuccess
                 )
+            }
+        }
+
+        // Auto RSVP Status Banner
+        val pendingCount = guests.count { it.rsvpStatus.equals("Pending", ignoreCase = true) || it.rsvpStatus.equals("Maybe", ignoreCase = true) }
+        if (pendingCount > 0) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToTab(2) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF5FF)),
+                    border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFD8B4FE))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = PurplePrimary
+                            ) {
+                                Icon(
+                                    Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .padding(6.dp)
+                                        .size(16.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    "Otomatisasi RSVP Aktif",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = InkDark
+                                )
+                                Text(
+                                    "$pendingCount tamu belum merespon • Ketuk untuk kelola & trigger pengingat",
+                                    fontSize = 11.sp,
+                                    color = PurplePrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = PurplePrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
 
@@ -306,7 +370,7 @@ fun HomeScreen(
                         iconBg = Color(0xFFFCE7F3),
                         iconTint = PinkAccent,
                         title = "Guest Manager",
-                        desc = "RSVP & E-Pass",
+                        desc = "RSVP & Auto-Reminder",
                         onClick = { onNavigateToTab(2) }
                     )
                 }

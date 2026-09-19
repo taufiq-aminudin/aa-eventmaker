@@ -157,3 +157,102 @@ data class TemplateItem(
     val gradientColors: List<Long>,
     val description: String
 )
+
+enum class EmailTemplateCategory(val displayName: String) {
+    INVITATION("Undangan Resmi"),
+    RSVP_REMINDER("Pengingat RSVP"),
+    VENUE_GUIDE("Panduan Hari-H & E-Pass"),
+    THANK_YOU("Ucapan Terima Kasih")
+}
+
+data class EmailTemplate(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val category: EmailTemplateCategory,
+    val subject: String,
+    val body: String,
+    val isDefault: Boolean = false,
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+enum class CampaignTarget(val displayName: String, val description: String) {
+    ALL("Semua Tamu", "Kirim ke seluruh daftar tamu terdaftar"),
+    PENDING_RSVP("Belum Konfirmasi RSVP", "Tamu dengan status 'Pending' atau 'Maybe'"),
+    CONFIRMED_RSVP("Sudah Konfirmasi Hadir", "Tamu yang sudah konfirmasi 'Confirmed'"),
+    VIP_FAMILY("Tamu VIP & Keluarga", "Tamu dalam kelompok VIP dan Keluarga")
+}
+
+enum class ScheduleTiming(val displayName: String, val offsetLabel: String) {
+    IMMEDIATE("Kirim Sekarang (Direct Dispatch)", "Sekarang"),
+    H_MINUS_7("H-7 Sebelum Acara", "7 hari sebelum acara (Pagi)"),
+    H_MINUS_3("H-3 Sebelum Acara", "3 hari sebelum acara (Siang)"),
+    H_MINUS_1("H-1 Menjelang Acara", "1 hari sebelum acara (08:00 WIB)"),
+    CUSTOM("Jadwal Tanggal & Jam Khusus", "Pilih tanggal & jam khusus")
+}
+
+enum class CampaignStatus(val displayName: String) {
+    DRAFT("Draf"),
+    SCHEDULED("Terjadwal"),
+    SENT("Terkirim")
+}
+
+data class EmailScheduleCampaign(
+    val id: String = UUID.randomUUID().toString(),
+    val projectId: String,
+    val title: String,
+    val templateId: String,
+    val subject: String,
+    val bodyTemplate: String,
+    val target: CampaignTarget,
+    val scheduleTiming: ScheduleTiming,
+    val scheduledTimeDisplay: String,
+    val status: CampaignStatus = CampaignStatus.DRAFT,
+    val recipientCount: Int = 0,
+    val sentAt: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+data class AutoReminderRule(
+    val id: String = UUID.randomUUID().toString(),
+    val title: String,
+    val timing: ScheduleTiming,
+    val scheduledTimeDisplay: String,
+    val isEnabled: Boolean = true,
+    val lastTriggered: String? = null,
+    val totalDispatched: Int = 0
+)
+
+data class AutoReminderLog(
+    val id: String = UUID.randomUUID().toString(),
+    val timestamp: String,
+    val recipientCount: Int,
+    val recipientNames: List<String>,
+    val triggerSource: String,
+    val summary: String = ""
+)
+
+data class AutoRsvpSchedulerConfig(
+    val projectId: String,
+    val isEnabled: Boolean = true,
+    val rules: List<AutoReminderRule> = emptyList(),
+    val emailSubject: String = "Pengingat Konfirmasi RSVP: {{event_title}} ({{guest_name}})",
+    val emailBody: String = """Halo {{first_name}},
+
+Mengingat hari bahagia {{event_title}} semakin dekat pada {{event_date}} di {{venue}}, kami mencatat bahwa Anda belum mengonfirmasi kehadiran.
+
+Mohon bantu kami mempersiapkan jamuan terbaik dengan mengonfirmasi kehadiran Anda melalui tautan RSVP personal berikut:
+{{check_in_url}}
+
+Detail Undangan:
+- Kuota: {{pax}} Pax • Meja: {{table_number}}
+- Kode E-Pass: {{check_in_code}}
+
+Konfirmasi kehadiran Anda sangat berarti bagi kelancaran acara kami. Terima kasih banyak!
+
+Salam hangat,
+{{hosts}}""".trimIndent(),
+    val lastTriggeredTime: String? = null,
+    val totalRemindersSent: Int = 0,
+    val logs: List<AutoReminderLog> = emptyList()
+)
+

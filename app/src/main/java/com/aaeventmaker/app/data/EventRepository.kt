@@ -35,6 +35,15 @@ object EventRepository {
     private val _memories = MutableStateFlow<List<MemoryItem>>(SampleData.createInitialMemories(initialProj.id))
     val memories: StateFlow<List<MemoryItem>> = _memories.asStateFlow()
 
+    private val _emailTemplates = MutableStateFlow<List<EmailTemplate>>(com.aaeventmaker.app.util.EmailTemplateEngine.DEFAULT_TEMPLATES)
+    val emailTemplates: StateFlow<List<EmailTemplate>> = _emailTemplates.asStateFlow()
+
+    private val _campaigns = MutableStateFlow<List<EmailScheduleCampaign>>(SampleData.createInitialCampaigns(initialProj.id))
+    val campaigns: StateFlow<List<EmailScheduleCampaign>> = _campaigns.asStateFlow()
+
+    private val _autoRsvpConfig = MutableStateFlow<AutoRsvpSchedulerConfig>(SampleData.createInitialAutoRsvpConfig(initialProj.id))
+    val autoRsvpConfig: StateFlow<AutoRsvpSchedulerConfig> = _autoRsvpConfig.asStateFlow()
+
     // AI Creator state
     private val _aiDraftResult = MutableStateFlow<AiConceptResult?>(
         AiConceptResult(
@@ -243,7 +252,192 @@ object EventRepository {
             photoDirection = "Soft cinematic portraiture, warm tungsten illumination, editorial framing dengan busana modern"
         )
     }
+
+    // Email Template & Campaign Methods
+    fun saveEmailTemplate(template: EmailTemplate) {
+        val exists = _emailTemplates.value.any { it.id == template.id }
+        if (exists) {
+            _emailTemplates.value = _emailTemplates.value.map { if (it.id == template.id) template else it }
+        } else {
+            _emailTemplates.value = _emailTemplates.value + template
+        }
+    }
+
+    fun deleteEmailTemplate(templateId: String) {
+        _emailTemplates.value = _emailTemplates.value.filterNot { it.id == templateId }
+    }
+
+    fun scheduleCampaign(
+        title: String,
+        templateId: String,
+        subject: String,
+        bodyTemplate: String,
+        target: CampaignTarget,
+        scheduleTiming: ScheduleTiming,
+        customTimeDisplay: String = ""
+    ): EmailScheduleCampaign {
+        val timingDisplay = when (scheduleTiming) {
+            ScheduleTiming.IMMEDIATE -> "Langsung Dikirim"
+            ScheduleTiming.H_MINUS_7 -> "H-7 Sebelum Acara (17 Okt 2026, 09:00 WIB)"
+            ScheduleTiming.H_MINUS_3 -> "H-3 Sebelum Acara (21 Okt 2026, 10:00 WIB)"
+            ScheduleTiming.H_MINUS_1 -> "H-1 Hari-H (23 Okt 2026, 08:00 WIB)"
+            ScheduleTiming.CUSTOM -> customTimeDisplay.ifBlank { "Tanggal Kustom" }
+        }
+        val targetGuests = com.aaeventmaker.app.util.EmailTemplateEngine.filterRecipients(target, _guests.value)
+        val initialStatus = if (scheduleTiming == ScheduleTiming.IMMEDIATE) CampaignStatus.SENT else CampaignStatus.SCHEDULED
+        val sentTime = if (scheduleTiming == ScheduleTiming.IMMEDIATE) {
+            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
+        } else null
+
+        val campaign = EmailScheduleCampaign(
+            projectId = _currentProject.value.id,
+            title = title,
+            templateId = templateId,
+            subject = subject,
+            bodyTemplate = bodyTemplate,
+            target = target,
+            scheduleTiming = scheduleTiming,
+            scheduledTimeDisplay = timingDisplay,
+            status = initialStatus,
+            recipientCount = targetGuests.size,
+            sentAt = sentTime
+        )
+        _campaigns.value = listOf(campaign) + _campaigns.value
+        return campaign
+    }
+
+    fun updateCampaignStatus(id: String, newStatus: CampaignStatus) {
+        val now = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
+        _campaigns.value = _campaigns.value.map {
+            if (it.id == id) {
+                it.copy(
+                    status = newStatus,
+                    sentAt = if (newStatus == CampaignStatus.SENT) now else it.sentAt
+                )
+            } else it
+        }
+    }
+
+    fun deleteCampaign(id: String) {
+        _campaigns.value = _campaigns.value.filterNot { it.id == id }
+    }
+
+    // Automated RSVP Reminder Scheduler Methods
+    fun toggleAutoRsvpScheduler(enabled: Boolean) {
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(isEnabled = enabled)
+    }
+
+    fun toggleAutoReminderRule(ruleId: String, enabled: Boolean) {
+        val updatedRules = _autoRsvpConfig.value.rules.map {
+            if (it.id == ruleId) it.copy(isEnabled = enabled) else it
+        }
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(rules = updatedRules)
+    }
+
+    fun addOrUpdateAutoReminderRule(rule: AutoReminderRule) {
+        val exists = _autoRsvpConfig.value.rules.any { it.id == rule.id }
+        val newRules = if (exists) {
+            _autoRsvpConfig.value.rules.map { if (it.id == rule.id) rule else it }
+        } else {
+            _autoRsvpConfig.value.rules + rule
+        }
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(rules = newRules)
+    }
+
+    fun deleteAutoReminderRule(ruleId: String) {
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(
+            rules = _autoRsvpConfig.value.rules.filterNot { it.id == ruleId }
+        )
+    }
+
+    fun updateAutoReminderTemplate(subject: String, body: String) {
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(
+            emailSubject = subject,
+            emailBody = body
+        )
+    }
+
+    fun triggerPendingRsvpRemindersNow(triggerSource: String = "Trigger Manual Planners"): Pair<Int, List<String>> {
+        val pendingGuests = _guests.value.filter {
+            it.rsvpStatus.equals("Pending", ignoreCase = true) ||
+            it.rsvpStatus.equals("Maybe", ignoreCase = true)
+        }
+
+        val now = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.getDefault()).format(Date())
+        val recipientNames = pendingGuests.map { it.name }
+        val count = pendingGuests.size
+
+        if (count > 0) {
+            // Create a campaign history entry
+            val campaign = EmailScheduleCampaign(
+                projectId = _currentProject.value.id,
+                title = "Otomatisasi RSVP: Pengingat untuk ${count} Tamu Pending",
+                templateId = "tmpl_rsvp_reminder",
+                subject = _autoRsvpConfig.value.emailSubject,
+                bodyTemplate = _autoRsvpConfig.value.emailBody,
+                target = CampaignTarget.PENDING_RSVP,
+                scheduleTiming = ScheduleTiming.IMMEDIATE,
+                scheduledTimeDisplay = "Dieksekusi ($now)",
+                status = CampaignStatus.SENT,
+                recipientCount = count,
+                sentAt = now
+            )
+            _campaigns.value = listOf(campaign) + _campaigns.value
+
+            // Add an audit log entry
+            val newLog = AutoReminderLog(
+                timestamp = now,
+                recipientCount = count,
+                recipientNames = recipientNames,
+                triggerSource = triggerSource,
+                summary = "Berhasil mengirim pengingat RSVP email ke $count tamu yang belum merespon"
+            )
+
+            _autoRsvpConfig.value = _autoRsvpConfig.value.copy(
+                lastTriggeredTime = now,
+                totalRemindersSent = _autoRsvpConfig.value.totalRemindersSent + count,
+                logs = listOf(newLog) + _autoRsvpConfig.value.logs
+            )
+        }
+
+        return Pair(count, recipientNames)
+    }
+
+    fun sendSingleRsvpReminder(guestId: String): Guest? {
+        val guest = _guests.value.find { it.id == guestId } ?: return null
+        val now = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.getDefault()).format(Date())
+
+        val campaign = EmailScheduleCampaign(
+            projectId = _currentProject.value.id,
+            title = "Pengingat RSVP Personal: ${guest.name}",
+            templateId = "tmpl_rsvp_reminder",
+            subject = _autoRsvpConfig.value.emailSubject,
+            bodyTemplate = _autoRsvpConfig.value.emailBody,
+            target = CampaignTarget.PENDING_RSVP,
+            scheduleTiming = ScheduleTiming.IMMEDIATE,
+            scheduledTimeDisplay = "Direct ($now)",
+            status = CampaignStatus.SENT,
+            recipientCount = 1,
+            sentAt = now
+        )
+        _campaigns.value = listOf(campaign) + _campaigns.value
+
+        val newLog = AutoReminderLog(
+            timestamp = now,
+            recipientCount = 1,
+            recipientNames = listOf(guest.name),
+            triggerSource = "Nudge Personal Tamu",
+            summary = "Pengingat RSVP personal dikirim khusus ke ${guest.name}"
+        )
+        _autoRsvpConfig.value = _autoRsvpConfig.value.copy(
+            lastTriggeredTime = now,
+            totalRemindersSent = _autoRsvpConfig.value.totalRemindersSent + 1,
+            logs = listOf(newLog) + _autoRsvpConfig.value.logs
+        )
+        return guest
+    }
 }
+
 
 data class AiConceptResult(
     val prompt: String,

@@ -478,4 +478,94 @@ object SampleData {
             )
         )
     }
+
+    fun createInitialCampaigns(projectId: String): List<EmailScheduleCampaign> {
+        return listOf(
+            EmailScheduleCampaign(
+                projectId = projectId,
+                title = "Blast Undangan Resmi & E-Pass",
+                templateId = "tmpl_formal_invitation",
+                subject = "Undangan Pernikahan: {{event_title}} - {{guest_name}}",
+                bodyTemplate = """Kepada Yth. Bapak/Ibu/Saudara/i {{guest_name}},
+
+Dengan penuh rasa syukur, kami mengundang Anda untuk hadir pada acara {{event_title}} pada {{event_date}} di {{venue}}.
+
+Detail Undangan:
+- Kuota: {{pax}} Pax • Meja: {{table_number}}
+- Kode E-Pass: {{check_in_code}}
+- Tautan Check-In Personal: {{check_in_url}}
+
+Salam hangat,
+{{hosts}}""".trimIndent(),
+                target = CampaignTarget.ALL,
+                scheduleTiming = ScheduleTiming.H_MINUS_7,
+                scheduledTimeDisplay = "17 Okt 2026, 09:00 WIB",
+                status = CampaignStatus.SCHEDULED,
+                recipientCount = 6
+            ),
+            EmailScheduleCampaign(
+                projectId = projectId,
+                title = "Pengingat Konfirmasi RSVP Final",
+                templateId = "tmpl_rsvp_reminder",
+                subject = "Pengingat Konfirmasi Kehadiran: {{event_title}} ({{guest_name}})",
+                bodyTemplate = """Halo {{first_name}},
+
+Mengingat hari bahagia {{event_title}} semakin dekat ({{event_date}} di {{venue}}), mohon konfirmasi kehadiran Anda melalui:
+{{check_in_url}}
+
+Terima kasih banyak,
+{{hosts}}""".trimIndent(),
+                target = CampaignTarget.PENDING_RSVP,
+                scheduleTiming = ScheduleTiming.H_MINUS_3,
+                scheduledTimeDisplay = "21 Okt 2026, 10:00 WIB",
+                status = CampaignStatus.DRAFT,
+                recipientCount = 2
+            )
+        )
+    }
+
+    fun createInitialAutoRsvpConfig(projectId: String): AutoRsvpSchedulerConfig {
+        return AutoRsvpSchedulerConfig(
+            projectId = projectId,
+            isEnabled = true,
+            rules = listOf(
+                AutoReminderRule(
+                    title = "Pengingat Pertama (H-7)",
+                    timing = ScheduleTiming.H_MINUS_7,
+                    scheduledTimeDisplay = "17 Okt 2026, 09:00 WIB (H-7)",
+                    isEnabled = true,
+                    lastTriggered = null,
+                    totalDispatched = 0
+                ),
+                AutoReminderRule(
+                    title = "Pengingat Intensif (H-3)",
+                    timing = ScheduleTiming.H_MINUS_3,
+                    scheduledTimeDisplay = "21 Okt 2026, 10:00 WIB (H-3)",
+                    isEnabled = true,
+                    lastTriggered = null,
+                    totalDispatched = 0
+                ),
+                AutoReminderRule(
+                    title = "Pengingat Final Katering (H-1)",
+                    timing = ScheduleTiming.H_MINUS_1,
+                    scheduledTimeDisplay = "23 Okt 2026, 08:00 WIB (H-1)",
+                    isEnabled = false,
+                    lastTriggered = null,
+                    totalDispatched = 0
+                )
+            ),
+            lastTriggeredTime = "12 Okt 2026, 14:30 WIB",
+            totalRemindersSent = 4,
+            logs = listOf(
+                AutoReminderLog(
+                    timestamp = "12 Okt 2026, 14:30 WIB",
+                    recipientCount = 4,
+                    recipientNames = listOf("dr. Siti Nurhaliza, Sp.A", "Bambang Pamungkas", "Rizky Firmansyah", "Dimas Anggara"),
+                    triggerSource = "Simulasi Jadwal Awal",
+                    summary = "Reminder blast berhasil dikirimkan ke 4 tamu pending"
+                )
+            )
+        )
+    }
 }
+
