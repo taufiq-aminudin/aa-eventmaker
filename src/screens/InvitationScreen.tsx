@@ -1,0 +1,385 @@
+import React, { useState } from 'react';
+import {
+  Mail,
+  Check,
+  Eye,
+  Globe,
+  Share2,
+  Copy,
+  Sparkles,
+  Palette,
+  ExternalLink,
+} from 'lucide-react';
+import { useEvent } from '../context/EventContext';
+
+export const InvitationScreen: React.FC = () => {
+  const {
+    invitation,
+    updateInvitation,
+    selectTemplate,
+    templates,
+    currentProject,
+    setShowPublicPreview,
+    showToast,
+  } = useEvent();
+
+  const [formData, setFormData] = useState({
+    title: invitation.title,
+    hosts: invitation.hosts,
+    opening: invitation.opening,
+    date: invitation.date,
+    time: invitation.time,
+    venue: invitation.venue,
+    address: invitation.address,
+    slug: invitation.slug,
+    isPublished: invitation.isPublished,
+  });
+
+  const [copied, setCopied] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  const categories = ['All', 'Wedding', 'Adat Heritage', 'Modern', 'Birthday', 'Corporate'];
+
+  const filteredTemplates =
+    selectedCategory === 'All'
+      ? templates
+      : templates.filter((t) => t.category === selectedCategory);
+
+  const handleInputChange = (field: string, val: any) => {
+    setFormData((prev) => ({ ...prev, [field]: val }));
+    updateInvitation({ [field]: val });
+  };
+
+  const handleCopyLink = () => {
+    const publicUrl = `${window.location.origin}/#invitation/${formData.slug}`;
+    navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    showToast('Tautan undangan disalin!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div id="invitation-screen" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center space-x-2">
+            <Mail className="w-5 h-5 text-[#6d28d9]" />
+            <h1 className="text-lg font-bold text-slate-900">Pembuat Undangan Digital (E-Invitation)</h1>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Pilih tema estetik, kustomisasi informasi acara, dan bagikan tautan kepada tamu undangan.
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleCopyLink}
+            className="px-3.5 py-2 text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors flex items-center space-x-1.5"
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? 'Tersalin' : 'Salin Tautan'}</span>
+          </button>
+          <button
+            onClick={() => setShowPublicPreview(true)}
+            className="px-4 py-2 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-opacity flex items-center space-x-1.5"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Lihat Fullscreen</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Template Gallery Section */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <Palette className="w-4 h-4 text-[#6d28d9]" />
+            <h2 className="text-sm font-bold text-slate-900">Pilihan Tema & Gaya Undangan</h2>
+            <span className="text-xs text-slate-500">
+              (Tema Aktif: <strong className="text-[#6d28d9]">{invitation.templateName}</strong>)
+            </span>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === cat
+                    ? 'bg-purple-100 text-[#6d28d9] font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTemplates.map((tmpl) => {
+            const isSelected = invitation.templateName === tmpl.title;
+            return (
+              <div
+                key={tmpl.id}
+                onClick={() => selectTemplate(tmpl.title)}
+                className={`rounded-2xl border p-4 transition-all cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-[#6d28d9] bg-purple-50/40 shadow-sm ring-2 ring-purple-400/20'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                }`}
+              >
+                <div>
+                  {/* Visual Header */}
+                  <div
+                    className={`h-24 rounded-xl ${tmpl.gradientTheme} p-3 flex flex-col justify-between text-white relative overflow-hidden shadow-inner mb-3`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white">
+                        {tmpl.styleTag}
+                      </span>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-white text-[#6d28d9] flex items-center justify-center shadow-md">
+                          <Check className="w-4 h-4 stroke-[3]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs font-serif font-bold text-white drop-shadow-sm">
+                      {tmpl.title}
+                    </div>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-slate-900">{tmpl.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{tmpl.description}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-medium">{tmpl.category}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectTemplate(tmpl.title);
+                    }}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                      isSelected
+                        ? 'bg-[#6d28d9] text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {isSelected ? 'Terpilih' : 'Terapkan'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Editor & Interactive Live Preview Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Editor Form (7 cols) */}
+        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-bold text-slate-900">Formulir Informasi Undangan</h2>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-slate-500">Status Undangan:</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublished}
+                  onChange={(e) => handleInputChange('isPublished', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-700">
+                  {formData.isPublished ? 'Online' : 'Draft'}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Judul Undangan (Header Title)
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                placeholder="Contoh: The Wedding of Andi & Ayu"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Nama Mempelai / Tuan Rumah (Hosts)
+              </label>
+              <input
+                type="text"
+                value={formData.hosts}
+                onChange={(e) => handleInputChange('hosts', e.target.value)}
+                placeholder="Contoh: Andi Pratama & Ayu Maharani"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Hari & Tanggal Acara
+                </label>
+                <input
+                  type="text"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange('date', e.target.value)}
+                  placeholder="Contoh: Sabtu, 24 Oktober 2026"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Waktu Pelaksanaan
+                </label>
+                <input
+                  type="text"
+                  value={formData.time}
+                  onChange={(e) => handleInputChange('time', e.target.value)}
+                  placeholder="Akad: 08:00 WIB | Resepsi: 11:00 WIB"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Nama Gedung / Tempat (Venue)
+              </label>
+              <input
+                type="text"
+                value={formData.venue}
+                onChange={(e) => handleInputChange('venue', e.target.value)}
+                placeholder="Contoh: Grand Ballroom Plataran Dharmawangsa"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Alamat Lengkap Venue
+              </label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Jl. Dharmawangsa Raya No. 6, Kebayoran Baru, Jakarta Selatan"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Kata Sambutan / Ayat Suci / Teks Pembuka
+              </label>
+              <textarea
+                rows={3}
+                value={formData.opening}
+                onChange={(e) => handleInputChange('opening', e.target.value)}
+                placeholder="Tuliskan kata sambutan doa restu..."
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                URL Slug Khusus
+              </label>
+              <div className="flex items-center">
+                <span className="text-xs bg-slate-100 border border-r-0 border-slate-200 px-3 py-2.5 rounded-l-xl text-slate-500">
+                  aaeventmaker.app/
+                </span>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) =>
+                    handleInputChange(
+                      'slug',
+                      e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+                    )
+                  }
+                  placeholder="andi-ayu-wedding"
+                  className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-r-xl focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Smartphone Simulator (5 cols) */}
+        <div className="lg:col-span-5 flex flex-col items-center">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <Eye className="w-3.5 h-3.5 text-[#6d28d9]" />
+            <span>Simulasi Tampilan Ponsel Tamu</span>
+          </div>
+
+          {/* Phone Frame */}
+          <div className="w-full max-w-[320px] rounded-[36px] bg-slate-900 p-3 shadow-2xl border-4 border-slate-800">
+            {/* Camera notch */}
+            <div className="w-24 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+            </div>
+
+            {/* Inner Phone Screen */}
+            <div className="bg-[#0b0f19] text-slate-100 rounded-[28px] overflow-y-auto max-h-[500px] text-center p-4 space-y-4 no-scrollbar">
+              <div className="py-4 bg-gradient-to-b from-purple-900/50 to-pink-900/40 rounded-2xl p-3 border border-purple-800/40">
+                <span className="text-[9px] uppercase tracking-widest text-amber-200 font-semibold block mb-1">
+                  WEDDING INVITATION
+                </span>
+                <h3 className="text-lg font-serif font-bold text-white leading-tight">
+                  {formData.hosts || 'Mempelai'}
+                </h3>
+                <p className="text-[10px] text-purple-200 mt-1 italic">{formData.title}</p>
+                <div className="mt-2 text-[9px] bg-black/40 px-2 py-0.5 rounded-full inline-block text-slate-300">
+                  {formData.date}
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-300 font-light leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                "{formData.opening.slice(0, 110)}..."
+              </div>
+
+              <div className="text-left bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[10px]">
+                <div className="font-bold text-amber-300 text-[11px] mb-1">Waktu & Lokasi</div>
+                <div className="text-slate-300">
+                  <strong>Waktu:</strong> {formData.time}
+                </div>
+                <div className="text-slate-300">
+                  <strong>Tempat:</strong> {formData.venue}
+                </div>
+                <div className="text-slate-400 text-[9px] line-clamp-1">{formData.address}</div>
+              </div>
+
+              <div className="p-3 bg-purple-950/40 border border-purple-800/40 rounded-xl text-center">
+                <span className="text-[10px] font-bold text-pink-300 block mb-1">
+                  Konfirmasi Kehadiran
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPublicPreview(true)}
+                  className="w-full py-1.5 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-[10px] font-bold rounded-lg shadow-sm"
+                >
+                  Buka Undangan Lengkap & RSVP
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

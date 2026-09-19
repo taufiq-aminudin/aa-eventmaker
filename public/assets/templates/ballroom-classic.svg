@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 300">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eee7df"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+<rect width="500" height="300" fill="url(#g)"/><g fill="none" stroke="#5b4636" opacity=".38" stroke-width="2"><path d="M35 265V75h60v190M405 265V75h60v190"/><path d="M20 75h90M390 75h90"/><circle cx="65" cy="55" r="14"/><circle cx="435" cy="55" r="14"/></g><circle cx="250" cy="45" r="30" fill="#5b4636" opacity=".1"/>
+<rect x="15" y="15" width="470" height="270" rx="19" fill="none" stroke="#5b4636" opacity=".22"/>
+<g text-anchor="middle" fill="#5b4636">
+<text x="250" y="92" font-family="Arial,sans-serif" font-size="10" font-weight="700" letter-spacing="3">WEDDING CONCEPT</text>
+<text x="250" y="138" font-family="Georgia,serif" font-size="26" font-weight="700">BALLROOM CLASSIC</text>
+<line x1="195" y1="155" x2="305" y2="155" stroke="#5b4636" opacity=".3"/>
+<text x="250" y="182" font-family="Georgia,serif" font-size="15">YOUR NAMES</text>
+<text x="250" y="207" font-family="Arial,sans-serif" font-size="9" letter-spacing="2">DD MONTH YYYY</text>
+<text x="250" y="226" font-family="Arial,sans-serif" font-size="8" letter-spacing="1.3">CLASSIC</text>
+</g></svg>

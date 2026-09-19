@@ -1,7 +1,9 @@
 {
   "name": "AA : Event Maker",
   "description": "All-in-one event creation platform for invitations, guest management, planning, budget, and memories",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
