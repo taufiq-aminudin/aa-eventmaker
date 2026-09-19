@@ -1,7 +1,1 @@
-<<<<<<< HEAD
 const CACHE='aa-event-maker-v8';self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['index.html','styles.css','app.js']))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
-=======
-const CACHE="aa-event-maker-v7";const ASSETS=["./","./index.html","./styles.css","./workspace.css","./app.js","./manifest.webmanifest","./create.html","./templates.html","./features.html","./dashboard.html","./invitation-maker.html","./invitation-editor.html","./invitation-detail.html","./photo-maker.html","./video-maker.html","./design-maker.html","./ai-creator.html","./guest-manager.html","./location.html","./event-planner.html","./budget.html","./analytics.html","./memories.html","./login.html","./signup.html","./profile.html","./assets/icon.svg"];self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone))}return res}).catch(()=>r)))});
->>>>>>> 87a05b20a8d1770e8552fad94763099b5ec709cb

@@ -1,33 +1,17 @@
 {
-<<<<<<< HEAD
   "name": "aa-event-maker-app",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "scripts": {
-    "web": "python -m http.server 8080 --directory web",
+    "web": "npx serve ../web",
     "sync": "npx cap sync",
     "android": "npx cap open android"
   },
   "dependencies": {
-    "@capacitor/core": "latest",
-    "@capacitor/android": "latest"
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/android": "^8.5.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "latest"
-=======
-  "name": "aa-event-maker",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "npx serve ../web",
-    "android": "npx cap open android"
-  },
-  "dependencies": {
-    "@capacitor/android": "^7.4.4",
-    "@capacitor/core": "^7.4.4"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^7.4.4"
->>>>>>> 87a05b20a8d1770e8552fad94763099b5ec709cb
+    "@capacitor/cli": "^8.5.2"
   }
 }
