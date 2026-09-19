@@ -5,6 +5,7 @@ import {
   Guest,
   TaskItem,
   BudgetItem,
+  WeeklyExpenseRecord,
   VenueLocation,
   MemoryItem,
   TemplateItem,
@@ -24,6 +25,7 @@ import {
   INITIAL_GUESTS,
   INITIAL_TASKS,
   INITIAL_BUDGETS,
+  INITIAL_WEEKLY_EXPENSES,
   INITIAL_LOCATIONS,
   INITIAL_MEMORIES,
   TEMPLATES_DATA,
@@ -94,6 +96,15 @@ interface EventContextType {
   addBudgetItem: (category: string, planned: number, actual: number, notes: string) => void;
   updateBudgetItem: (updated: BudgetItem) => void;
   deleteBudgetItem: (id: string) => void;
+  weeklyExpenses: WeeklyExpenseRecord[];
+  addWeeklyExpense: (item: {
+    weekLabel: string;
+    dateRange: string;
+    amount: number;
+    note: string;
+    categories: string[];
+  }) => void;
+  deleteWeeklyExpense: (id: string) => void;
 
   // Locations & Memories
   locations: VenueLocation[];
@@ -180,6 +191,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
   });
 
+  const [weeklyExpenses, setWeeklyExpenses] = useState<WeeklyExpenseRecord[]>(() => {
+    const saved = localStorage.getItem('aa_weekly_expenses');
+    return saved ? JSON.parse(saved) : INITIAL_WEEKLY_EXPENSES;
+  });
+
   const [locations, setLocations] = useState<VenueLocation[]>(() => {
     const saved = localStorage.getItem('aa_locations');
     return saved ? JSON.parse(saved) : INITIAL_LOCATIONS;
@@ -229,6 +245,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('aa_budgets', JSON.stringify(budgets));
   }, [budgets]);
+  useEffect(() => {
+    localStorage.setItem('aa_weekly_expenses', JSON.stringify(weeklyExpenses));
+  }, [weeklyExpenses]);
   useEffect(() => {
     localStorage.setItem('aa_locations', JSON.stringify(locations));
   }, [locations]);
@@ -488,6 +507,33 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteBudgetItem = (id: string) => {
     setBudgets((prev) => prev.filter((b) => b.id !== id));
     showToast('Item anggaran dihapus.');
+  };
+
+  const addWeeklyExpense = (item: {
+    weekLabel: string;
+    dateRange: string;
+    amount: number;
+    note: string;
+    categories: string[];
+  }) => {
+    const nextNum = weeklyExpenses.length + 1;
+    const newRecord: WeeklyExpenseRecord = {
+      id: `wexp-${Date.now()}`,
+      projectId: currentProject.id,
+      weekNumber: nextNum,
+      weekLabel: item.weekLabel || `Minggu ${nextNum}`,
+      dateRange: item.dateRange || 'Baru',
+      amount: item.amount,
+      note: item.note,
+      categories: item.categories.length > 0 ? item.categories : ['Vendor Acara'],
+    };
+    setWeeklyExpenses((prev) => [...prev, newRecord]);
+    showToast(`Pengeluaran ${newRecord.weekLabel} berhasil dicatat.`);
+  };
+
+  const deleteWeeklyExpense = (id: string) => {
+    setWeeklyExpenses((prev) => prev.filter((w) => w.id !== id));
+    showToast('Catatan pengeluaran mingguan dihapus.');
   };
 
   // Locations & Memories
@@ -850,6 +896,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addBudgetItem,
         updateBudgetItem,
         deleteBudgetItem,
+        weeklyExpenses,
+        addWeeklyExpense,
+        deleteWeeklyExpense,
 
         locations,
         addLocation,

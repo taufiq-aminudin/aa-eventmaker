@@ -68,6 +68,17 @@ export interface BudgetItem {
   notes: string;
 }
 
+export interface WeeklyExpenseRecord {
+  id: string;
+  projectId: string;
+  weekNumber: number;
+  weekLabel: string;
+  dateRange: string;
+  amount: number;
+  note: string;
+  categories: string[];
+}
+
 export interface VenueLocation {
   id: string;
   projectId: string;

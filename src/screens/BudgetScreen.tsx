@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { BudgetItem } from '../types';
+import { BudgetSpendingTrends } from '../components/BudgetSpendingTrends';
 
 export const BudgetScreen: React.FC = () => {
   const { budgets, addBudgetItem, updateBudgetItem, deleteBudgetItem } = useEvent();
@@ -323,6 +324,9 @@ export const BudgetScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Historical Spending Trends Graph & List */}
+      <BudgetSpendingTrends />
 
       {/* Budget Items Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
