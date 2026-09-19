@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Wallet,
   Plus,
@@ -338,170 +339,213 @@ export const BudgetScreen: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {budgets.map((item) => {
-                const diff = item.plannedAmount - item.actualAmount;
-                const percent =
-                  item.plannedAmount > 0
-                    ? Math.round((item.actualAmount / item.plannedAmount) * 100)
-                    : 0;
-                return (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-900">
-                      <div className="flex items-center justify-between gap-2">
-                        <span>{item.category}</span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm ${
-                          diff >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
-                        }`}>
-                          {diff >= 0 ? `Sisa ${(100 - Math.min(100, percent))}%` : `Over ${percent - 100}%`}
-                        </span>
-                      </div>
-                      <div className="w-full max-w-[160px] bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            percent > 100 ? 'bg-rose-500' : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${Math.min(percent, 100)}%` }}
-                        />
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4 text-right font-medium text-slate-700">
-                      {formatRupiah(item.plannedAmount)}
-                    </td>
-
-                    <td className="py-3 px-4 text-right font-bold text-emerald-700">
-                      {formatRupiah(item.actualAmount)}
-                    </td>
-
-                    <td
-                      className={`py-3 px-4 text-right font-semibold ${
-                        diff >= 0 ? 'text-blue-600' : 'text-rose-600'
-                      }`}
+              <AnimatePresence initial={false}>
+                {budgets.map((item) => {
+                  const diff = item.plannedAmount - item.actualAmount;
+                  const percent =
+                    item.plannedAmount > 0
+                      ? Math.round((item.actualAmount / item.plannedAmount) * 100)
+                      : 0;
+                  return (
+                    <motion.tr
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: -12, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{
+                        opacity: 0,
+                        x: -20,
+                        backgroundColor: '#fff1f2',
+                        transition: { duration: 0.2 },
+                      }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                      className="hover:bg-slate-50/80 transition-colors"
                     >
-                      {diff >= 0 ? `+${formatRupiah(diff)}` : `-${formatRupiah(Math.abs(diff))}`}
-                    </td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{item.category}</span>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm ${
+                            diff >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                          }`}>
+                            {diff >= 0 ? `Sisa ${(100 - Math.min(100, percent))}%` : `Over ${percent - 100}%`}
+                          </span>
+                        </div>
+                        <div className="w-full max-w-[160px] bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              percent > 100 ? 'bg-rose-500' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.min(percent, 100)}%` }}
+                          />
+                        </div>
+                      </td>
 
-                    <td className="py-3 px-4 text-slate-500 max-w-xs truncate">{item.notes}</td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-700">
+                        {formatRupiah(item.plannedAmount)}
+                      </td>
 
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end space-x-1">
-                        <button
-                          onClick={() => {
-                            setEditingItem(item);
-                            setCategory(item.category);
-                            setPlanned(item.plannedAmount);
-                            setActual(item.actualAmount);
-                            setNotes(item.notes);
-                            setShowModal(true);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => deleteBudgetItem(item.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                        {formatRupiah(item.actualAmount)}
+                      </td>
+
+                      <td
+                        className={`py-3 px-4 text-right font-semibold ${
+                          diff >= 0 ? 'text-blue-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {diff >= 0 ? `+${formatRupiah(diff)}` : `-${formatRupiah(Math.abs(diff))}`}
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate">{item.notes}</td>
+
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end space-x-1">
+                          <button
+                            onClick={() => {
+                              setEditingItem(item);
+                              setCategory(item.category);
+                              setPlanned(item.plannedAmount);
+                              setActual(item.actualAmount);
+                              setNotes(item.notes);
+                              setShowModal(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
+                            title="Edit Item"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => deleteBudgetItem(item.id)}
+                            className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"
+                            title="Hapus Item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+
+              {budgets.length === 0 && (
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center"
+                >
+                  <td colSpan={6} className="py-10 text-slate-400">
+                    Belum ada item biaya anggaran. Klik tombol &ldquo;Tambah Item Biaya&rdquo; di atas untuk memulai.
+                  </td>
+                </motion.tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* ADD / EDIT MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <h3 className="text-base font-bold text-slate-900 mb-1">
-              {editingItem ? 'Edit Item Anggaran' : 'Tambah Item Anggaran'}
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Masukkan estimasi rencana biaya dan pengeluaran aktual vendor.
-            </p>
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100"
+            >
+              <h3 className="text-base font-bold text-slate-900 mb-1">
+                {editingItem ? 'Edit Item Anggaran' : 'Tambah Item Anggaran'}
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Masukkan estimasi rencana biaya dan pengeluaran aktual vendor.
+              </p>
 
-            <form onSubmit={handleSave} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kategori Vendor / Pos Biaya
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Katering & Gubukan (500 Pax)"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSave} className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Rencana Anggaran (Rp)
+                    Kategori Vendor / Pos Biaya
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    step={100000}
-                    value={planned}
-                    onChange={(e) => setPlanned(Number(e.target.value))}
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
+                    type="text"
+                    required
+                    placeholder="Contoh: Katering & Gubukan (500 Pax)"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Rencana Anggaran (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={100000}
+                      value={planned}
+                      onChange={(e) => setPlanned(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Realisasi Aktual (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={100000}
+                      value={actual}
+                      onChange={(e) => setActual(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Realisasi Aktual (Rp)
+                    Catatan Rincian
                   </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100000}
-                    value={actual}
-                    onChange={(e) => setActual(Number(e.target.value))}
+                  <textarea
+                    rows={2}
+                    placeholder="Keterangan fasilitas atau termin pembayaran vendor..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Catatan Rincian
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Keterangan fasilitas atau termin pembayaran vendor..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs"
-                >
-                  Simpan Pos Biaya
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs"
+                  >
+                    Simpan Pos Biaya
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
