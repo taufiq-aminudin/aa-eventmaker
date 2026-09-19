@@ -66,6 +66,7 @@ fun GuestScreen(
     var showAddGuestDialog by remember { mutableStateOf(false) }
     var showScannerDialog by remember { mutableStateOf(initialOpenScanner) }
     var showEmailCampaignDialog by remember { mutableStateOf(false) }
+    var showExportReportDialog by remember { mutableStateOf(false) }
     var selectedGuestForEmail by remember { mutableStateOf<Guest?>(null) }
     var emailCampaignInitialTab by remember { mutableStateOf(0) }
 
@@ -125,9 +126,20 @@ fun GuestScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Daftar Tamu & E-Pass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text("Total: ${guests.size} Undangan ($totalPax Pax) • Link Unik Aktif", style = MaterialTheme.typography.bodySmall, color = MutedText)
+                    }
+
+                    FilledTonalButton(
+                        onClick = { showExportReportDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFFEFF6FF), contentColor = Color(0xFF1D4ED8)),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Ekspor", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -141,39 +153,52 @@ fun GuestScreen(
                     FilledTonalButton(
                         onClick = {
                             selectedGuestForEmail = null
+                            emailCampaignInitialTab = 1
                             showEmailCampaignDialog = true
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFFF3E8FF), contentColor = PurplePrimary),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Email & RSVP", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Email & RSVP", fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     FilledTonalButton(
                         onClick = { showBatchQrDialog = true },
                         shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Hub Link & QR", fontSize = 11.sp)
+                        Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Hub Link & QR", fontSize = 10.5.sp)
+                    }
+
+                    FilledTonalButton(
+                        onClick = { showExportReportDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFFECFDF5), contentColor = Color(0xFF047857)),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Assessment, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Laporan Data", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Button(
                         onClick = { showScannerDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = InkDark),
                         shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Scan QR", fontSize = 11.sp)
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Scan QR", fontSize = 10.5.sp)
                     }
                 }
             }
@@ -518,6 +543,16 @@ fun GuestScreen(
                 showEmailCampaignDialog = false
                 selectedGuestForEmail = null
             }
+        )
+    }
+
+    // Export Guest List & Attendance Status Report Dialog (PDF / Excel)
+    if (showExportReportDialog) {
+        ExportReportDialog(
+            guests = guests,
+            invitation = invitation,
+            project = currentProject,
+            onDismiss = { showExportReportDialog = false }
         )
     }
 
