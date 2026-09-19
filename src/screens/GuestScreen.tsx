@@ -984,8 +984,7 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
               Jadwalkan Blast Kampanye Undangan
             </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Kirim blast pesan personal ke tamu menggunakan variabel dinamis ({{guest_name}},
-              {{check_in_url}}, {{table_number}}).
+              Kirim blast pesan personal ke tamu menggunakan variabel dinamis (&#123;&#123;guest_name&#125;&#125;, &#123;&#123;check_in_url&#125;&#125;, &#123;&#123;table_number&#125;&#125;).
             </p>
 
             <form onSubmit={handleCreateCampaign} className="space-y-3.5">
