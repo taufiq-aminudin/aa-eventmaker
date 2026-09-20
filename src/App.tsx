@@ -6,7 +6,7 @@ import { GuestPassModal } from './components/GuestPassModal';
 import { PublicInvitationView } from './components/PublicInvitationView';
 import { AuthModal } from './components/AuthModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
-import { SeoManager } from './components/SeoManager';
+import { SeoMetadata } from './components/SeoMetadata';
 
 // Screens
 import { HomeScreen } from './screens/HomeScreen';
@@ -55,7 +55,7 @@ const MainAppContent: React.FC = () => {
   if (showPublicLanding) {
     return (
       <>
-        <SeoManager />
+        <SeoMetadata />
         <PublicPortalScreen />
         <AuthModal />
         <OfflineIndicator />
@@ -66,7 +66,7 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-700">
-      <SeoManager />
+      <SeoMetadata />
       <OfflineIndicator />
 
       {/* Top Navbar */}

@@ -26,6 +26,7 @@ import confetti from 'canvas-confetti';
 import { useEvent } from '../context/EventContext';
 import { globalAudioPlayer } from '../utils/audioPlayer';
 import { ShareWhatsAppButton } from './ShareWhatsAppButton';
+import { SeoMetadata } from './SeoMetadata';
 
 export const PublicInvitationView: React.FC = () => {
   const {
@@ -207,6 +208,14 @@ export const PublicInvitationView: React.FC = () => {
       id="public-invitation-view"
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 flex flex-col items-center justify-start selection:bg-purple-500 selection:text-white"
     >
+      <SeoMetadata
+        title={`${invitation.title} – Undangan Digital Resmi | AA Event Maker`}
+        description={`Undangan digital resmi pernikahan ${invitation.title} (${invitation.hosts}). Acara diselenggarakan pada ${invitation.date} di ${invitation.venue}. Buka undangan digital Anda di sini.`}
+        canonicalPath={`/invitation/${invitation.slug || 'andi-ayu-wedding'}`}
+        imageUrl={displayCover}
+        type="website"
+      />
+
       {/* 1. ENVELOPE / WAX SEAL OPENING GATEWAY MODAL */}
       {!isOpenEnvelope && (
         <div className="fixed inset-0 z-60 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4">

@@ -33,6 +33,7 @@ import { GoogleAdSlot } from '../components/GoogleAdSlot';
 import { TemplateDetailModal } from '../components/TemplateDetailModal';
 import { PromotionalFeaturesShowcase } from '../components/PromotionalFeaturesShowcase';
 import { ShareWhatsAppButton } from '../components/ShareWhatsAppButton';
+import { SeoMetadata } from '../components/SeoMetadata';
 import { TemplateItem } from '../types';
 
 export const PublicPortalScreen: React.FC = () => {
@@ -198,6 +199,14 @@ export const PublicPortalScreen: React.FC = () => {
 
   return (
     <div id="public-homepage" className="min-h-screen bg-[#f8fafc] text-slate-900">
+      <SeoMetadata
+        title="AA Event Maker – Create Beautiful Digital Invitations"
+        description="Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker."
+        canonicalPath="/"
+        imageUrl="https://aa-eventmaker.my.id/pwa-512x512.png"
+        type="website"
+      />
+
       {/* Top Public Bar */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
