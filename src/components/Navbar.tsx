@@ -23,6 +23,7 @@ import { useEvent } from '../context/EventContext';
 import { EventType, UserRole } from '../types';
 import { AALogo } from './AALogo';
 import { PWAInstallButton } from './PWAInstallButton';
+import { useRouter } from '../context/RouterContext';
 
 export const Navbar: React.FC = () => {
   const {
@@ -42,6 +43,8 @@ export const Navbar: React.FC = () => {
     logout,
     setShowPublicLanding,
   } = useEvent();
+
+  const { navigate, currentPath } = useRouter();
 
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -101,7 +104,7 @@ export const Navbar: React.FC = () => {
               <AALogo
                 variant="header"
                 size="sm"
-                onClick={() => setActiveTab(0)}
+                onClick={() => navigate('/')}
               />
 
               <div className="relative">
@@ -204,9 +207,9 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center space-x-2">
               {/* Public Portal Switcher */}
               <button
-                onClick={() => setShowPublicLanding(true)}
+                onClick={() => navigate('/')}
                 title="Lihat Tampilan Web & Portal Publik"
-                className="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
               >
                 <Globe className="w-3.5 h-3.5 text-blue-600" />
                 <span>Web Publik</span>

@@ -28,6 +28,8 @@ import { THEME_PRESETS, ThemeMood } from '../utils/themePresets';
 import { soundManager } from '../utils/ambientSound';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import { PWAInstallButton } from './PWAInstallButton';
+import { useRouter } from '../context/RouterContext';
+import { FolderKanban } from 'lucide-react';
 
 interface MobileBottomNavProps {
   currentThemeMood: ThemeMood;
@@ -53,6 +55,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     setShowPublicPreview,
     setShowPublicLanding,
   } = useEvent();
+
+  const { navigate, currentPath } = useRouter();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
@@ -102,16 +106,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         <div className="grid grid-cols-5 h-16 max-w-md mx-auto px-1 items-center">
           {/* Tab 0: Home */}
           <button
-            onClick={() => handleTabClick(0)}
+            onClick={() => {
+              soundManager.playTapSound();
+              navigate('/dashboard');
+              setActiveTab(0);
+              setIsMenuOpen(false);
+            }}
             className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
-              activeTab === 0 && activeRole === 'ORGANIZER' && !isMenuOpen
+              (currentPath === '/dashboard' || activeTab === 0) && !isMenuOpen
                 ? 'text-slate-900 font-extrabold'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             <div className="relative">
               <Home className="w-5 h-5" />
-              {activeTab === 0 && activeRole === 'ORGANIZER' && !isMenuOpen && (
+              {(currentPath === '/dashboard' || activeTab === 0) && !isMenuOpen && (
                 <span
                   className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: currentTheme.accentColor }}
@@ -121,32 +130,66 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1">Beranda</span>
           </button>
 
-          {/* Tab 1: Undangan */}
+          {/* Tab 1: Templates */}
           <button
-            onClick={() => handleTabClick(1)}
+            onClick={() => {
+              soundManager.playTapSound();
+              navigate('/templates');
+              setIsMenuOpen(false);
+            }}
             className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
-              activeTab === 1 && activeRole === 'ORGANIZER' && !isMenuOpen
+              currentPath === '/templates' && !isMenuOpen
                 ? 'text-slate-900 font-extrabold'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             <div className="relative">
-              <Mail className="w-5 h-5" />
-              {activeTab === 1 && activeRole === 'ORGANIZER' && !isMenuOpen && (
+              <Palette className="w-5 h-5" />
+              {currentPath === '/templates' && !isMenuOpen && (
                 <span
                   className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: currentTheme.accentColor }}
                 />
               )}
             </div>
-            <span className="text-[10px] mt-1">Undangan</span>
+            <span className="text-[10px] mt-1">Template</span>
           </button>
 
-          {/* Tab 2: Tamu */}
+          {/* Tab 2: Proyek */}
           <button
-            onClick={() => handleTabClick(2)}
+            onClick={() => {
+              soundManager.playTapSound();
+              navigate('/projects');
+              setIsMenuOpen(false);
+            }}
             className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
-              activeTab === 2 && activeRole === 'ORGANIZER' && !isMenuOpen
+              currentPath === '/projects' && !isMenuOpen
+                ? 'text-slate-900 font-extrabold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <div className="relative">
+              <FolderKanban className="w-5 h-5" />
+              {currentPath === '/projects' && !isMenuOpen && (
+                <span
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: currentTheme.accentColor }}
+                />
+              )}
+            </div>
+            <span className="text-[10px] mt-1">Proyek</span>
+          </button>
+
+          {/* Tab 3: Tamu */}
+          <button
+            onClick={() => {
+              soundManager.playTapSound();
+              navigate('/guests');
+              setActiveTab(2);
+              setIsMenuOpen(false);
+            }}
+            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
+              (currentPath === '/guests' || activeTab === 2) && !isMenuOpen
                 ? 'text-slate-900 font-extrabold'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
@@ -158,7 +201,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   {pendingRsvpCount}
                 </span>
               )}
-              {activeTab === 2 && activeRole === 'ORGANIZER' && !isMenuOpen && (
+              {(currentPath === '/guests' || activeTab === 2) && !isMenuOpen && (
                 <span
                   className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: currentTheme.accentColor }}
@@ -166,32 +209,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               )}
             </div>
             <span className="text-[10px] mt-1">Tamu</span>
-          </button>
-
-          {/* Tab 3: Planner */}
-          <button
-            onClick={() => handleTabClick(3)}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
-              activeTab === 3 && activeRole === 'ORGANIZER' && !isMenuOpen
-                ? 'text-slate-900 font-extrabold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <div className="relative">
-              <CheckSquare className="w-5 h-5" />
-              {pendingTasksCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 min-w-4 text-center">
-                  {pendingTasksCount}
-                </span>
-              )}
-              {activeTab === 3 && activeRole === 'ORGANIZER' && !isMenuOpen && (
-                <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: currentTheme.accentColor }}
-                />
-              )}
-            </div>
-            <span className="text-[10px] mt-1">Planner</span>
           </button>
 
           {/* Tab 4: More / Menu */}
@@ -406,12 +423,33 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setShowPublicLanding(true);
+                    navigate('/');
                   }}
-                  className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100"
+                  className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer"
                 >
                   <Globe className="w-3.5 h-3.5" />
-                  <span>Web Portal Tamu</span>
+                  <span>Web Publik</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    navigate('/create');
+                  }}
+                  className="flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                >
+                  <span>+ Buat Acara Baru</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                >
+                  <span>⚙ Pengaturan Akun</span>
                 </button>
               </div>
 
