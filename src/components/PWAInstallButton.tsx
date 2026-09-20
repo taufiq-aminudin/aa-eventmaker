@@ -3,7 +3,7 @@ import { Download, Smartphone, Check, X, Share2, PlusSquare } from 'lucide-react
 import { usePWAInstall } from '../utils/usePWAInstall';
 
 interface PWAInstallButtonProps {
-  variant?: 'navbar' | 'banner' | 'card';
+  variant?: 'navbar' | 'banner' | 'card' | 'inline';
   className?: string;
 }
 
@@ -19,7 +19,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   if (isInstalled) {
     if (variant === 'banner') return null;
     return (
-      <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg">
+      <div className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg ${variant === 'inline' ? 'w-full py-2' : 'hidden sm:inline-flex'}`}>
         <Check className="w-3.5 h-3.5 text-emerald-600" />
         <span>App Installed</span>
       </div>
@@ -115,6 +115,53 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 className="mt-5 w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors"
               >
                 Mengerti
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (variant === 'inline') {
+    return (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className={`w-full flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            isInstallable
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xs'
+              : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+          } ${className}`}
+          title="Pasang aplikasi ke layar ponsel/komputer"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Install Aplikasi (PWA)</span>
+        </button>
+
+        {/* iOS Modal */}
+        {showIOSGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-100 text-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Install AA-EventMaker</h3>
+                <button
+                  onClick={() => setShowIOSGuide(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+                1. Buka menu browser (ikon <Share2 className="w-3.5 h-3.5 inline text-blue-600" /> Share di Safari atau titik tiga di Chrome).<br />
+                2. Pilih <strong>Tambahkan ke Layar Utama (Add to Home Screen)</strong>.<br />
+                3. Aplikasi akan langsung terpasang dan siap digunakan seperti aplikasi Play Store / App Store.
+              </p>
+              <button
+                onClick={() => setShowIOSGuide(false)}
+                className="mt-4 w-full rounded-xl bg-blue-600 py-2 text-xs font-bold text-white hover:bg-blue-700"
+              >
+                Tutup
               </button>
             </div>
           </div>
