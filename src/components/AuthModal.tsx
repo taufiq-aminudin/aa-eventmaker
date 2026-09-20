@@ -1,105 +1,93 @@
 import React, { useState } from 'react';
 import {
   X,
-  Mail,
-  Lock,
-  User,
-  Phone,
-  Briefcase,
-  CheckCircle2,
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  CheckCircle2,
+  Briefcase,
   Heart,
   Camera,
   Ticket,
+  User,
+  ExternalLink,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { UserRole } from '../types';
-import { AALogo } from './AALogo';
 
 export const AuthModal: React.FC = () => {
   const {
     showAuthModal,
     setShowAuthModal,
-    authModalMode,
-    setAuthModalMode,
-    login,
-    register,
-    lastRegisteredUser,
-    switchRole,
+    loginWithGoogle,
+    currentUser,
+    setShowPublicLanding,
   } = useEvent();
 
-  // Form states
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-
-  // Register form states
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('ORGANIZER');
-  const [regOrgName, setRegOrgName] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regAgreeTerms, setRegAgreeTerms] = useState(true);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [customEmail, setCustomEmail] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('ORGANIZER');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   if (!showAuthModal) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    if (!loginEmail.trim()) {
-      setFormError('Silakan masukkan email Anda.');
-      return;
-    }
-    login(loginEmail);
-  };
+  const quickGoogleAccounts = [
+    {
+      name: 'Taufiq Aminudin',
+      email: 'taufiq.aminudin@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      role: 'ORGANIZER' as UserRole,
+      badge: 'Admin EO',
+    },
+    {
+      name: 'Suryautama Event Planner',
+      email: 'suryautama0001@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+      role: 'ORGANIZER' as UserRole,
+      badge: 'Organizer',
+    },
+    {
+      name: 'Dimas & Ayu Maharani',
+      email: 'dimas.ayu.wedding@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=120&q=80',
+      role: 'CLIENT' as UserRole,
+      badge: 'Pengantin',
+    },
+  ];
 
-  const handleQuickRoleLogin = (role: UserRole) => {
-    switchRole(role);
-    setShowAuthModal(false);
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-
-    if (!regName.trim()) {
-      setFormError('Nama lengkap wajib diisi.');
-      return;
-    }
-    if (!regEmail.trim()) {
-      setFormError('Alamat email wajib diisi.');
-      return;
-    }
-    if (!regPhone.trim()) {
-      setFormError('Nomor WhatsApp wajib diisi untuk verifikasi E-Pass & notifikasi.');
-      return;
-    }
-    if (!regPassword.trim() || regPassword.length < 6) {
-      setFormError('Kata sandi minimal 6 karakter.');
-      return;
-    }
-    if (!regAgreeTerms) {
-      setFormError('Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.');
-      return;
-    }
-
-    register({
-      name: regName.trim(),
-      email: regEmail.trim(),
-      phone: regPhone.trim(),
-      role: regRole,
-      organizationName: regOrgName.trim() || undefined,
-    });
+  const handleGoogleSignIn = (account?: (typeof quickGoogleAccounts)[0]) => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      if (account) {
+        loginWithGoogle({
+          name: account.name,
+          email: account.email,
+          avatar: account.avatar,
+          role: account.role,
+        });
+      } else if (customEmail.trim()) {
+        const email = customEmail.trim();
+        const derivedName = customName.trim() || email.split('@')[0].replace(/[._-]/g, ' ');
+        loginWithGoogle({
+          name: derivedName.charAt(0).toUpperCase() + derivedName.slice(1),
+          email: email.includes('@') ? email : `${email}@gmail.com`,
+          role: selectedRole,
+        });
+      } else {
+        // Default Google Login
+        loginWithGoogle();
+      }
+      setIsProcessing(false);
+      setShowAuthModal(false);
+      setShowPublicLanding(false);
+    }, 450);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 animate-in fade-in zoom-in-95">
-        {/* Modal Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 animate-in fade-in zoom-in-95">
+        {/* Close Button */}
         <button
           onClick={() => setShowAuthModal(false)}
           className="absolute top-4 right-4 z-10 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
@@ -108,448 +96,216 @@ export const AuthModal: React.FC = () => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Header with Branding */}
+        {/* Modal Header */}
         <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-orange-600 px-6 pt-7 pb-6 text-white text-center relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
-          <div className="flex justify-center mb-2">
-            <div className="w-14 h-14 rounded-2xl bg-white p-2 shadow-lg flex items-center justify-center">
+          <div className="flex justify-center mb-3">
+            <div className="w-13 h-13 rounded-2xl bg-white p-2 shadow-lg flex items-center justify-center">
               <img src="/icon.svg" alt="AA-EventMaker" className="w-full h-full object-contain" />
             </div>
           </div>
           <h2 className="text-xl font-black tracking-tight text-white">AA-EventMaker</h2>
-          <p className="text-xs text-blue-100 font-medium">Plan • Manage • Make It Happen</p>
+          <p className="text-xs text-blue-100 font-medium mt-0.5">
+            Plan • Manage • Make It Happen
+          </p>
         </div>
 
-        {/* Modal Body: Login / Register / Success */}
-        <div className="p-6 sm:p-7">
-          {authModalMode === 'login' && (
-            <div>
-              <div className="text-center mb-5">
-                <h3 className="text-lg font-bold text-slate-900">Masuk ke Akun Anda</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Akses dasbor acara, manajemen tamu, dan kalkulator budget
-                </p>
-              </div>
+        {/* Modal Body */}
+        <div className="p-6 sm:p-7 space-y-5">
+          <div className="text-center">
+            <h3 className="text-lg font-bold text-slate-900">Masuk dengan Google</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+              Akses instan dasbor acara, buat undangan digital, dan kelola RSVP tanpa perlu mengingat kata sandi.
+            </p>
+          </div>
 
-              {formError && (
-                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold">
-                  {formError}
-                </div>
-              )}
-
-              {/* Quick Role Tester / Demo Logins */}
-              <div className="mb-5 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="text-[11px] font-bold text-slate-700 mb-2 flex items-center justify-between">
-                  <span>Login Cepat Uji Coba (Pilih Peran):</span>
-                  <span className="text-[10px] text-blue-600 font-semibold">1-Click Test</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickRoleLogin('ORGANIZER')}
-                    className="flex items-center space-x-2 p-2 rounded-xl bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-left transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                      <Briefcase className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Event Organizer</div>
-                      <div className="text-[10px] text-slate-400">Dasbor EO Penuh</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickRoleLogin('CLIENT')}
-                    className="flex items-center space-x-2 p-2 rounded-xl bg-white hover:bg-pink-50 border border-slate-200 hover:border-pink-300 text-left transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-pink-100 text-pink-700 flex items-center justify-center shrink-0">
-                      <Heart className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Klien / Pengantin</div>
-                      <div className="text-[10px] text-slate-400">Countdown & Angpao</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickRoleLogin('VENDOR')}
-                    className="flex items-center space-x-2 p-2 rounded-xl bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-left transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
-                      <Camera className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Vendor Partner</div>
-                      <div className="text-[10px] text-slate-400">Termin & Rundown PIC</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickRoleLogin('GUEST')}
-                    className="flex items-center space-x-2 p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-left transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <Ticket className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Tamu Undangan</div>
-                      <div className="text-[10px] text-slate-400">E-Pass QR & Rute</div>
-                    </div>
-                  </button>
+          {/* If already logged in */}
+          {currentUser && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="truncate">
+                  <span className="text-slate-500">Masuk sebagai: </span>
+                  <strong className="text-slate-900">{currentUser.name}</strong>
                 </div>
               </div>
-
-              <div className="relative flex py-2 items-center">
-                <div className="grow border-t border-slate-200" />
-                <span className="shrink mx-3 text-[11px] text-slate-400 uppercase font-semibold">Atau Masuk Email</span>
-                <div className="grow border-t border-slate-200" />
-              </div>
-
-              {/* Email Login Form */}
-              <form onSubmit={handleLoginSubmit} className="space-y-3.5 mt-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Alamat Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="nama@email.com"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Kata Sandi
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-slate-600">Ingat Saya</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => alert('Fitur reset sandi telah dikirim ke email terdaftar.')}
-                    className="text-blue-600 hover:text-blue-700 font-semibold"
-                  >
-                    Lupa Sandi?
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors flex items-center justify-center space-x-2"
-                >
-                  <span>Masuk Sekarang</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-
-              <div className="mt-5 text-center text-xs text-slate-600">
-                Belum memiliki akun?{' '}
-                <button
-                  type="button"
-                  onClick={() => setAuthModalMode('register')}
-                  className="text-orange-600 hover:text-orange-700 font-bold"
-                >
-                  Daftar Akun Baru
-                </button>
-              </div>
-            </div>
-          )}
-
-          {authModalMode === 'register' && (
-            <div>
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-bold text-slate-900">Daftar Akun Baru</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Bergabunglah dengan AA-EventMaker untuk mengelola event dengan mudah
-                </p>
-              </div>
-
-              {formError && (
-                <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold">
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleRegisterSubmit} className="space-y-3">
-                {/* Role Selector Cards */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Pilih Peran Akun Anda:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('ORGANIZER')}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        regRole === 'ORGANIZER'
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 ring-2 ring-blue-600/20'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-1.5 font-bold text-xs">
-                        <Briefcase className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Penyelenggara / EO</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">Kelola tim, budget & vendor</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('CLIENT')}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        regRole === 'CLIENT'
-                          ? 'border-pink-600 bg-pink-50/70 text-pink-900 ring-2 ring-pink-600/20'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-1.5 font-bold text-xs">
-                        <Heart className="w-3.5 h-3.5 text-pink-600" />
-                        <span>Pengantin / Klien</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">Pantau RSVP & angpao</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('VENDOR')}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        regRole === 'VENDOR'
-                          ? 'border-orange-600 bg-orange-50/70 text-orange-900 ring-2 ring-orange-600/20'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-1.5 font-bold text-xs">
-                        <Camera className="w-3.5 h-3.5 text-orange-600" />
-                        <span>Vendor Partner</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">Jadwal loading & termin</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('GUEST')}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        regRole === 'GUEST'
-                          ? 'border-emerald-600 bg-emerald-50/70 text-emerald-900 ring-2 ring-emerald-600/20'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-1.5 font-bold text-xs">
-                        <Ticket className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Tamu Undangan</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">E-Pass QR & rute lokasi</div>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Nama Lengkap
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      placeholder="Contoh: Dimas Aditya"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Alamat Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="email@domain.com"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Nomor WhatsApp
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="tel"
-                        value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        placeholder="08123456789"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {(regRole === 'ORGANIZER' || regRole === 'VENDOR') && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Nama Usaha / Organizer
-                    </label>
-                    <input
-                      type="text"
-                      value={regOrgName}
-                      onChange={(e) => setRegOrgName(e.target.value)}
-                      placeholder="Contoh: Royal Wedding Organizer"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Buat Kata Sandi
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="password"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="Minimal 6 karakter"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <label className="flex items-start space-x-2 text-xs text-slate-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={regAgreeTerms}
-                      onChange={(e) => setRegAgreeTerms(e.target.checked)}
-                      className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>
-                      Saya menyetujui Ketentuan Layanan & Kebijakan Privasi AA-EventMaker untuk keamanan data acara.
-                    </span>
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full mt-2 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Daftar Sekarang & Aktifkan Akun</span>
-                </button>
-              </form>
-
-              <div className="mt-4 text-center text-xs text-slate-600">
-                Sudah punya akun?{' '}
-                <button
-                  type="button"
-                  onClick={() => setAuthModalMode('login')}
-                  className="text-blue-600 hover:text-blue-700 font-bold"
-                >
-                  Masuk di sini
-                </button>
-              </div>
-            </div>
-          )}
-
-          {authModalMode === 'registered_success' && (
-            <div className="text-center py-2">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center mb-3 shadow-md">
-                <CheckCircle2 className="w-9 h-9" />
-              </div>
-
-              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 mb-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Notifikasi Pendaftaran Berhasil</span>
-              </div>
-
-              <h3 className="text-xl font-black text-slate-900">
-                Selamat Datang, {lastRegisteredUser?.name || 'Member Baru'}!
-              </h3>
-              <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto leading-relaxed">
-                Akun peran <strong>{lastRegisteredUser?.role}</strong> Anda telah berhasil diverifikasi dan siap digunakan.
-              </p>
-
-              {/* Role specific highlight */}
-              <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-left text-xs space-y-1.5">
-                <div className="font-bold text-slate-800 flex items-center justify-between">
-                  <span>Ringkasan Akun Anda:</span>
-                  <span className="text-blue-600 font-bold uppercase text-[10px]">{lastRegisteredUser?.role}</span>
-                </div>
-                <div className="text-slate-600 text-[11px]">
-                  • Email: <strong>{lastRegisteredUser?.email}</strong>
-                </div>
-                <div className="text-slate-600 text-[11px]">
-                  • WhatsApp: <strong>{lastRegisteredUser?.phone}</strong>
-                </div>
-                {lastRegisteredUser?.role === 'ORGANIZER' && (
-                  <div className="text-purple-700 text-[11px] font-medium pt-1">
-                    💡 Fitur aktif: Buat acara, undang vendor, kelola budget multi-mata uang, dan scanner QR tamu.
-                  </div>
-                )}
-                {lastRegisteredUser?.role === 'CLIENT' && (
-                  <div className="text-pink-700 text-[11px] font-medium pt-1">
-                    💡 Fitur aktif: Countdown hari-H, live tracker tamu RSVP, dan amplop digital transfer.
-                  </div>
-                )}
-                {lastRegisteredUser?.role === 'VENDOR' && (
-                  <div className="text-orange-700 text-[11px] font-medium pt-1">
-                    💡 Fitur aktif: Jadwal loading perlengkapan, termin termin pembayaran, & kontak PIC panitia.
-                  </div>
-                )}
-                {lastRegisteredUser?.role === 'GUEST' && (
-                  <div className="text-emerald-700 text-[11px] font-medium pt-1">
-                    💡 Fitur aktif: E-Pass QR Check-in, petunjuk rute Google Maps, dan buku ucapan digital.
-                  </div>
-                )}
-              </div>
-
               <button
-                type="button"
-                onClick={() => setShowAuthModal(false)}
-                className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center space-x-2"
+                onClick={() => {
+                  setShowAuthModal(false);
+                  setShowPublicLanding(false);
+                }}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 underline shrink-0 ml-2"
               >
-                <span>Buka Dasbor {lastRegisteredUser?.role} Saya Sekarang</span>
-                <ArrowRight className="w-4 h-4" />
+                Buka Dasbor
               </button>
             </div>
           )}
+
+          {/* Primary Google One-Click Button */}
+          <div>
+            <button
+              onClick={() => handleGoogleSignIn()}
+              disabled={isProcessing}
+              className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs font-bold text-sm flex items-center justify-center space-x-3 transition-all hover:shadow-md cursor-pointer disabled:opacity-60"
+            >
+              {/* Official Google Vector Logo */}
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.37 7.37 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.94 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.27 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>
+                {isProcessing ? 'Menghubungkan ke Google...' : 'Lanjutkan dengan Akun Google'}
+              </span>
+            </button>
+          </div>
+
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-slate-200 w-full" />
+            <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+              Pilih Akun Google Tersedia
+            </span>
+            <div className="border-t border-slate-200 w-full" />
+          </div>
+
+          {/* Quick Google Profile Accounts */}
+          <div className="space-y-2">
+            {quickGoogleAccounts.map((acc, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleGoogleSignIn(acc)}
+                disabled={isProcessing}
+                className="w-full text-left p-2.5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="relative">
+                    <img
+                      src={acc.avatar}
+                      alt={acc.name}
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                    />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-xs">
+                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                      {acc.name}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">{acc.email}</div>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center space-x-1.5 pl-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-800">
+                    {acc.badge}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Toggle Custom Google Account Option */}
+          <div className="pt-1">
+            {!showCustomInput ? (
+              <button
+                type="button"
+                onClick={() => setShowCustomInput(true)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors block mx-auto text-center"
+              >
+                + Gunakan alamat email Google lainnya
+              </button>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in">
+                <div className="text-xs font-bold text-slate-800">
+                  Masukkan Akun Google Anda:
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Rian Pratama"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Email Google (@gmail.com)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="namaanda@gmail.com"
+                    value={customEmail}
+                    onChange={(e) => setCustomEmail(e.target.value)}
+                    className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Peran Akun
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST'] as UserRole[]).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setSelectedRole(r)}
+                        className={`text-[11px] font-semibold py-1.5 px-2 rounded-lg border transition-all ${
+                          selectedRole === r
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {r === 'ORGANIZER' && 'Event Organizer'}
+                        {r === 'CLIENT' && 'Klien / Pengantin'}
+                        {r === 'VENDOR' && 'Vendor Mitra'}
+                        {r === 'GUEST' && 'Tamu Undangan'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleGoogleSignIn()}
+                  disabled={!customEmail.trim() || isProcessing}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Masuk dengan Email Google Ini</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Security & Privacy Disclaimer */}
+          <div className="pt-2 border-t border-slate-100 text-center">
+            <div className="flex items-center justify-center space-x-1.5 text-[11px] text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Google OAuth 2.0 Aman • Tanpa Akses Password</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Dengan masuk, Anda menyetujui Ketentuan Layanan & Kebijakan Privasi AA-EventMaker.
+            </p>
+          </div>
         </div>
       </div>
     </div>

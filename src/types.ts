@@ -46,6 +46,14 @@ export interface InvitationData {
   templateName: string;
   isPublished: boolean;
   views: number;
+  coverPhoto?: string;
+  couplePhoto?: string;
+  groomPhoto?: string;
+  bridePhoto?: string;
+  galleryPhotos?: string[];
+  quote?: string;
+  loveStory?: { year: string; title: string; desc: string }[];
+  musicUrl?: string;
 }
 
 export interface Guest {
@@ -133,6 +141,16 @@ export interface TemplateItem {
   gradientColors: string[];
   description: string;
   svgAsset?: string;
+  sampleHosts?: string;
+  sampleDate?: string;
+  sampleVenue?: string;
+  sampleOpening?: string;
+  sampleQuote?: string;
+  defaultCoverPhoto?: string;
+  defaultCouplePhoto?: string;
+  defaultGallery?: string[];
+  accentColor?: string;
+  patternType?: 'floral' | 'batik' | 'siger' | 'balinese' | 'modern' | 'ballroom' | 'festive' | 'corporate' | 'stars';
 }
 
 export interface PhotoPresetItem {

@@ -65,6 +65,7 @@ interface EventContextType {
   setShowPublicLanding: (show: boolean) => void;
   lastRegisteredUser: AppUser | null;
   login: (email: string, role?: UserRole) => boolean;
+  loginWithGoogle: (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }) => boolean;
   register: (data: {
     name: string;
     email: string;
@@ -229,10 +230,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedGuestForPass, setSelectedGuestForPass] = useState<Guest | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Auth & Roles State
+  // Auth & Roles State: Default to null for public visitor experience
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
     const saved = localStorage.getItem('aa_current_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS.ORGANIZER;
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [activeRole, setActiveRole] = useState<UserRole>(() => {
@@ -242,7 +243,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'registered_success'>('login');
-  const [showPublicLanding, setShowPublicLanding] = useState<boolean>(false);
+  const [showPublicLanding, setShowPublicLanding] = useState<boolean>(() => {
+    // If no logged in user, show public landing page by default
+    const saved = localStorage.getItem('aa_current_user');
+    return !saved;
+  });
   const [lastRegisteredUser, setLastRegisteredUser] = useState<AppUser | null>(null);
 
   const showToast = (msg: string) => {
@@ -250,6 +255,36 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTimeout(() => {
       setToastMessage((cur) => (cur === msg ? null : cur));
     }, 4000);
+  };
+
+  const loginWithGoogle = (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }): boolean => {
+    const profile = googleProfile || {
+      name: 'Taufiq Aminudin',
+      email: 'taufiq.aminudin@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      role: 'ORGANIZER' as UserRole,
+    };
+
+    const targetRole = profile.role || 'ORGANIZER';
+    const googleUser: AppUser = {
+      id: `usr_google_${Date.now()}`,
+      name: profile.name,
+      email: profile.email,
+      phone: '+6281234567890',
+      role: targetRole,
+      organizationName: 'Event Planner & Organizer',
+      associatedEventId: currentProject.id,
+      createdAt: Date.now(),
+    };
+
+    setCurrentUser(googleUser);
+    setActiveRole(targetRole);
+    localStorage.setItem('aa_current_user', JSON.stringify(googleUser));
+    localStorage.setItem('aa_active_role', targetRole);
+    setShowAuthModal(false);
+    setShowPublicLanding(false);
+    showToast(`Berhasil masuk dengan Google sebagai ${googleUser.name}!`);
+    return true;
   };
 
   const login = (email: string, role?: UserRole): boolean => {
@@ -296,7 +331,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLastRegisteredUser(newUser);
     localStorage.setItem('aa_current_user', JSON.stringify(newUser));
     localStorage.setItem('aa_active_role', newUser.role);
-    setAuthModalMode('registered_success');
+    setShowPublicLanding(false);
+    setShowAuthModal(false);
     showToast(`Pendaftaran berhasil! Akun ${newUser.role} Anda telah aktif.`);
     return newUser;
   };
@@ -304,7 +340,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('aa_current_user');
-    showToast('Sesi telah diakhiri. Silakan login kembali.');
+    setShowPublicLanding(true);
+    showToast('Anda telah keluar dari akun.');
   };
 
   const switchRole = (newRole: UserRole) => {
@@ -1060,6 +1097,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setShowPublicLanding,
         lastRegisteredUser,
         login,
+        loginWithGoogle,
         register,
         logout,
         switchRole,

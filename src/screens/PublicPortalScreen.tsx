@@ -13,27 +13,66 @@ import {
   Eye,
   Star,
   Zap,
+  Palette,
+  Heart,
+  ExternalLink,
+  ChevronRight,
+  Camera,
+  Layers,
+  Clock,
+  MapPin,
+  LogIn,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { AALogo } from '../components/AALogo';
 import { PWAInstallButton } from '../components/PWAInstallButton';
 import { GoogleAdSlot } from '../components/GoogleAdSlot';
+import { TemplateDetailModal } from '../components/TemplateDetailModal';
+import { TemplateItem } from '../types';
 
 export const PublicPortalScreen: React.FC = () => {
   const {
     setShowAuthModal,
-    setAuthModalMode,
     setShowPublicPreview,
     setShowPublicLanding,
+    setActiveTab,
+    currentUser,
     guests,
     setSelectedGuestForPass,
-    setShowQrCheckinModal,
+    templates,
+    selectTemplate,
     showToast,
   } = useEvent();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<any | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [activePreviewTemplate, setActivePreviewTemplate] = useState<TemplateItem | null>(null);
+
+  const categories = [
+    'Semua',
+    'Wedding',
+    'Adat Nusantara',
+    'Modern Minimalist',
+    'Birthday',
+    'Corporate',
+    'Baby',
+  ];
+
+  const filteredTemplates =
+    selectedCategory === 'Semua'
+      ? templates
+      : templates.filter((t) => {
+          if (selectedCategory === 'Wedding') return t.category === 'Wedding';
+          if (selectedCategory === 'Adat Nusantara')
+            return t.category === 'Adat Heritage' || t.title.toLowerCase().includes('jawa') || t.title.toLowerCase().includes('sunda') || t.title.toLowerCase().includes('bali');
+          if (selectedCategory === 'Modern Minimalist') return t.category === 'Modern';
+          if (selectedCategory === 'Birthday') return t.category === 'Birthday';
+          if (selectedCategory === 'Corporate') return t.category === 'Corporate';
+          if (selectedCategory === 'Baby') return t.category === 'Baby';
+          return true;
+        });
 
   const handleSearchGuest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,84 +88,141 @@ export const PublicPortalScreen: React.FC = () => {
     setSearchResult(found || null);
   };
 
+  const handleCreateInvitationCTA = () => {
+    if (currentUser) {
+      setShowPublicLanding(false);
+      setActiveTab(1); // Go to Invitation editor
+    } else {
+      showToast('Masuk dengan Google untuk langsung mulai membuat undangan Anda.');
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleSelectTemplateCTA = (tmpl: TemplateItem) => {
+    selectTemplate(tmpl.title);
+    if (currentUser) {
+      setShowPublicLanding(false);
+      setActiveTab(1);
+      showToast(`Template "${tmpl.title}" siap diedit!`);
+    } else {
+      showToast(`Masuk dengan Google untuk mengkustomisasi template "${tmpl.title}".`);
+      setShowAuthModal(true);
+    }
+  };
+
+  const scrollToTemplates = () => {
+    const el = document.getElementById('templates-explorer');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
+    <div id="public-homepage" className="min-h-screen bg-[#f8fafc] text-slate-900">
       {/* Top Public Bar */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <AALogo variant="header" size="sm" onClick={() => setShowPublicLanding(false)} />
+          <AALogo variant="header" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+
+          {/* Navigation links on desktop */}
+          <nav className="hidden md:flex items-center space-x-6 text-xs font-bold text-slate-600">
+            <button
+              onClick={scrollToTemplates}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Koleksi Template
+            </button>
+            <a href="#fitur-utama" className="hover:text-blue-600 transition-colors">
+              Fitur Unggulan
+            </a>
+            <a href="#portal-tamu" className="hover:text-blue-600 transition-colors">
+              Cek E-Pass Tamu
+            </a>
+            <a href="#paket-harga" className="hover:text-blue-600 transition-colors">
+              Paket Harga
+            </a>
+          </nav>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
             <PWAInstallButton variant="navbar" />
 
-            <button
-              onClick={() => {
-                setAuthModalMode('login');
-                setShowAuthModal(true);
-              }}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            >
-              Masuk
-            </button>
+            {currentUser ? (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowPublicLanding(false)}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5"
+                >
+                  <span>Buka Dasbor Saya</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center space-x-1.5"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Masuk dengan Google</span>
+                </button>
 
-            <button
-              onClick={() => {
-                setAuthModalMode('register');
-                setShowAuthModal(true);
-              }}
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-xs transition-all"
-            >
-              Daftar Gratis
-            </button>
-
-            <button
-              onClick={() => setShowPublicLanding(false)}
-              className="hidden md:inline-flex px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
-            >
-              Buka App
-            </button>
+                <button
+                  onClick={handleCreateInvitationCTA}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:opacity-95 text-white font-bold text-xs shadow-xs transition-all"
+                >
+                  Buat Undangan
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 bg-gradient-to-b from-blue-50/60 via-white to-slate-50">
+      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 bg-gradient-to-b from-blue-50/70 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-100/70 border border-blue-200 text-blue-800 text-xs font-bold mb-6">
             <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-            <span>Platform No. 1 Persiapan Pernikahan & Manajemen Acara</span>
+            <span>Platform No. 1 Pembuat Undangan Digital & Manajemen Acara</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-4xl mx-auto leading-tight">
             Plan • Manage • Make It Happen.
             <br />
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">
-              Wujudkan Event Sempurna Tanpa Ribet
+              Undangan Digital Cantik & Manajemen Tamu Cepat
             </span>
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Dari undangan digital eksklusif, buku tamu QR check-in pintar, tracking konfirmasi RSVP otomatis, hingga kalkulator budget multi-mata uang untuk pengantin & vendor.
+            Pilih dari puluhan tema adat Nusantara & modern, unggah foto momen terbaik Anda, kelola konfirmasi RSVP instan via WhatsApp, dan percepat antrean masuk dengan E-Pass QR code cerdas.
           </p>
 
+          {/* Primary Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={() => {
-                setAuthModalMode('register');
-                setShowAuthModal(true);
-              }}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center space-x-2"
+              onClick={handleCreateInvitationCTA}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <span>Mulai Buat Acara Gratis</span>
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Buat Undangan Sekarang</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
+              onClick={scrollToTemplates}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <Palette className="w-4 h-4 text-indigo-600" />
+              <span>Jelajahi Template</span>
+            </button>
+
+            <button
               onClick={() => setShowPublicPreview(true)}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <Eye className="w-4 h-4 text-pink-600" />
-              <span>Lihat Demo Undangan</span>
+              <span>Contoh Undangan Nyata</span>
             </button>
           </div>
 
@@ -134,32 +230,172 @@ export const PublicPortalScreen: React.FC = () => {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-medium">
             <div className="flex items-center space-x-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>100% Mobile & PWA Ready</span>
+              <span>Foto Otomatis Terkompresi Cepat</span>
             </div>
             <div className="flex items-center space-x-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Support Android Play Store / TWA</span>
+              <span>100% Responsif Smartphone</span>
             </div>
             <div className="flex items-center space-x-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>QR Check-in Super Cepat</span>
+              <span>Login Instan dengan Akun Google</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>QR Check-in Buku Tamu</span>
             </div>
           </div>
         </div>
       </section>
 
+      {/* SECTION: EXPLORE REALISTIC TEMPLATES */}
+      <section id="templates-explorer" className="py-16 bg-white border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold mb-3">
+              <Palette className="w-3.5 h-3.5" />
+              <span>Katalog Undangan Terlengkap</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Pilihan Tema Estetik & Realistis
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-2">
+              Setiap template dirancang dengan ornamen budaya otentik, palet warna elegan, dan tipografi berkualitas tinggi yang siap Anda sematkan foto-foto terbaik.
+            </p>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex items-center justify-center space-x-2 overflow-x-auto no-scrollbar pb-3 mb-8">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Template Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((tmpl) => {
+              return (
+                <div
+                  key={tmpl.id}
+                  className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all overflow-hidden flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Realistic Visual Thumbnail with Cover Image & Motifs */}
+                    <div className="relative h-48 overflow-hidden bg-slate-900">
+                      <img
+                        src={tmpl.defaultCoverPhoto}
+                        alt={tmpl.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 border border-white/10 shadow-xs">
+                          {tmpl.styleTag}
+                        </span>
+                        <span
+                          className="w-4 h-4 rounded-full border-2 border-white shadow-xs"
+                          style={{ backgroundColor: tmpl.accentColor || '#f59e0b' }}
+                          title="Warna Aksen Tema"
+                        />
+                      </div>
+
+                      {/* Host & Date Preview inside thumbnail */}
+                      <div className="absolute bottom-3 left-3 right-3 text-white">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
+                          {tmpl.category}
+                        </div>
+                        <h3 className="text-base font-serif font-bold text-white drop-shadow-md truncate">
+                          {tmpl.sampleHosts || tmpl.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="p-5 space-y-3">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {tmpl.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {tmpl.description}
+                        </p>
+                      </div>
+
+                      {/* Sample Venue & Date Metadata */}
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px] text-slate-600">
+                        <div className="flex items-center space-x-1.5 truncate">
+                          <Calendar className="w-3 h-3 text-blue-500 shrink-0" />
+                          <span>{tmpl.sampleDate || 'Sabtu, 24 Oktober 2026'}</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 truncate">
+                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                          <span className="truncate">{tmpl.sampleVenue || 'Ballroom Hotel Indonesia'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="p-5 pt-0 flex items-center space-x-2 border-t border-slate-100 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setActivePreviewTemplate(tmpl)}
+                      className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Preview Realistis</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTemplateCTA(tmpl)}
+                      className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Gunakan</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-10 text-center">
+            <button
+              onClick={handleCreateInvitationCTA}
+              className="inline-flex items-center space-x-2 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <span>Ingin kustomisasi sendiri atau unggah foto Anda? Buka Pembuat Undangan</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Public Guest Portal: Search & Retrieve E-Pass */}
-      <section className="py-12 bg-white border-y border-slate-200/80">
+      <section id="portal-tamu" className="py-14 bg-slate-50 border-b border-slate-200/80">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-6">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
               Portal Undangan & E-Pass Tamu
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-              Cari Undangan & Tiket Masuk Anda
+            <h2 className="text-xl sm:text-3xl font-black text-slate-900 mt-1">
+              Cek E-Pass & Buku Tamu Anda
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Masukkan nama lengkap atau nomor telepon untuk melihat status E-Pass dan konfirmasi RSVP
+            <p className="text-xs text-slate-500 mt-1">
+              Masukkan nama lengkap atau nomor kontak untuk melihat status undangan dan tiket QR masuk Anda
             </p>
           </div>
 
@@ -170,8 +406,8 @@ export const PublicPortalScreen: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Ketik nama Anda (contoh: Hendra, Sinta)..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                placeholder="Ketik nama Anda (contoh: Hendra, Dimas, Sinta)..."
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden bg-white"
               />
             </div>
             <button
@@ -186,7 +422,7 @@ export const PublicPortalScreen: React.FC = () => {
           {hasSearched && (
             <div className="mt-6 max-w-xl mx-auto">
               {searchResult ? (
-                <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/80 border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in">
+                <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/90 border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in">
                   <div className="text-center sm:text-left">
                     <div className="text-xs font-bold text-blue-700 uppercase">E-Pass Ditemukan</div>
                     <div className="text-base font-black text-slate-900 mt-0.5">{searchResult.name}</div>
@@ -205,8 +441,8 @@ export const PublicPortalScreen: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 animate-in fade-in">
-                  Nama tidak ditemukan dalam daftar tamu. Silakan periksa kembali ejaan atau hubungi pihak penyelenggara acara.
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 text-center text-xs text-slate-600 animate-in fade-in">
+                  Nama belum terdaftar. Silakan hubungi pihak penyelenggara acara untuk konfirmasi.
                 </div>
               )}
             </div>
@@ -215,7 +451,7 @@ export const PublicPortalScreen: React.FC = () => {
       </section>
 
       {/* Core Feature Pillars */}
-      <section className="py-16 bg-slate-50">
+      <section id="fitur-utama" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">
@@ -230,27 +466,27 @@ export const PublicPortalScreen: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-black mb-4">
                 <Mail className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Undangan Digital Eksklusif</h3>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Tema sinematik, musik latar syahdu, galeri foto pre-wedding, countdown otomatis, dan amplop digital transfer bank & QRIS.
+                Tema sinematik, musik latar syahdu, galeri foto momen, countdown otomatis, serta panduan Google Maps terintegrasi.
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black mb-4">
                 <Users className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Buku Tamu QR & E-Pass</h3>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Check-in tamu kurang dari 2 detik via scanner kamera. Bebas antrean, tracking kehadiran VIP otomatis, dan cetak nomor meja.
+                Check-in tamu cepat via scanner kamera ponsel. Bebas antrean panjang, penataan nomor meja VIP, dan rekap otomatis.
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black mb-4">
                 <Wallet className="w-6 h-6" />
               </div>
@@ -260,13 +496,13 @@ export const PublicPortalScreen: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center font-black mb-4">
                 <Zap className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Jadwal Blast & Pengingat Otomatis</h3>
+              <h3 className="text-base font-bold text-slate-900">Auto RSVP & Blast WhatsApp</h3>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Kirim pengingat RSVP via email & WhatsApp blast otomatis menjelang hari H agar estimasi konsumsi catering akurat.
+                Kirim pengingat konfirmasi RSVP otomatis menjelang hari H agar estimasi konsumsi catering dan souvenir akurat.
               </p>
             </div>
           </div>
@@ -278,13 +514,8 @@ export const PublicPortalScreen: React.FC = () => {
         <PWAInstallButton variant="banner" />
       </div>
 
-      {/* AdSense Slot */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <GoogleAdSlot />
-      </div>
-
       {/* Pricing / Packages */}
-      <section className="py-16 bg-white border-t border-slate-200/80">
+      <section id="paket-harga" className="py-16 bg-white border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
@@ -309,10 +540,7 @@ export const PublicPortalScreen: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setAuthModalMode('register');
-                  setShowAuthModal(true);
-                }}
+                onClick={handleCreateInvitationCTA}
                 className="mt-6 w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
               >
                 Pilih Starter
@@ -337,10 +565,7 @@ export const PublicPortalScreen: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setAuthModalMode('register');
-                  setShowAuthModal(true);
-                }}
+                onClick={handleCreateInvitationCTA}
                 className="mt-6 w-full py-2.5 rounded-xl bg-white text-blue-900 text-xs font-bold hover:bg-blue-50 shadow-md"
               >
                 Pilih Professional
@@ -361,10 +586,7 @@ export const PublicPortalScreen: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setAuthModalMode('register');
-                  setShowAuthModal(true);
-                }}
+                onClick={handleCreateInvitationCTA}
                 className="mt-6 w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
               >
                 Hubungi Kami
@@ -380,17 +602,27 @@ export const PublicPortalScreen: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800">
             <AALogo variant="header" size="sm" className="text-white" />
             <div className="flex flex-wrap gap-4 text-xs text-slate-400">
-              <button onClick={() => alert('Kebijakan Privasi: Data tamu dan privasi acara Anda dienkripsi secara aman.')} className="hover:text-white">
+              <button
+                onClick={() =>
+                  showToast('Kebijakan Privasi: Data tamu dan privasi acara Anda terlindungi dan aman.')
+                }
+                className="hover:text-white"
+              >
                 Kebijakan Privasi
               </button>
-              <button onClick={() => alert('Ketentuan Layanan AA-EventMaker berlaku untuk semua akun terdaftar.')} className="hover:text-white">
+              <button
+                onClick={() =>
+                  showToast('Ketentuan Layanan AA-EventMaker berlaku untuk seluruh pengguna.')
+                }
+                className="hover:text-white"
+              >
                 Ketentuan Layanan
               </button>
-              <button onClick={() => alert('Bantuan & Dukungan: Hubungi support@aa-eventmaker.com')} className="hover:text-white">
-                Bantuan 24/7
-              </button>
-              <button onClick={() => setShowPublicLanding(false)} className="text-orange-400 hover:text-orange-300 font-bold">
-                Kembali ke Aplikasi Utama
+              <button
+                onClick={handleCreateInvitationCTA}
+                className="text-orange-400 hover:text-orange-300 font-bold"
+              >
+                Mulai Buat Undangan Sekarang ➔
               </button>
             </div>
           </div>
@@ -400,15 +632,25 @@ export const PublicPortalScreen: React.FC = () => {
               © 2026 AA-EventMaker. Hak Cipta Dilindungi Undang-Undang. Plan • Manage • Make It Happen.
             </div>
             <div className="flex items-center space-x-2 text-[11px]">
-              <span>Google Search Console Verified</span>
+              <span>Google OAuth 2.0 Ready</span>
               <span>•</span>
-              <span>AdSense Ready</span>
-              <span>•</span>
-              <span>Play Store / TWA Compliant</span>
+              <span>PWA Mobile Offline Enabled</span>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Realistic Template Detail Preview Modal */}
+      {activePreviewTemplate && (
+        <TemplateDetailModal
+          template={activePreviewTemplate}
+          onClose={() => setActivePreviewTemplate(null)}
+          onUseTemplate={(tmpl) => {
+            handleSelectTemplateCTA(tmpl);
+            setActivePreviewTemplate(null);
+          }}
+        />
+      )}
     </div>
   );
 };

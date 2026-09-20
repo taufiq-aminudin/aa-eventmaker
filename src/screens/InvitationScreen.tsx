@@ -9,8 +9,14 @@ import {
   Sparkles,
   Palette,
   ExternalLink,
+  Camera,
+  Heart,
+  ImageIcon,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
+import { InvitationPhotoUploader } from '../components/InvitationPhotoUploader';
+import { TemplateDetailModal } from '../components/TemplateDetailModal';
+import { TemplateItem } from '../types';
 
 export const InvitationScreen: React.FC = () => {
   const {
@@ -37,6 +43,7 @@ export const InvitationScreen: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [previewingTemplate, setPreviewingTemplate] = useState<TemplateItem | null>(null);
 
   const categories = ['All', 'Wedding', 'Adat Heritage', 'Modern', 'Birthday', 'Corporate'];
 
@@ -68,7 +75,7 @@ export const InvitationScreen: React.FC = () => {
             <h1 className="text-lg font-bold text-slate-900">Pembuat Undangan Digital (E-Invitation)</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Pilih tema estetik, kustomisasi informasi acara, dan bagikan tautan kepada tamu undangan.
+            Pilih tema estetik, unggah foto mempelai / momen, kustomisasi informasi acara, dan bagikan tautan kepada tamu undangan.
           </p>
         </div>
 
@@ -89,6 +96,9 @@ export const InvitationScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Upload Photos Component */}
+      <InvitationPhotoUploader />
 
       {/* Template Gallery Section */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
@@ -133,21 +143,25 @@ export const InvitationScreen: React.FC = () => {
                 }`}
               >
                 <div>
-                  {/* Visual Header */}
-                  <div
-                    className={`h-24 rounded-xl ${tmpl.gradientTheme} p-3 flex flex-col justify-between text-white relative overflow-hidden shadow-inner mb-3`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-white">
+                  {/* Visual Header with Real Image Thumbnail */}
+                  <div className="relative h-28 rounded-xl overflow-hidden mb-3 shadow-inner group">
+                    <img
+                      src={tmpl.defaultCoverPhoto}
+                      alt={tmpl.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    <div className="absolute top-2 left-2 right-2 flex justify-between items-center">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white">
                         {tmpl.styleTag}
                       </span>
                       {isSelected && (
-                        <div className="w-6 h-6 rounded-full bg-white text-[#6d28d9] flex items-center justify-center shadow-md">
-                          <Check className="w-4 h-4 stroke-[3]" />
+                        <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </div>
                       )}
                     </div>
-                    <div className="text-xs font-serif font-bold text-white drop-shadow-sm">
+                    <div className="absolute bottom-2 left-2 right-2 text-xs font-serif font-bold text-white drop-shadow-sm truncate">
                       {tmpl.title}
                     </div>
                   </div>
@@ -158,20 +172,34 @@ export const InvitationScreen: React.FC = () => {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[11px] text-slate-400 font-medium">{tmpl.category}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectTemplate(tmpl.title);
-                    }}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
-                      isSelected
-                        ? 'bg-[#6d28d9] text-white'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {isSelected ? 'Terpilih' : 'Terapkan'}
-                  </button>
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewingTemplate(tmpl);
+                      }}
+                      className="text-xs font-semibold px-2.5 py-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center space-x-1"
+                      title="Lihat Preview Realistis"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Preview</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectTemplate(tmpl.title);
+                      }}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                        isSelected
+                          ? 'bg-[#6d28d9] text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {isSelected ? 'Terpilih' : 'Terapkan'}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -297,11 +325,11 @@ export const InvitationScreen: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                URL Slug Khusus
+                URL Slug Khusus Undangan
               </label>
               <div className="flex items-center">
                 <span className="text-xs bg-slate-100 border border-r-0 border-slate-200 px-3 py-2.5 rounded-l-xl text-slate-500">
-                  aaeventmaker.app/
+                  /#invitation/
                 </span>
                 <input
                   type="text"
@@ -335,19 +363,39 @@ export const InvitationScreen: React.FC = () => {
             </div>
 
             {/* Inner Phone Screen */}
-            <div className="bg-[#0b0f19] text-slate-100 rounded-[28px] overflow-y-auto max-h-[500px] text-center p-4 space-y-4 no-scrollbar">
-              <div className="py-4 bg-gradient-to-b from-purple-900/50 to-pink-900/40 rounded-2xl p-3 border border-purple-800/40">
-                <span className="text-[9px] uppercase tracking-widest text-amber-200 font-semibold block mb-1">
-                  WEDDING INVITATION
-                </span>
-                <h3 className="text-lg font-serif font-bold text-white leading-tight">
-                  {formData.hosts || 'Mempelai'}
-                </h3>
-                <p className="text-[10px] text-purple-200 mt-1 italic">{formData.title}</p>
-                <div className="mt-2 text-[9px] bg-black/40 px-2 py-0.5 rounded-full inline-block text-slate-300">
-                  {formData.date}
+            <div className="bg-[#0b0f19] text-slate-100 rounded-[28px] overflow-y-auto max-h-[520px] text-center p-4 space-y-4 no-scrollbar">
+              {/* Cover Banner with Uploaded / Default Cover */}
+              <div className="relative py-4 bg-gradient-to-b from-purple-900/60 to-pink-900/50 rounded-2xl p-3 border border-purple-800/40 overflow-hidden">
+                {invitation.coverPhoto && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity"
+                    style={{ backgroundImage: `url(${invitation.coverPhoto})` }}
+                  />
+                )}
+                <div className="relative z-10">
+                  <span className="text-[9px] uppercase tracking-widest text-amber-200 font-semibold block mb-1">
+                    WEDDING INVITATION
+                  </span>
+                  <h3 className="text-lg font-serif font-bold text-white leading-tight">
+                    {formData.hosts || 'Mempelai'}
+                  </h3>
+                  <p className="text-[10px] text-purple-200 mt-1 italic">{formData.title}</p>
+                  <div className="mt-2 text-[9px] bg-black/40 px-2 py-0.5 rounded-full inline-block text-slate-300">
+                    {formData.date}
+                  </div>
                 </div>
               </div>
+
+              {/* Couple Photo if uploaded */}
+              {invitation.couplePhoto && (
+                <div className="flex justify-center">
+                  <img
+                    src={invitation.couplePhoto}
+                    alt="Mempelai"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-amber-400 shadow-md"
+                  />
+                </div>
+              )}
 
               <div className="text-[10px] text-slate-300 font-light leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
                 "{formData.opening.slice(0, 110)}..."
@@ -363,6 +411,14 @@ export const InvitationScreen: React.FC = () => {
                 </div>
                 <div className="text-slate-400 text-[9px] line-clamp-1">{formData.address}</div>
               </div>
+
+              {/* Gallery count indicator */}
+              {(invitation.galleryPhotos || []).length > 0 && (
+                <div className="flex items-center justify-center space-x-1 text-[10px] text-slate-400">
+                  <ImageIcon className="w-3 h-3 text-purple-400" />
+                  <span>{invitation.galleryPhotos?.length} Foto Galeri Tersedia</span>
+                </div>
+              )}
 
               <div className="p-3 bg-purple-950/40 border border-purple-800/40 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-pink-300 block mb-1">
@@ -380,6 +436,18 @@ export const InvitationScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Template Detail Realistic Preview Modal */}
+      {previewingTemplate && (
+        <TemplateDetailModal
+          template={previewingTemplate}
+          onClose={() => setPreviewingTemplate(null)}
+          onUseTemplate={(t) => {
+            selectTemplate(t.title);
+            setPreviewingTemplate(null);
+          }}
+        />
+      )}
     </div>
   );
 };
