@@ -6,6 +6,7 @@ export type AppRoute =
   | '/features'
   | '/guest-pass'
   | '/pricing'
+  | '/payment'
   | '/about'
   | '/contact'
   | '/help'
@@ -18,18 +19,21 @@ export type AppRoute =
   | '/guests'
   | '/settings'
   | '/admin'
+  | '/admin/payments'
   | '/invitation/:slug';
 
 interface RouteMatch {
   path: string;
   route: AppRoute;
   params: Record<string, string>;
+  queryParams: Record<string, string>;
 }
 
 interface RouterContextType {
   currentPath: string;
   currentRoute: AppRoute;
   params: Record<string, string>;
+  queryParams: Record<string, string>;
   navigate: (to: string, options?: { replace?: boolean }) => void;
   isPublicRoute: boolean;
 }
@@ -38,6 +42,16 @@ const RouterContext = createContext<RouterContextType | undefined>(undefined);
 
 function matchRoute(rawPath: string): RouteMatch {
   let path = rawPath.trim();
+
+  // Extract query parameters before stripping
+  const queryParams: Record<string, string> = {};
+  const queryPart = path.includes('?') ? path.split('?')[1] : (typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '');
+  if (queryPart) {
+    const sp = new URLSearchParams(queryPart.split('#')[0]);
+    sp.forEach((val, key) => {
+      queryParams[key] = val;
+    });
+  }
 
   // Strip hash prefix if hash routing is used (e.g. #/templates or #invitation/...)
   if (path.startsWith('#/')) {
@@ -58,6 +72,7 @@ function matchRoute(rawPath: string): RouteMatch {
       path,
       route: '/invitation/:slug',
       params: { slug: invitationMatch[1] },
+      queryParams,
     };
   }
 
@@ -67,6 +82,7 @@ function matchRoute(rawPath: string): RouteMatch {
     '/features',
     '/guest-pass',
     '/pricing',
+    '/payment',
     '/about',
     '/contact',
     '/help',
@@ -79,6 +95,7 @@ function matchRoute(rawPath: string): RouteMatch {
     '/guests',
     '/settings',
     '/admin',
+    '/admin/payments',
   ];
 
   if (staticRoutes.includes(path as AppRoute)) {
@@ -86,6 +103,7 @@ function matchRoute(rawPath: string): RouteMatch {
       path,
       route: path as AppRoute,
       params: {},
+      queryParams,
     };
   }
 
@@ -94,6 +112,7 @@ function matchRoute(rawPath: string): RouteMatch {
     path,
     route: '/',
     params: {},
+    queryParams,
   };
 }
 
@@ -151,6 +170,7 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     '/features',
     '/guest-pass',
     '/pricing',
+    '/payment',
     '/about',
     '/contact',
     '/help',
@@ -167,6 +187,7 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         currentPath: match.path,
         currentRoute: match.route,
         params: match.params,
+        queryParams: match.queryParams,
         navigate,
         isPublicRoute,
       }}

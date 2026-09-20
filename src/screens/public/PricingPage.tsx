@@ -170,14 +170,39 @@ export const PricingPage: React.FC = () => {
 
                 <div className="mt-8 pt-4">
                   <button
-                    onClick={() => navigate('/create')}
-                    className={`w-full py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${p.buttonClass}`}
+                    onClick={() => navigate(`/payment?package=${p.id}`)}
+                    className={`w-full py-3.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1.5 ${p.buttonClass}`}
                   >
-                    {p.cta} ➔
+                    <span>Choose Package</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Payment Guarantee & Method Banner */}
+          <div className="max-w-4xl mx-auto mb-16 p-6 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border border-blue-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  Metode Pembayaran Resmi AA Event Maker
+                </h4>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Tersedia via <span className="font-bold text-slate-900">Bank Mandiri (1850007334896)</span> &amp; <span className="font-bold text-slate-900">DANA (081382000412)</span> a.n. Taufiq Aminudin.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/payment')}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0 transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Halaman Pembayaran ➔</span>
+            </button>
           </div>
 
           {/* Feature Comparison Table */}

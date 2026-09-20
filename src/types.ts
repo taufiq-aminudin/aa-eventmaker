@@ -1,5 +1,46 @@
 export type UserRole = 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST';
 
+export type PaymentStatus = 'Pending' | 'Under Review' | 'Paid' | 'Rejected' | 'Refunded';
+
+export type PaymentMethodType = 'Bank Mandiri' | 'DANA';
+
+export interface PaymentSubmission {
+  id: string;
+  orderId: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  amountFormatted: string;
+  paymentMethod: PaymentMethodType;
+  paymentDate: string;
+  referenceNumber: string;
+  proofDataUrl?: string;
+  proofFileName?: string;
+  proofFileType?: string;
+  notes?: string;
+  status: PaymentStatus;
+  adminNotes?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: number;
+}
+
+export interface PackagePlan {
+  id: string;
+  name: string;
+  badge: string;
+  price: number;
+  priceFormatted: string;
+  period: string;
+  description: string;
+  features: string[];
+  cta: string;
+  isPopular?: boolean;
+}
+
 export interface AppUser {
   id: string;
   name: string;
@@ -9,6 +50,7 @@ export interface AppUser {
   avatar?: string;
   organizationName?: string;
   associatedEventId?: string;
+  subscriptionTier?: 'starter' | 'professional' | 'agency';
   createdAt: number;
 }
 

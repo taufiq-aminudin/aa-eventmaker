@@ -21,6 +21,9 @@ import {
   EventType,
   UserRole,
   AppUser,
+  PaymentSubmission,
+  PaymentStatus,
+  PaymentMethodType,
 } from '../types';
 import {
   INITIAL_PROJECT,
@@ -178,6 +181,28 @@ interface EventContextType {
   // AI Concept Creator
   aiConcept: AiConceptResult;
   generateAiConcept: (prompt: string) => void;
+
+  // Payment Management
+  payments: PaymentSubmission[];
+  activeSubscriptionTier: 'starter' | 'professional' | 'agency';
+  submitPayment: (data: {
+    customerName: string;
+    email: string;
+    phone: string;
+    packageId: string;
+    packageName: string;
+    amount: number;
+    amountFormatted: string;
+    paymentMethod: PaymentMethodType;
+    paymentDate: string;
+    referenceNumber: string;
+    proofDataUrl?: string;
+    proofFileName?: string;
+    proofFileType?: string;
+    notes?: string;
+  }) => PaymentSubmission;
+  updatePaymentStatus: (paymentId: string, status: PaymentStatus, adminNotes?: string) => void;
+  deletePayment: (paymentId: string) => void;
 }
 
 export const DEFAULT_USERS: Record<UserRole, AppUser> = {
@@ -424,6 +449,89 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('aa_selected_currency');
     return (saved as CurrencyCode) || 'IDR';
   });
+
+  const INITIAL_PAYMENTS: PaymentSubmission[] = [
+    {
+      id: 'pay_sub_01',
+      orderId: 'AA-PAY-2026-9182',
+      customerName: 'Bagas Prasetyo & Annisa',
+      email: 'bagas.annisa@gmail.com',
+      phone: '081289123456',
+      packageId: 'professional',
+      packageName: 'Wedding Professional',
+      amount: 299000,
+      amountFormatted: 'Rp 299.000',
+      paymentMethod: 'Bank Mandiri',
+      paymentDate: '2026-09-18',
+      referenceNumber: 'MDR-8823901429',
+      proofFileName: 'bukti_transfer_mandiri_bagas.jpg',
+      proofFileType: 'image/jpeg',
+      notes: 'Mohon verifikasi segera untuk persiapan resepsi November 2026.',
+      status: 'Pending',
+      createdAt: 1726650000000,
+    },
+    {
+      id: 'pay_sub_02',
+      orderId: 'AA-PAY-2026-8741',
+      customerName: 'Citra Kirana & Reza',
+      email: 'citra.reza@gmail.com',
+      phone: '081377889900',
+      packageId: 'professional',
+      packageName: 'Wedding Professional',
+      amount: 299000,
+      amountFormatted: 'Rp 299.000',
+      paymentMethod: 'DANA',
+      paymentDate: '2026-09-19',
+      referenceNumber: 'DANA-20260919102948',
+      proofFileName: 'dana_transfer_citra.png',
+      proofFileType: 'image/png',
+      notes: 'Transfer via dompet DANA ke nomor 081382000412.',
+      status: 'Under Review',
+      adminNotes: 'Sedang dicek mutasi saldo masuk ke DANA Taufiq Aminudin.',
+      createdAt: 1726730000000,
+    },
+    {
+      id: 'pay_sub_03',
+      orderId: 'AA-PAY-2026-7612',
+      customerName: 'Pratama Wedding Planner (Rian)',
+      email: 'rian@pratamaplanner.com',
+      phone: '081122334455',
+      packageId: 'agency',
+      packageName: 'EO & Agency',
+      amount: 899000,
+      amountFormatted: 'Rp 899.000',
+      paymentMethod: 'Bank Mandiri',
+      paymentDate: '2026-09-15',
+      referenceNumber: 'MDR-9901823712',
+      proofFileName: 'mandiri_livin_agency_rian.jpg',
+      proofFileType: 'image/jpeg',
+      notes: 'Upgrade lisensi tahunan EO & Agency untuk 5 event klien.',
+      status: 'Paid',
+      adminNotes: 'Dana sudah terverifikasi di mutasi Mandiri Taufiq Aminudin. Akun Agency aktif.',
+      reviewedBy: 'Taufiq Aminudin (Admin)',
+      reviewedAt: '15/09/2026, 14:20 WIB',
+      createdAt: 1726380000000,
+    },
+  ];
+
+  const [payments, setPayments] = useState<PaymentSubmission[]>(() => {
+    const saved = localStorage.getItem('aa_payments_data');
+    return saved ? JSON.parse(saved) : INITIAL_PAYMENTS;
+  });
+
+  const [activeSubscriptionTier, setActiveSubscriptionTier] = useState<'starter' | 'professional' | 'agency'>(() => {
+    const saved = localStorage.getItem('aa_active_subscription_tier');
+    return (saved as 'starter' | 'professional' | 'agency') || 'starter';
+  });
+
+  // Sync payments & subscription
+  useEffect(() => {
+    localStorage.setItem('aa_payments_data', JSON.stringify(payments));
+  }, [payments]);
+
+  useEffect(() => {
+    localStorage.setItem('aa_active_subscription_tier', activeSubscriptionTier);
+  }, [activeSubscriptionTier]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -1071,6 +1179,73 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`Konsep tema AI "${generated.themeTitle}" berhasil dirumuskan!`);
   };
 
+  // Payment Actions
+  const submitPayment = (data: {
+    customerName: string;
+    email: string;
+    phone: string;
+    packageId: string;
+    packageName: string;
+    amount: number;
+    amountFormatted: string;
+    paymentMethod: PaymentMethodType;
+    paymentDate: string;
+    referenceNumber: string;
+    proofDataUrl?: string;
+    proofFileName?: string;
+    proofFileType?: string;
+    notes?: string;
+  }): PaymentSubmission => {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const orderId = `AA-PAY-${new Date().getFullYear()}-${randomSuffix}`;
+    const newSubmission: PaymentSubmission = {
+      ...data,
+      id: `pay_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      orderId,
+      status: 'Pending',
+      createdAt: Date.now(),
+    };
+
+    setPayments((prev) => [newSubmission, ...prev]);
+    showToast(`Konfirmasi pembayaran berhasil dikirim! ID Pesanan: ${orderId}`);
+    return newSubmission;
+  };
+
+  const updatePaymentStatus = (paymentId: string, status: PaymentStatus, adminNotes?: string) => {
+    setPayments((prev) =>
+      prev.map((item) => {
+        if (item.id === paymentId) {
+          const nowStr = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) + ' WIB';
+          const updated: PaymentSubmission = {
+            ...item,
+            status,
+            adminNotes: adminNotes !== undefined ? adminNotes : item.adminNotes,
+            reviewedBy: currentUser ? currentUser.name : 'Taufiq Aminudin (Admin)',
+            reviewedAt: nowStr,
+          };
+
+          // If approved & Paid, activate the appropriate paid package
+          if (status === 'Paid') {
+            if (item.packageId === 'agency') {
+              setActiveSubscriptionTier('agency');
+            } else if (item.packageId === 'professional' && activeSubscriptionTier !== 'agency') {
+              setActiveSubscriptionTier('professional');
+            }
+          }
+
+          return updated;
+        }
+        return item;
+      })
+    );
+    showToast(`Status pembayaran diperbarui: ${status}`);
+  };
+
+  const deletePayment = (paymentId: string) => {
+    setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+    showToast('Data pembayaran berhasil dihapus.');
+  };
+
   return (
     <EventContext.Provider
       value={{
@@ -1162,6 +1337,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         aiConcept,
         generateAiConcept,
+
+        payments,
+        activeSubscriptionTier,
+        submitPayment,
+        updatePaymentStatus,
+        deletePayment,
       }}
     >
       {children}

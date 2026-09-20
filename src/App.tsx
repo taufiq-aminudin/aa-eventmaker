@@ -16,12 +16,14 @@ import { PricingPage } from './screens/public/PricingPage';
 import { AboutPage } from './screens/public/AboutPage';
 import { ContactPage } from './screens/public/ContactPage';
 import { HelpPage } from './screens/public/HelpPage';
+import { PaymentPage } from './screens/public/PaymentPage';
 import { AuthPage } from './screens/auth/AuthPage';
 
 // App Pages
 import { ProjectsPage } from './screens/app/ProjectsPage';
 import { CreateEventPage } from './screens/app/CreateEventPage';
 import { SettingsPage } from './screens/app/SettingsPage';
+import { AdminPaymentManagementScreen } from './screens/admin/AdminPaymentManagementScreen';
 
 // Lazy Loaded Workspace Screens & Modals for performance
 const HomeScreen = React.lazy(() =>
@@ -169,6 +171,8 @@ const MainRouter: React.FC = () => {
       return <GuestPassPage />;
     case '/pricing':
       return <PricingPage />;
+    case '/payment':
+      return <PaymentPage />;
     case '/about':
       return <AboutPage />;
     case '/contact':
@@ -179,6 +183,11 @@ const MainRouter: React.FC = () => {
       return <AuthPage initialMode="login" />;
     case '/signup':
       return <AuthPage initialMode="signup" />;
+
+    // Admin Pages
+    case '/admin':
+    case '/admin/payments':
+      return <AdminPaymentManagementScreen />;
 
     // App & Workspace Dedicated Pages
     case '/projects':

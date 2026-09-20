@@ -29,6 +29,7 @@ export const PublicHeader: React.FC = () => {
     { label: 'Fitur Unggulan', href: '/features', icon: Zap },
     { label: 'Cek E-Pass Tamu', href: '/guest-pass', icon: QrCode },
     { label: 'Paket Harga', href: '/pricing', icon: CreditCard },
+    { label: 'Pembayaran', href: '/payment', icon: CreditCard },
   ];
 
   const handleNavClick = (href: string) => {

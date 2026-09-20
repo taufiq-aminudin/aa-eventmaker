@@ -59,6 +59,11 @@ export const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/payment" className="hover:text-white transition-colors">
+                  Metode Pembayaran & Konfirmasi
+                </Link>
+              </li>
+              <li>
                 <Link to="/create" className="hover:text-amber-400 transition-colors font-semibold">
                   Buat Undangan Baru ➔
                 </Link>

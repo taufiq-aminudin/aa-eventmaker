@@ -18,6 +18,7 @@ import {
   Heart,
   Camera,
   Ticket,
+  CreditCard,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { EventType, UserRole } from '../types';
@@ -331,6 +332,19 @@ export const Navbar: React.FC = () => {
                     </button>
 
                     <div className="border-t border-slate-100 my-1 pt-1">
+                      {activeRole === 'ORGANIZER' && (
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            navigate('/admin/payments');
+                          }}
+                          className="w-full px-3.5 py-2 text-xs flex items-center space-x-2 text-left hover:bg-slate-50 text-blue-700 font-bold"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Verifikasi Pembayaran (Admin)</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
