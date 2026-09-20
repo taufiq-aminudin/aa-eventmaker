@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Calendar,
@@ -11,18 +11,24 @@ import {
   ExternalLink,
   Sparkles,
   CheckCircle,
-  Share2,
   Copy,
   Check,
   MessageCircle,
   Image as ImageIcon,
+  Gift,
+  CreditCard,
+  QrCode,
+  Play,
+  MailOpen,
+  Share2,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useEvent } from '../context/EventContext';
+import { globalAudioPlayer } from '../utils/audioPlayer';
 
 export const PublicInvitationView: React.FC = () => {
   const {
     invitation,
-    currentProject,
     memories,
     submitRsvp,
     setShowPublicPreview,
@@ -31,24 +37,72 @@ export const PublicInvitationView: React.FC = () => {
     showToast,
   } = useEvent();
 
+  // State
+  const [isOpenEnvelope, setIsOpenEnvelope] = useState(false);
+  const [recipientName, setRecipientName] = useState<string>('Tamu Undangan');
   const [guestName, setGuestName] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<'Confirmed' | 'Declined' | 'Maybe'>('Confirmed');
   const [pax, setPax] = useState<number>(2);
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [isPlayingMusic, setIsPlayingMusic] = useState(true);
+  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
+
+  // Countdown timer state
+  const [timeLeft, setTimeLeft] = useState({
+    days: 34,
+    hours: 12,
+    minutes: 45,
+    seconds: 18,
+  });
+
+  // Extract recipient name from query params (?to=Nama or ?guest=Nama)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let toParam = urlParams.get('to') || urlParams.get('guest');
+
+      if (!toParam && window.location.hash.includes('?')) {
+        const hashQuery = window.location.hash.split('?')[1];
+        const hashParams = new URLSearchParams(hashQuery);
+        toParam = hashParams.get('to') || hashParams.get('guest');
+      }
+
+      if (toParam) {
+        const cleanName = decodeURIComponent(toParam).replace(/\+/g, ' ');
+        setRecipientName(cleanName);
+        setGuestName(cleanName);
+      }
+    } catch (e) {
+      console.warn('Could not parse query params', e);
+    }
+  }, []);
+
+  // Countdown simulation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
+        return prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const matchedTemplate = templates.find((t) => t.title === invitation.templateName);
 
   const isSunda = invitation.templateName.toLowerCase().includes('sunda');
-  const isJawa = invitation.templateName.toLowerCase().includes('jawa');
+  const isJawa = invitation.templateName.toLowerCase().includes('jawa') || invitation.templateName.toLowerCase().includes('solo');
   const isBali = invitation.templateName.toLowerCase().includes('bali');
   const isGarden = invitation.templateName.toLowerCase().includes('garden');
   const isCorporate = matchedTemplate?.category === 'Corporate';
   const isBirthday = matchedTemplate?.category === 'Birthday';
-  const isBaby = matchedTemplate?.category === 'Baby';
+  const isBaby = matchedTemplate?.category === 'Baby' || matchedTemplate?.category === 'Kids';
 
   const themeGradient = isSunda
     ? 'from-[#064e3b] via-[#047857] to-[#10b981]'
@@ -86,30 +140,61 @@ export const PublicInvitationView: React.FC = () => {
           'https://images.unsplash.com/photo-1519225429712-421b9ec76fbe?auto=format&fit=crop&w=600&q=80',
         ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Open envelope handler
+  const handleOpenEnvelope = () => {
+    setIsOpenEnvelope(true);
+    // Fire celebratory confetti
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+    // Start ambient music
+    globalAudioPlayer.start();
+    setIsPlayingMusic(true);
+  };
+
+  const handleToggleMusic = () => {
+    const state = globalAudioPlayer.toggle();
+    setIsPlayingMusic(state);
+  };
+
+  const handleSubmitRsvp = (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) return;
     submitRsvp(guestName, rsvpStatus, pax, notes);
     setSubmitted(true);
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.7 },
+    });
   };
 
   const handleCopyLink = () => {
-    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}`;
+    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(recipientName)}`;
     navigator.clipboard.writeText(publicUrl);
     setCopiedLink(true);
-    showToast('Tautan undangan disalin!');
+    showToast('Tautan undangan dengan nama tamu berhasil disalin!');
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleCopyAccount = (acc: string, label: string) => {
+    navigator.clipboard.writeText(acc);
+    setCopiedAccount(acc);
+    showToast(`Nomor rekening ${label} berhasil disalin!`);
+    setTimeout(() => setCopiedAccount(null), 2000);
+  };
+
   const handleShareWhatsApp = () => {
-    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}`;
-    const text = `Halo! Anda diundang ke acara *${invitation.title}* (${invitation.hosts}). Buka undangan digital resmi di sini: ${publicUrl}`;
+    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(recipientName)}`;
+    const text = `Kepada Yth. *${recipientName}*,\n\nTanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).\n\nBuka undangan digital resmi kami melalui tautan berikut:\n${publicUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const handleClose = () => {
+    globalAudioPlayer.stop();
     setShowPublicPreview(false);
-    // If URL is in public invitation view hash, clear hash to show public home
     if (window.location.hash.startsWith('#invitation')) {
       window.location.hash = '';
       setShowPublicLanding(true);
@@ -121,12 +206,67 @@ export const PublicInvitationView: React.FC = () => {
       id="public-invitation-view"
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 flex flex-col items-center justify-start selection:bg-purple-500 selection:text-white"
     >
-      {/* Top Floating Bar */}
+      {/* 1. ENVELOPE / WAX SEAL OPENING GATEWAY MODAL */}
+      {!isOpenEnvelope && (
+        <div className="fixed inset-0 z-60 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-gradient-to-b from-[#111827] to-[#0b0f19] border border-amber-500/30 rounded-3xl p-6 sm:p-8 text-center shadow-2xl space-y-6 relative overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Background shimmer */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="space-y-2">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-bold tracking-widest uppercase">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Undangan Pernikahan Resmi</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-black text-white pt-2">
+                {invitation.hosts}
+              </h2>
+              <p className="text-xs text-slate-300 italic font-serif">"{invitation.title}"</p>
+            </div>
+
+            {/* Couple Cover Thumbnail */}
+            <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-full p-1 border-2 border-amber-400/50 shadow-xl overflow-hidden">
+              <img
+                src={displayCouple}
+                alt={invitation.hosts}
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+
+            {/* Recipient Greeting Box */}
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+              <div className="text-[11px] text-slate-400 font-medium">Kepada Yth. Bapak/Ibu/Saudara/i:</div>
+              <div className="text-base font-bold text-amber-300">{recipientName}</div>
+              <div className="text-[10px] text-slate-400">Mohon maaf bila ada kesalahan penulisan nama & gelar</div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleOpenEnvelope}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-xl shadow-amber-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-102"
+              >
+                <MailOpen className="w-4 h-4" />
+                <span>Buka Undangan Digital</span>
+              </button>
+
+              <button
+                onClick={handleClose}
+                className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. TOP FLOATING APP BAR */}
       <div className="sticky top-0 z-30 w-full max-w-2xl bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-lg">
         <div className="flex items-center space-x-2 min-w-0">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span className="text-xs font-bold text-slate-200 truncate">
-            Undangan Resmi • {invitation.templateName}
+            {invitation.hosts} • {invitation.templateName}
           </span>
         </div>
 
@@ -134,27 +274,37 @@ export const PublicInvitationView: React.FC = () => {
           <button
             onClick={handleCopyLink}
             className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors flex items-center space-x-1"
-            title="Salin Tautan"
+            title="Salin Tautan Khusus Tamu Ini"
           >
             {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{copiedLink ? 'Tersalin' : 'Salin'}</span>
+            <span className="hidden sm:inline">{copiedLink ? 'Tersalin' : 'Salin Link'}</span>
           </button>
 
           <button
             onClick={handleShareWhatsApp}
             className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center space-x-1"
-            title="Bagikan ke WhatsApp"
+            title="Kirim Pesan WhatsApp Personal"
           >
             <MessageCircle className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">WhatsApp</span>
           </button>
 
+          {/* Equalizer Audio Toggle */}
           <button
-            onClick={() => setIsPlayingMusic(!isPlayingMusic)}
-            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-            title="Musik Latar"
+            onClick={handleToggleMusic}
+            className={`p-1.5 rounded-xl transition-all flex items-center space-x-1 ${
+              isPlayingMusic ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
+            }`}
+            title="Nyalakan / Matikan Musik"
           >
-            {isPlayingMusic ? <Volume2 className="w-4 h-4 text-pink-400" /> : <VolumeX className="w-4 h-4" />}
+            {isPlayingMusic ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {isPlayingMusic && (
+              <div className="flex items-center space-x-0.5 h-3 px-1">
+                <span className="w-0.5 h-2 bg-slate-950 animate-bounce" />
+                <span className="w-0.5 h-3 bg-slate-950 animate-pulse" />
+                <span className="w-0.5 h-1.5 bg-slate-950 animate-bounce" />
+              </div>
+            )}
           </button>
 
           <button
@@ -167,13 +317,10 @@ export const PublicInvitationView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Invitation Container */}
+      {/* 3. MAIN INVITATION BODY */}
       <div className="w-full max-w-xl min-h-screen bg-[#0b0f19] border-x border-slate-800 shadow-2xl flex flex-col">
-        {/* Hero Section with Cover Photo */}
-        <div
-          className={`relative px-6 py-20 sm:py-28 text-center bg-gradient-to-b ${themeGradient} overflow-hidden`}
-        >
-          {/* Cover Photo Overlay */}
+        {/* Cover Hero Banner */}
+        <div className={`relative px-6 py-20 sm:py-28 text-center bg-gradient-to-b ${themeGradient} overflow-hidden`}>
           <div
             className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity scale-105"
             style={{ backgroundImage: `url(${displayCover})` }}
@@ -206,6 +353,37 @@ export const PublicInvitationView: React.FC = () => {
               <div className="inline-block px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-xl border border-white/15 text-xs font-semibold tracking-wider">
                 {invitation.date}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recipient Welcome Pill */}
+        <div className="px-6 py-4 bg-slate-900/90 border-b border-slate-800 text-center">
+          <div className="text-[11px] text-slate-400">Turut Mengundang yang Terhormat:</div>
+          <div className="text-sm font-bold text-amber-300 mt-0.5">{recipientName}</div>
+        </div>
+
+        {/* COUNTDOWN TIMER SECTION */}
+        <div className="px-6 py-8 bg-slate-950 text-center border-b border-slate-800/80">
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+            Menghitung Hari Menuju Hari Bahagia
+          </div>
+          <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto">
+            <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="text-xl sm:text-2xl font-black text-white font-mono">{timeLeft.days}</div>
+              <div className="text-[9px] uppercase tracking-wider text-slate-400">Hari</div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="text-xl sm:text-2xl font-black text-white font-mono">{timeLeft.hours}</div>
+              <div className="text-[9px] uppercase tracking-wider text-slate-400">Jam</div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="text-xl sm:text-2xl font-black text-white font-mono">{timeLeft.minutes}</div>
+              <div className="text-[9px] uppercase tracking-wider text-slate-400">Menit</div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">{timeLeft.seconds}</div>
+              <div className="text-[9px] uppercase tracking-wider text-slate-400">Detik</div>
             </div>
           </div>
         </div>
@@ -323,6 +501,32 @@ export const PublicInvitationView: React.FC = () => {
           </div>
         </div>
 
+        {/* CINEMATIC VIDEO PREVIEW SECTION */}
+        <div className="px-6 py-10 bg-slate-950 border-t border-slate-800">
+          <div className="text-center mb-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">
+              Video Sinematik
+            </h3>
+            <h2 className="text-2xl font-serif font-bold text-white">Prewedding Teaser</h2>
+          </div>
+
+          <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-center group">
+            <img
+              src={displayCover}
+              alt="Video Thumbnail"
+              className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="relative z-10 w-14 h-14 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+              <Play className="w-6 h-6 ml-0.5" />
+            </div>
+            <div className="absolute bottom-3 left-4 text-white text-xs">
+              <div className="font-bold">Kisah Perjalanan & Harapan Masa Depan</div>
+              <div className="text-[10px] text-slate-300">Sinematografi 4K Ultra HD</div>
+            </div>
+          </div>
+        </div>
+
         {/* Gallery Section */}
         <div className="px-6 py-10 bg-slate-900/50 border-t border-slate-800">
           <div className="text-center mb-6">
@@ -349,6 +553,72 @@ export const PublicInvitationView: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* DIGITAL GIFT & ANGPAO (AMPLOP DIGITAL) */}
+        <div className="px-6 py-10 bg-slate-950 border-t border-slate-800">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-bold mb-2">
+              <Gift className="w-3.5 h-3.5" />
+              <span>Tanda Kasih & Doa Restu</span>
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-white">Amplop Digital (Angpao)</h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Doa restu Anda merupakan karunia terindah. Namun jika ingin memberikan tanda kasih secara digital:
+            </p>
+          </div>
+
+          <div className="space-y-3 max-w-md mx-auto">
+            {/* BCA */}
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-bold text-blue-400">BANK BCA</div>
+                <div className="text-sm font-mono font-bold text-white mt-0.5">8830 1928 3341</div>
+                <div className="text-[11px] text-slate-400">a/n Andi Pratama</div>
+              </div>
+              <button
+                onClick={() => handleCopyAccount('883019283341', 'BCA')}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors flex items-center space-x-1"
+              >
+                {copiedAccount === '883019283341' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Tersalin</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* MANDIRI */}
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-bold text-amber-400">BANK MANDIRI</div>
+                <div className="text-sm font-mono font-bold text-white mt-0.5">1370 0293 8472</div>
+                <div className="text-[11px] text-slate-400">a/n Ayu Maharani</div>
+              </div>
+              <button
+                onClick={() => handleCopyAccount('137002938472', 'Mandiri')}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors flex items-center space-x-1"
+              >
+                {copiedAccount === '137002938472' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Tersalin</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -380,7 +650,7 @@ export const PublicInvitationView: React.FC = () => {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmitRsvp} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
                   Nama Lengkap
@@ -469,10 +739,10 @@ export const PublicInvitationView: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-lg hover:opacity-95 transition-opacity flex items-center justify-center space-x-1.5"
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 text-xs font-black rounded-xl shadow-lg hover:opacity-95 transition-opacity flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Kirim Konfirmasi Kehadiran</span>
+                <span>Kirim Konfirmasi Kehadiran & Doa</span>
               </button>
             </form>
           )}

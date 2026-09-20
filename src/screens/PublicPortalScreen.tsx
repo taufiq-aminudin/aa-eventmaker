@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Calendar,
@@ -22,12 +22,15 @@ import {
   Clock,
   MapPin,
   LogIn,
+  Share2,
+  QrCode,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { AALogo } from '../components/AALogo';
 import { PWAInstallButton } from '../components/PWAInstallButton';
 import { GoogleAdSlot } from '../components/GoogleAdSlot';
 import { TemplateDetailModal } from '../components/TemplateDetailModal';
+import { PromotionalFeaturesShowcase } from '../components/PromotionalFeaturesShowcase';
 import { TemplateItem } from '../types';
 
 export const PublicPortalScreen: React.FC = () => {
@@ -50,6 +53,74 @@ export const PublicPortalScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [activePreviewTemplate, setActivePreviewTemplate] = useState<TemplateItem | null>(null);
 
+  // Hero Mockup Interactive State
+  const [heroThemeIndex, setHeroThemeIndex] = useState(0);
+  const heroThemes = [
+    {
+      name: 'Golden Night Luxury',
+      category: 'Wedding',
+      bgClass: 'from-[#0a0f1d] via-[#1e1b4b] to-[#b45309]',
+      accentColor: '#fbbf24',
+      couple: 'Andi Pratama & Ayu Maharani',
+      date: 'Sabtu, 24 Oktober 2026',
+      venue: 'Plataran Dharmawangsa Jakarta',
+      badge: 'Gold Luxury Edition',
+      photo: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      name: 'Keraton Solo Hadiningrat',
+      category: 'Adat Jawa',
+      bgClass: 'from-[#1c1917] via-[#451a03] to-[#b45309]',
+      accentColor: '#d97706',
+      couple: 'K.R.T. Dananjaya & Sekar Langit',
+      date: 'Sabtu, 14 November 2026',
+      venue: 'Pendopo Ndalem Danukusuman, Surakarta',
+      badge: 'Adat Basahan & Beludru',
+      photo: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      name: 'Sunda Siger Halus',
+      category: 'Adat Sunda',
+      bgClass: 'from-[#064e3b] via-[#047857] to-[#10b981]',
+      accentColor: '#34d399',
+      couple: 'Rizky Ramadhan & Neng Farah Diba',
+      date: 'Ahad, 18 Oktober 2026',
+      venue: 'Gedung Bale Asri Pusdai, Bandung',
+      badge: 'Ronce Melati & Kujang Emas',
+      photo: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      name: 'Bali Ayu Dewata',
+      category: 'Adat Bali',
+      bgClass: 'from-[#581c87] via-[#701a75] to-[#f59e0b]',
+      accentColor: '#f59e0b',
+      couple: 'I Putu Arya & Ni Luh Putu Gayatri',
+      date: 'Sabtu, 31 Oktober 2026',
+      venue: 'Puri Santrian Sanur Pavilion, Denpasar',
+      badge: 'Payas Agung & Candi Bentar',
+      photo: 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      name: 'Modern Minimalist Serif',
+      category: 'Editorial Modern',
+      bgClass: 'from-[#09090b] via-[#18181b] to-[#71717a]',
+      accentColor: '#e4e4e7',
+      couple: 'Julian Alexander & Samantha Grace',
+      date: 'Jumat, 16 Oktober 2026',
+      venue: 'The Glasshouse Senayan, Jakarta',
+      badge: 'Clean Monochrome Editorial',
+      photo: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80',
+    },
+  ];
+
+  // Auto rotate hero mockup themes every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroThemeIndex((prev) => (prev + 1) % heroThemes.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroThemes.length]);
+
   const categories = [
     'Semua',
     'Wedding',
@@ -57,7 +128,10 @@ export const PublicPortalScreen: React.FC = () => {
     'Modern Minimalist',
     'Birthday',
     'Corporate',
-    'Baby',
+    'Islamic',
+    'Anniversary',
+    'Graduation',
+    'Kids',
   ];
 
   const filteredTemplates =
@@ -67,10 +141,13 @@ export const PublicPortalScreen: React.FC = () => {
           if (selectedCategory === 'Wedding') return t.category === 'Wedding';
           if (selectedCategory === 'Adat Nusantara')
             return t.category === 'Adat Heritage' || t.title.toLowerCase().includes('jawa') || t.title.toLowerCase().includes('sunda') || t.title.toLowerCase().includes('bali');
-          if (selectedCategory === 'Modern Minimalist') return t.category === 'Modern';
+          if (selectedCategory === 'Modern Minimalist') return t.category === 'Modern' || t.title.toLowerCase().includes('minimalist');
           if (selectedCategory === 'Birthday') return t.category === 'Birthday';
           if (selectedCategory === 'Corporate') return t.category === 'Corporate';
-          if (selectedCategory === 'Baby') return t.category === 'Baby';
+          if (selectedCategory === 'Islamic') return t.category === 'Islamic';
+          if (selectedCategory === 'Anniversary') return t.category === 'Anniversary';
+          if (selectedCategory === 'Graduation') return t.category === 'Graduation';
+          if (selectedCategory === 'Kids') return t.category === 'Kids' || t.category === 'Baby';
           return true;
         });
 
@@ -179,74 +256,199 @@ export const PublicPortalScreen: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 bg-gradient-to-b from-blue-50/70 via-white to-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-100/70 border border-blue-200 text-blue-800 text-xs font-bold mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-            <span>Platform No. 1 Pembuat Undangan Digital & Manajemen Acara</span>
+      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-28 bg-gradient-to-b from-blue-50/80 via-white to-slate-50">
+        {/* Background radial glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-blue-200/30 via-indigo-200/20 to-orange-200/30 blur-3xl pointer-events-none rounded-full" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-900 text-xs font-bold mb-6 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Platform Undangan Digital & Manajemen Tamu Modern No. 1</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-950 tracking-tight leading-tight">
+              Create. Customize. Celebrate.
+            </h1>
+
+            <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Create beautiful animated digital invitations, manage your guests, share instantly, and make every event memorable.
+            </p>
+
+            {/* Primary Call to Actions */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+              <button
+                onClick={handleCreateInvitationCTA}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-102"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Create Invitation</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={scrollToTemplates}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Palette className="w-4 h-4 text-indigo-600" />
+                <span>Explore Templates</span>
+              </button>
+
+              <button
+                onClick={() => setShowPublicPreview(true)}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Eye className="w-4 h-4 text-pink-600" />
+                <span>Lihat Live Preview</span>
+              </button>
+            </div>
+
+            {/* Micro proof badges */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500 font-medium">
+              <div className="flex items-center space-x-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>Google OAuth 2.0 Instant Login</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>Real-Time WhatsApp RSVP Sync</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>QR Check-in & Buku Tamu Digital</span>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-4xl mx-auto leading-tight">
-            Plan • Manage • Make It Happen.
-            <br />
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">
-              Undangan Digital Cantik & Manajemen Tamu Cepat
-            </span>
-          </h1>
-
-          <p className="mt-4 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Pilih dari puluhan tema adat Nusantara & modern, unggah foto momen terbaik Anda, kelola konfirmasi RSVP instan via WhatsApp, dan percepat antrean masuk dengan E-Pass QR code cerdas.
-          </p>
-
-          {/* Primary Action Buttons */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={handleCreateInvitationCTA}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Buat Undangan Sekarang</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={scrollToTemplates}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <Palette className="w-4 h-4 text-indigo-600" />
-              <span>Jelajahi Template</span>
-            </button>
-
-            <button
-              onClick={() => setShowPublicPreview(true)}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <Eye className="w-4 h-4 text-pink-600" />
-              <span>Contoh Undangan Nyata</span>
-            </button>
-          </div>
-
-          {/* Social Proof Badges */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-medium">
-            <div className="flex items-center space-x-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Foto Otomatis Terkompresi Cepat</span>
+          {/* ANIMATED MOCKUP HERO SHOWCASE (Mobile Phone + Desktop Preview + Floating UI) */}
+          <div className="mt-14 max-w-5xl mx-auto relative">
+            {/* Theme Selector Tabs above Mockup */}
+            <div className="flex items-center justify-center space-x-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+              {heroThemes.map((thm, idx) => (
+                <button
+                  key={thm.name}
+                  onClick={() => setHeroThemeIndex(idx)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    heroThemeIndex === idx
+                      ? 'bg-slate-900 text-white shadow-md scale-105'
+                      : 'bg-white/80 hover:bg-white text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  {thm.name}
+                </button>
+              ))}
             </div>
-            <div className="flex items-center space-x-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>100% Responsif Smartphone</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Login Instan dengan Akun Google</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>QR Check-in Buku Tamu</span>
+
+            {/* Center Stage: Framed Phone Mockup & Surrounding Floating Badges */}
+            <div className="relative flex items-center justify-center">
+              {/* Floating Element 1 (Top Left): WhatsApp Guest Blast Status */}
+              <div className="hidden md:flex absolute -left-6 top-12 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100 animate-bounce duration-1000">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900">WhatsApp RSVP Blast</div>
+                  <div className="text-[10px] text-emerald-600 font-semibold">✓ 142 Tamu Terkirim Otomatis</div>
+                </div>
+              </div>
+
+              {/* Floating Element 2 (Bottom Left): Live Music Equalizer */}
+              <div className="hidden md:flex absolute -left-4 bottom-16 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/30">
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900">Harmoni Romantis</div>
+                  <div className="text-[10px] text-blue-600 font-semibold">🎵 Piano & Gamelan Pelog Halus</div>
+                </div>
+              </div>
+
+              {/* Floating Element 3 (Top Right): Realtime RSVP Counter */}
+              <div className="hidden md:flex absolute -right-6 top-16 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100 animate-pulse">
+                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/30">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900">RSVP Masuk Real-Time</div>
+                  <div className="text-[10px] text-purple-600 font-semibold">Bpk. Hendra Kusuma (+2 Pax)</div>
+                </div>
+              </div>
+
+              {/* Floating Element 4 (Bottom Right): QR Scanner Verified */}
+              <div className="hidden md:flex absolute -right-4 bottom-12 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/30">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900">E-Pass Terverifikasi</div>
+                  <div className="text-[10px] text-emerald-600 font-bold">✓ Scan Kamera 0.5 Detik</div>
+                </div>
+              </div>
+
+              {/* Central Smartphone Container Mockup */}
+              <div className="relative w-[300px] sm:w-[340px] h-[580px] sm:h-[620px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-900/10">
+                {/* Speaker notch / dynamic island */}
+                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-30 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+                </div>
+
+                {/* Phone Screen Contents with Dynamic Theme Transition */}
+                <div
+                  className={`w-full h-full rounded-[36px] bg-gradient-to-b ${heroThemes[heroThemeIndex].bgClass} text-white p-5 flex flex-col justify-between overflow-hidden relative transition-all duration-700 shadow-inner`}
+                >
+                  {/* Subtle Pattern Overlay */}
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+                  {/* Header inside phone */}
+                  <div className="relative z-10 pt-6 text-center">
+                    <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white">
+                      {heroThemes[heroThemeIndex].badge}
+                    </span>
+                    <div className="text-[11px] uppercase tracking-widest text-slate-200 mt-3">The Wedding Of</div>
+                    <h3 className="text-xl sm:text-2xl font-serif font-bold text-white mt-1 leading-snug">
+                      {heroThemes[heroThemeIndex].couple}
+                    </h3>
+                  </div>
+
+                  {/* Middle: Couple Photo Box */}
+                  <div className="relative z-10 my-auto">
+                    <div className="w-36 h-48 sm:w-40 sm:h-52 mx-auto rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl relative group">
+                      <img
+                        src={heroThemes[heroThemeIndex].photo}
+                        alt="Couple Portrait"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    </div>
+                  </div>
+
+                  {/* Footer inside phone */}
+                  <div className="relative z-10 text-center space-y-2 pb-2">
+                    <div className="text-[11px] text-slate-200 font-semibold">
+                      {heroThemes[heroThemeIndex].date}
+                    </div>
+                    <div className="text-[10px] text-slate-300">
+                      {heroThemes[heroThemeIndex].venue}
+                    </div>
+                    <button
+                      onClick={() => setShowPublicPreview(true)}
+                      className="w-full py-2.5 rounded-xl bg-white text-slate-900 text-xs font-black shadow-lg hover:bg-slate-100 transition-colors"
+                    >
+                      Buka Undangan Digital
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* SECTION: PROMOTIONAL ANIMATED FEATURES SHOWCASE */}
+      <PromotionalFeaturesShowcase
+        onTryBuilder={handleCreateInvitationCTA}
+        onExploreTemplates={scrollToTemplates}
+      />
 
       {/* SECTION: EXPLORE REALISTIC TEMPLATES */}
       <section id="templates-explorer" className="py-16 bg-white border-y border-slate-200/80">

@@ -46,6 +46,13 @@ export const QrCheckinModal: React.FC = () => {
     setScanResult(result);
     if (result.success) {
       triggerCelebration();
+      try {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+      } catch {
+        // ignore
+      }
     }
   };
 
