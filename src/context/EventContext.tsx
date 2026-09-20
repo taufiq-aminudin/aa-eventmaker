@@ -1225,7 +1225,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
 
           // If approved & Paid, activate the appropriate paid package
-          if (status === 'Paid') {
+          if (status === 'Paid' || status === 'Approved') {
             if (item.packageId === 'agency') {
               setActiveSubscriptionTier('agency');
             } else if (item.packageId === 'professional' && activeSubscriptionTier !== 'agency') {

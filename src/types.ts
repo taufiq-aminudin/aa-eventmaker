@@ -1,6 +1,6 @@
 export type UserRole = 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST';
 
-export type PaymentStatus = 'Pending' | 'Under Review' | 'Paid' | 'Rejected' | 'Refunded';
+export type PaymentStatus = 'Pending' | 'Under Review' | 'Approved' | 'Paid' | 'Rejected' | 'Refunded';
 
 export type PaymentMethodType = 'Bank Mandiri' | 'DANA';
 

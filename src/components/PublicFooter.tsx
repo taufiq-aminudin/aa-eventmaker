@@ -93,6 +93,12 @@ export const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/admin/payments" className="text-amber-400/90 hover:text-amber-300 transition-colors flex items-center space-x-1 font-medium">
+                  <Shield className="w-3 h-3" />
+                  <span>Verifikasi Pembayaran (Admin)</span>
+                </Link>
+              </li>
+              <li>
                 <button
                   onClick={() =>
                     showToast('Kebijakan Privasi: Data tamu dan privasi acara Anda terlindungi secara ketat.')

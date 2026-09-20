@@ -85,11 +85,12 @@ export const PaymentStatus: React.FC<PaymentStatusProps> = ({
 
   const getStatusBadge = (status: PaymentStatusType) => {
     switch (status) {
+      case 'Approved':
       case 'Paid':
         return (
           <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Terverifikasi (Paid)</span>
+            <span>Terverifikasi (Approved)</span>
           </span>
         );
       case 'Under Review':
@@ -127,8 +128,8 @@ export const PaymentStatus: React.FC<PaymentStatusProps> = ({
   const renderProgressStepper = (status: PaymentStatusType) => {
     const isStep1Done = true;
     const isStep2Active = status === 'Under Review' || status === 'Pending';
-    const isStep2Done = status === 'Paid';
-    const isStep3Done = status === 'Paid';
+    const isStep2Done = status === 'Paid' || status === 'Approved';
+    const isStep3Done = status === 'Paid' || status === 'Approved';
     const isRejected = status === 'Rejected';
 
     return (
@@ -357,7 +358,7 @@ export const PaymentStatus: React.FC<PaymentStatusProps> = ({
           {/* Action Footer according to state */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
             <div className="text-xs text-slate-500">
-              {selectedSubmission.status === 'Paid' ? (
+              {selectedSubmission.status === 'Paid' || selectedSubmission.status === 'Approved' ? (
                 <span className="text-emerald-700 font-bold flex items-center space-x-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Paket Anda telah aktif! Anda dapat menggunakan fitur tanpa batas.</span>
@@ -375,7 +376,7 @@ export const PaymentStatus: React.FC<PaymentStatusProps> = ({
             </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-              {selectedSubmission.status === 'Paid' ? (
+              {selectedSubmission.status === 'Paid' || selectedSubmission.status === 'Approved' ? (
                 <button
                   type="button"
                   onClick={() => navigate('/editor')}

@@ -96,7 +96,12 @@ export const AdminPaymentManagementScreen: React.FC = () => {
 
   // Filter and search payments
   const filteredPayments = payments.filter((item) => {
-    const matchesFilter = activeFilter === 'ALL' || item.status === activeFilter;
+    let matchesFilter = activeFilter === 'ALL' || item.status === activeFilter;
+    if (activeFilter === 'Approved') {
+      matchesFilter = item.status === 'Approved' || item.status === 'Paid';
+    } else if (activeFilter === 'Paid') {
+      matchesFilter = item.status === 'Approved' || item.status === 'Paid';
+    }
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -114,12 +119,12 @@ export const AdminPaymentManagementScreen: React.FC = () => {
   const totalSubmissions = payments.length;
   const pendingCount = payments.filter((p) => p.status === 'Pending').length;
   const underReviewCount = payments.filter((p) => p.status === 'Under Review').length;
-  const paidCount = payments.filter((p) => p.status === 'Paid').length;
+  const approvedCount = payments.filter((p) => p.status === 'Approved' || p.status === 'Paid').length;
   const rejectedCount = payments.filter((p) => p.status === 'Rejected').length;
   const refundedCount = payments.filter((p) => p.status === 'Refunded').length;
 
   const totalVerifiedRevenue = payments
-    .filter((p) => p.status === 'Paid')
+    .filter((p) => p.status === 'Paid' || p.status === 'Approved')
     .reduce((sum, curr) => sum + curr.amount, 0);
 
   const formattedRevenue = new Intl.NumberFormat('id-ID', {
@@ -143,8 +148,16 @@ export const AdminPaymentManagementScreen: React.FC = () => {
   const handleQuickApprove = (item: PaymentSubmission) => {
     updatePaymentStatus(
       item.id,
-      'Paid',
+      'Approved',
       `Disetujui otomatis oleh ${currentUser?.name || 'Admin'} pada mutasi rekening masuk.`
+    );
+  };
+
+  const handleQuickPending = (item: PaymentSubmission) => {
+    updatePaymentStatus(
+      item.id,
+      'Pending',
+      `Status dikembalikan ke antrean Pending oleh ${currentUser?.name || 'Admin'}.`
     );
   };
 
@@ -160,11 +173,12 @@ export const AdminPaymentManagementScreen: React.FC = () => {
 
   const getStatusBadge = (status: PaymentStatus) => {
     switch (status) {
+      case 'Approved':
       case 'Paid':
         return (
           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-            <span>Paid (Lunas)</span>
+            <span>Approved</span>
           </span>
         );
       case 'Under Review':
@@ -272,9 +286,9 @@ export const AdminPaymentManagementScreen: React.FC = () => {
 
             <div className="bg-white rounded-2xl p-4 border border-emerald-200 shadow-xs bg-gradient-to-br from-white to-emerald-50/40">
               <span className="text-[11px] font-bold text-emerald-600 block uppercase tracking-wider">
-                Paid / Disetujui
+                Approved
               </span>
-              <div className="text-2xl font-black text-emerald-600 mt-1">{paidCount}</div>
+              <div className="text-2xl font-black text-emerald-600 mt-1">{approvedCount}</div>
               <div className="text-[10px] text-emerald-500 mt-0.5">Paket Aktif</div>
             </div>
 
@@ -291,7 +305,7 @@ export const AdminPaymentManagementScreen: React.FC = () => {
                 Total Omset
               </span>
               <div className="text-lg font-black text-white mt-1 truncate">{formattedRevenue}</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">Dari Status Paid</div>
+              <div className="text-[10px] text-slate-400 mt-0.5">Dari Status Approved</div>
             </div>
           </div>
 
@@ -304,9 +318,9 @@ export const AdminPaymentManagementScreen: React.FC = () => {
                   [
                     { id: 'ALL', label: 'Semua', count: totalSubmissions },
                     { id: 'Pending', label: 'Pending', count: pendingCount },
-                    { id: 'Under Review', label: 'Under Review', count: underReviewCount },
-                    { id: 'Paid', label: 'Paid', count: paidCount },
+                    { id: 'Approved', label: 'Approved', count: approvedCount },
                     { id: 'Rejected', label: 'Rejected', count: rejectedCount },
+                    { id: 'Under Review', label: 'Under Review', count: underReviewCount },
                     { id: 'Refunded', label: 'Refunded', count: refundedCount },
                   ] as const
                 ).map((tab) => {
@@ -470,23 +484,33 @@ export const AdminPaymentManagementScreen: React.FC = () => {
 
                         {/* Review Action Controls */}
                         <td className="py-4 px-6 text-right space-x-1.5 whitespace-nowrap">
-                          {item.status !== 'Paid' && (
+                          {item.status !== 'Approved' && item.status !== 'Paid' && (
                             <button
                               onClick={() => handleQuickApprove(item)}
                               className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
-                              title="Setujui dan Aktifkan Paket"
+                              title="Setujui (Approved) dan Aktifkan Paket"
                             >
                               Approve
                             </button>
                           )}
 
-                          {item.status !== 'Rejected' && item.status !== 'Paid' && (
+                          {item.status !== 'Rejected' && (
                             <button
                               onClick={() => handleQuickReject(item)}
                               className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold border border-rose-200 transition-colors cursor-pointer"
-                              title="Tolak Pembayaran"
+                              title="Tolak Pembayaran (Rejected)"
                             >
                               Reject
+                            </button>
+                          )}
+
+                          {item.status !== 'Pending' && (
+                            <button
+                              onClick={() => handleQuickPending(item)}
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition-colors cursor-pointer"
+                              title="Kembalikan ke antrean Pending"
+                            >
+                              Pending
                             </button>
                           )}
 
@@ -596,8 +620,8 @@ export const AdminPaymentManagementScreen: React.FC = () => {
 
             <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
               <div>{getStatusBadge(inspectProofSubmission.status)}</div>
-              <div className="space-x-2">
-                {inspectProofSubmission.status !== 'Paid' && (
+              <div className="space-x-2 flex items-center">
+                {inspectProofSubmission.status !== 'Approved' && inspectProofSubmission.status !== 'Paid' && (
                   <button
                     onClick={() => {
                       handleQuickApprove(inspectProofSubmission);
@@ -606,6 +630,17 @@ export const AdminPaymentManagementScreen: React.FC = () => {
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
                   >
                     Setujui (Approve)
+                  </button>
+                )}
+                {inspectProofSubmission.status !== 'Rejected' && (
+                  <button
+                    onClick={() => {
+                      handleQuickReject(inspectProofSubmission);
+                      setInspectProofSubmission(null);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 cursor-pointer"
+                  >
+                    Tolak (Reject)
                   </button>
                 )}
                 <button
@@ -668,14 +703,15 @@ export const AdminPaymentManagementScreen: React.FC = () => {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-blue-600 outline-hidden bg-white"
                 >
                   <option value="Pending">Pending (Menunggu Review)</option>
-                  <option value="Under Review">Under Review (Sedang Dicek)</option>
-                  <option value="Paid">Paid (Lunas &amp; Aktifkan Paket)</option>
+                  <option value="Approved">Approved (Setujui &amp; Aktifkan Paket)</option>
                   <option value="Rejected">Rejected (Tolak Pembayaran)</option>
+                  <option value="Under Review">Under Review (Sedang Dicek)</option>
+                  <option value="Paid">Paid (Lunas)</option>
                   <option value="Refunded">Refunded (Dana Dikembalikan)</option>
                 </select>
-                {reviewStatusChoice === 'Paid' && (
+                {(reviewStatusChoice === 'Approved' || reviewStatusChoice === 'Paid') && (
                   <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                    ✓ Memilih Paid akan mengaktifkan paket {selectedSubmissionForReview.packageName} secara otomatis.
+                    ✓ Memilih Approved / Paid akan mengaktifkan paket {selectedSubmissionForReview.packageName} secara otomatis.
                   </p>
                 )}
               </div>
