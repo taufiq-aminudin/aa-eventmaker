@@ -51,10 +51,14 @@ export const SeoManager: React.FC = () => {
   } = useEvent();
 
   useEffect(() => {
-    // 1. Hostname Redirect Safety Check: If someone visits aa-eventmaker.com, redirect to aa-eventmaker.my.id
+    // 1. Hostname Redirect Safety Check: Redirect non-canonical hosts to canonical https://aa-eventmaker.my.id
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      if (hostname === 'aa-eventmaker.com' || hostname === 'www.aa-eventmaker.com') {
+      if (
+        hostname === 'aa-eventmaker.com' ||
+        hostname === 'www.aa-eventmaker.com' ||
+        hostname === 'www.aa-eventmaker.my.id'
+      ) {
         const destination = `${PRODUCTION_DOMAIN}${window.location.pathname}${window.location.search}${window.location.hash}`;
         window.location.replace(destination);
         return;
@@ -215,7 +219,9 @@ export const SeoManager: React.FC = () => {
       const title = `Dasbor ${activeRole} | AA Event Maker`;
 
       document.title = title;
-      setCanonical(canonicalUrl);
+      // Remove canonical tag on private authenticated routes to prevent conflicting signals with noindex
+      const canonicalElement = document.querySelector('link[rel="canonical"]');
+      if (canonicalElement) canonicalElement.remove();
       setMetaTag('name', 'title', title);
       setMetaTag('name', 'robots', 'noindex, nofollow');
 

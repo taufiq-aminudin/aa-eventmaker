@@ -1,0 +1,33 @@
+# ==============================================================================
+# Apache / LiteSpeed Configuration for AA : Event Maker (aa-eventmaker.my.id)
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Redirect aa-eventmaker.com and www subdomains to canonical https://aa-eventmaker.my.id
+  RewriteCond %{HTTP_HOST} ^(www\.)?aa-eventmaker\.com$ [NC,OR]
+  RewriteCond %{HTTP_HOST} ^www\.aa-eventmaker\.my\.id$ [NC]
+  RewriteRule ^(.*)$ https://aa-eventmaker.my.id/$1 [R=301,L]
+
+  # Redirect HTTP to HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://aa-eventmaker.my.id/$1 [R=301,L]
+
+  # Don't rewrite existing files or directories
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Single Page Application (SPA) fallback to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Caching & Security Headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

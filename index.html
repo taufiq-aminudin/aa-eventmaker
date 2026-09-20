@@ -17,7 +17,11 @@
     <script>
       (function() {
         try {
-          if (window.location.hostname === 'aa-eventmaker.com' || window.location.hostname === 'www.aa-eventmaker.com') {
+          if (
+            window.location.hostname === 'aa-eventmaker.com' ||
+            window.location.hostname === 'www.aa-eventmaker.com' ||
+            window.location.hostname === 'www.aa-eventmaker.my.id'
+          ) {
             window.location.replace('https://aa-eventmaker.my.id' + window.location.pathname + window.location.search + window.location.hash);
           }
         } catch(e) {}
@@ -106,13 +110,151 @@
             "price": "0",
             "priceCurrency": "IDR"
           }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://aa-eventmaker.my.id/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Apa domain resmi AA Event Maker?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Domain resmi AA Event Maker adalah https://aa-eventmaker.my.id/ untuk layanan pembuatan undangan digital interaktif dan manajemen event di Indonesia."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Apakah undangan digital bisa dibuka di smartphone apa saja?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Ya, undangan dirancang mobile-first dan responsif untuk semua browser (Chrome, Safari, Firefox, Edge) pada Android maupun iOS tanpa perlu instalasi aplikasi tambahan."
+              }
+            }
+          ]
         }
       ]
     }
     </script>
   </head>
   <body class="bg-[#f8fafc] text-[#0f172a] antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Semantic Static Fallback Shell for Fast Search Engine Indexing (Googlebot / Bingbot) -->
+      <div style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 24px 16px; color: #0f172a; line-height: 1.6;">
+        <header style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 32px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="/icon.svg" alt="Logo AA Event Maker" width="40" height="40" style="border-radius: 10px;" />
+            <div>
+              <span style="font-weight: 800; font-size: 20px; letter-spacing: -0.02em; color: #1e293b;">AA : Event Maker</span>
+              <span style="display: block; font-size: 12px; color: #64748b; font-weight: 500;">Platform Manajemen & Undangan Digital Event No. 1</span>
+            </div>
+          </div>
+          <nav aria-label="Navigasi Utama">
+            <a href="/" style="margin-right: 16px; font-weight: 600; color: #2563eb; text-decoration: none;">Beranda</a>
+            <a href="/invitation/andi-ayu-wedding" style="margin-right: 16px; font-weight: 600; color: #475569; text-decoration: none;">Contoh Undangan</a>
+            <a href="#fitur" style="font-weight: 600; color: #475569; text-decoration: none;">Fitur</a>
+          </nav>
+        </header>
+
+        <main>
+          <section style="margin-bottom: 48px; text-align: center; padding: 32px 16px; background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%); border-radius: 24px; border: 1px solid #dbeafe;">
+            <span style="display: inline-block; padding: 6px 14px; background: #dbeafe; color: #1d4ed8; font-size: 13px; font-weight: 700; border-radius: 9999px; margin-bottom: 16px;">
+              ✨ Solusi Lengkap Undangan Digital & Manajemen Acara
+            </span>
+            <h1 style="font-size: 32px; font-weight: 900; line-height: 1.25; color: #0f172a; margin-bottom: 16px; letter-spacing: -0.03em;">
+              AA Event Maker – Create Beautiful Digital Invitations
+            </h1>
+            <p style="font-size: 16px; color: #475569; max-width: 720px; margin: 0 auto 24px auto;">
+              Platform all-in-one persiapan acara pernikahan dan event modern di Indonesia. Nikmati undangan digital interaktif responsif, QR check-in buku tamu, auto reminder RSVP via WhatsApp, dan kalkulator budget vendor yang akurat.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+              <a href="/invitation/andi-ayu-wedding" style="background: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 12px; font-weight: 700; text-decoration: none; display: inline-block;">
+                Lihat Contoh Undangan Digital
+              </a>
+              <a href="https://aa-eventmaker.my.id/" style="background: #ffffff; color: #334155; border: 1px solid #cbd5e1; padding: 12px 24px; border-radius: 12px; font-weight: 700; text-decoration: none; display: inline-block;">
+                Buka Platform Event Maker
+              </a>
+            </div>
+          </section>
+
+          <section id="fitur" style="margin-bottom: 48px;">
+            <h2 style="font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 24px; text-align: center;">
+              Fitur Unggulan AA Event Maker
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+              <article style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">💌 Undangan Digital Animasi Eksklusif</h3>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                  Dilengkapi musik latar, galeri foto terkompresi cepat untuk smartphone, hitung mundur (countdown), amplop digital, ucapan doa, serta panduan rute navigasi Google Maps.
+                </p>
+              </article>
+              <article style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📲 Buku Tamu Digital & QR Code Check-in</h3>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                  E-pass dengan QR Code unik untuk setiap tamu. Panitia dan penerima tamu dapat memindai QR code dalam 1 detik untuk verifikasi kehadiran dan pembagian souvenir.
+                </p>
+              </article>
+              <article style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📊 RSVP Online & Pengingat Otomatis</h3>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                  Pantau konfirmasi kehadiran secara real-time. Bagikan link personal dengan nama tamu via WhatsApp dan unduh rekapitulasi data tamu secara instan.
+                </p>
+              </article>
+              <article style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">💰 Kalkulator Budget & Vendor Organizer</h3>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                  Estimasi rincian anggaran pernikahan mulai dari katering, dekorasi, dokumentasi, gedung, hingga souvenir dengan manajemen termin pembayaran transparan.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section style="margin-bottom: 48px; background: #ffffff; padding: 28px; border-radius: 20px; border: 1px solid #e2e8f0;">
+            <h2 style="font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 16px;">
+              Contoh Undangan Digital Aktif
+            </h2>
+            <p style="font-size: 15px; color: #475569; margin-bottom: 16px;">
+              Jelajahi undangan pernikahan Andi & Ayu dengan animasi buka amplop, audio player, reservasi RSVP, buku tamu, dan peta lokasi interaktif:
+            </p>
+            <p>
+              👉 <a href="/invitation/andi-ayu-wedding" style="font-weight: 700; color: #2563eb; text-decoration: underline;">
+                Buka Demo Undangan: The Wedding of Andi & Ayu (Plataran Dharmawangsa)
+              </a>
+            </p>
+          </section>
+
+          <section style="margin-bottom: 48px;">
+            <h2 style="font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 20px;">
+              Pertanyaan yang Sering Diajukan (FAQ)
+            </h2>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">Apa domain resmi AA Event Maker?</h3>
+                <p style="font-size: 14px; color: #475569; margin: 0;">
+                  Domain resmi kami adalah <strong>https://aa-eventmaker.my.id/</strong>. Seluruh layanan undangan digital dan manajemen event dapat diakses melalui portal resmi ini.
+                </p>
+              </div>
+              <div style="background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">Apakah undangan digital bisa dibuka di smartphone apa saja?</h3>
+                <p style="font-size: 14px; color: #475569; margin: 0;">
+                  Ya! Undangan dirancang mobile-first dan responsif untuk semua browser (Chrome, Safari, Firefox, Edge) pada Android maupun iOS tanpa perlu instalasi aplikasi tambahan.
+                </p>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <footer style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center; font-size: 13px; color: #94a3b8;">
+          <p>© 2026 AA-EventMaker. Seluruh Hak Cipta Dilindungi Undang-Undang.</p>
+          <p>Website Resmi: <a href="https://aa-eventmaker.my.id/" style="color: #64748b; text-decoration: none;">https://aa-eventmaker.my.id/</a></p>
+        </footer>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding: 20px; background: #fff3cd; color: #856404; text-align: center; font-family: sans-serif;">
+        JavaScript diperlukan untuk menjalankan fitur interaktif penuh aplikasi AA Event Maker. Silakan aktifkan JavaScript di browser Anda.
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
