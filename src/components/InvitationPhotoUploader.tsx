@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, DragEvent } from 'react';
 import {
   Camera,
   Upload,
@@ -9,69 +9,86 @@ import {
   CheckCircle2,
   Plus,
   AlertCircle,
+  Zap,
 } from 'lucide-react';
-import { resizeAndCompressImage, formatFileSize } from '../utils/imageOptimizer';
+import {
+  compressImageForUpload,
+  resizeAndCompressImage,
+  formatFileSize,
+} from '../utils/imageOptimizer';
 import { useEvent } from '../context/EventContext';
 
 export const InvitationPhotoUploader: React.FC = () => {
   const { invitation, updateInvitation, showToast } = useEvent();
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastCompressionInfo, setLastCompressionInfo] = useState<string | null>(null);
+  const [isDraggingCover, setIsDraggingCover] = useState(false);
+  const [isDraggingCouple, setIsDraggingCouple] = useState(false);
+  const [isDraggingGallery, setIsDraggingGallery] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const coupleInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processCoverFile = async (file: File) => {
     try {
       setIsProcessing(true);
-      const result = await resizeAndCompressImage(file, {
-        maxWidth: 1400,
-        maxHeight: 1000,
-        quality: 0.85,
-      });
+      const result = await compressImageForUpload(file, 'cover');
       updateInvitation({ coverPhoto: result.dataUrl });
       setLastCompressionInfo(
         `Foto sampul: ${result.formattedOriginalSize} ➔ ${result.formattedCompressedSize} (Hemat ${result.savingsPercentage}%)`
       );
-      showToast(`Foto sampul dioptimalkan! Ukuran berkurang ${result.savingsPercentage}%`);
+      showToast(`Foto sampul dioptimalkan! Ukuran berkurang ${result.savingsPercentage}% untuk mobile`);
     } catch (err: any) {
-      showToast(err.message || 'Gagal mengunggah foto.');
+      showToast(err.message || 'Gagal mengunggah foto sampul.');
     } finally {
       setIsProcessing(false);
       if (coverInputRef.current) coverInputRef.current.value = '';
     }
   };
 
-  const handleCoupleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) processCoverFile(file);
+  };
 
+  const handleCoverDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingCover(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processCoverFile(file);
+  };
+
+  const processCoupleFile = async (file: File) => {
     try {
       setIsProcessing(true);
-      const result = await resizeAndCompressImage(file, {
-        maxWidth: 800,
-        maxHeight: 800,
-        quality: 0.88,
-      });
+      const result = await compressImageForUpload(file, 'couple');
       updateInvitation({ couplePhoto: result.dataUrl });
       setLastCompressionInfo(
         `Foto mempelai: ${result.formattedOriginalSize} ➔ ${result.formattedCompressedSize} (Hemat ${result.savingsPercentage}%)`
       );
-      showToast(`Foto mempelai dioptimalkan! Ukuran berkurang ${result.savingsPercentage}%`);
+      showToast(`Foto mempelai dioptimalkan! Ukuran berkurang ${result.savingsPercentage}% untuk mobile`);
     } catch (err: any) {
-      showToast(err.message || 'Gagal mengunggah foto.');
+      showToast(err.message || 'Gagal mengunggah foto mempelai.');
     } finally {
       setIsProcessing(false);
       if (coupleInputRef.current) coupleInputRef.current.value = '';
     }
   };
 
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleCoupleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processCoupleFile(file);
+  };
+
+  const handleCoupleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingCouple(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processCoupleFile(file);
+  };
+
+  const processGalleryFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     try {
@@ -83,11 +100,7 @@ export const InvitationPhotoUploader: React.FC = () => {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const res = await resizeAndCompressImage(file, {
-          maxWidth: 900,
-          maxHeight: 900,
-          quality: 0.82,
-        });
+        const res = await compressImageForUpload(file, 'gallery');
         newUrls.push(res.dataUrl);
         totalOriginal += res.originalSize;
         totalCompressed += res.compressedSize;
@@ -100,11 +113,21 @@ export const InvitationPhotoUploader: React.FC = () => {
       );
       showToast(`${newUrls.length} foto galeri berhasil dioptimalkan (Hemat ${totalSavings}%)!`);
     } catch (err: any) {
-      showToast(err.message || 'Gagal mengunggah beberapa foto.');
+      showToast(err.message || 'Gagal mengunggah beberapa foto galeri.');
     } finally {
       setIsProcessing(false);
       if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
+  };
+
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) processGalleryFiles(e.target.files);
+  };
+
+  const handleGalleryDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingGallery(false);
+    if (e.dataTransfer.files) processGalleryFiles(e.dataTransfer.files);
   };
 
   const handleRemoveCover = () => {
@@ -164,7 +187,19 @@ export const InvitationPhotoUploader: React.FC = () => {
             )}
           </div>
 
-          <div className="relative h-44 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden group bg-slate-50 flex items-center justify-center">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingCover(true);
+            }}
+            onDragLeave={() => setIsDraggingCover(false)}
+            onDrop={handleCoverDrop}
+            className={`relative h-44 rounded-2xl border-2 border-dashed transition-all overflow-hidden group flex items-center justify-center ${
+              isDraggingCover
+                ? 'border-purple-600 bg-purple-50 scale-[1.01]'
+                : 'border-slate-200 bg-slate-50'
+            }`}
+          >
             {invitation.coverPhoto ? (
               <>
                 <img
@@ -172,7 +207,7 @@ export const InvitationPhotoUploader: React.FC = () => {
                   alt="Foto Sampul"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-2">
                   <button
                     type="button"
                     onClick={() => coverInputRef.current?.click()}
@@ -182,6 +217,7 @@ export const InvitationPhotoUploader: React.FC = () => {
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Ganti Foto</span>
                   </button>
+                  <span className="text-[10px] text-white/90 font-medium">atau tarik & lepaskan gambar di sini</span>
                 </div>
               </>
             ) : (
@@ -189,11 +225,11 @@ export const InvitationPhotoUploader: React.FC = () => {
                 onClick={() => coverInputRef.current?.click()}
                 className="text-center p-4 cursor-pointer hover:bg-slate-100/80 transition-colors w-full h-full flex flex-col items-center justify-center"
               >
-                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-2 shadow-xs">
                   <Upload className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-700">Pilih Foto Sampul</span>
-                <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, atau WebP (Maks 10MB)</span>
+                <span className="text-xs font-bold text-slate-700">Pilih atau Tarik Foto Sampul</span>
+                <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, atau WebP (Otomatis dikompresi)</span>
               </div>
             )}
             <input
@@ -224,7 +260,19 @@ export const InvitationPhotoUploader: React.FC = () => {
             )}
           </div>
 
-          <div className="relative h-44 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden group bg-slate-50 flex items-center justify-center">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingCouple(true);
+            }}
+            onDragLeave={() => setIsDraggingCouple(false)}
+            onDrop={handleCoupleDrop}
+            className={`relative h-44 rounded-2xl border-2 border-dashed transition-all overflow-hidden group flex items-center justify-center ${
+              isDraggingCouple
+                ? 'border-pink-600 bg-pink-50 scale-[1.01]'
+                : 'border-slate-200 bg-slate-50'
+            }`}
+          >
             {invitation.couplePhoto ? (
               <div className="relative flex items-center justify-center w-full h-full">
                 <img
@@ -232,7 +280,7 @@ export const InvitationPhotoUploader: React.FC = () => {
                   alt="Foto Mempelai"
                   className="w-32 h-32 rounded-full object-cover shadow-md border-2 border-white ring-4 ring-purple-100"
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-2">
                   <button
                     type="button"
                     onClick={() => coupleInputRef.current?.click()}
@@ -242,6 +290,7 @@ export const InvitationPhotoUploader: React.FC = () => {
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Ganti Foto</span>
                   </button>
+                  <span className="text-[10px] text-white/90 font-medium">atau tarik & lepaskan gambar</span>
                 </div>
               </div>
             ) : (
@@ -249,10 +298,10 @@ export const InvitationPhotoUploader: React.FC = () => {
                 onClick={() => coupleInputRef.current?.click()}
                 className="text-center p-4 cursor-pointer hover:bg-slate-100/80 transition-colors w-full h-full flex flex-col items-center justify-center"
               >
-                <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center mb-2 shadow-xs">
                   <Camera className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-700">Pilih Foto Mempelai / Pasangan</span>
+                <span className="text-xs font-bold text-slate-700">Pilih atau Tarik Foto Mempelai</span>
                 <span className="text-[10px] text-slate-400 mt-0.5">Format potret atau persegi</span>
               </div>
             )}
@@ -296,8 +345,18 @@ export const InvitationPhotoUploader: React.FC = () => {
           />
         </div>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        {/* Gallery Grid & Dropzone */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingGallery(true);
+          }}
+          onDragLeave={() => setIsDraggingGallery(false)}
+          onDrop={handleGalleryDrop}
+          className={`grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 p-2 rounded-2xl transition-all ${
+            isDraggingGallery ? 'bg-purple-50/70 border-2 border-dashed border-purple-400' : ''
+          }`}
+        >
           {(invitation.galleryPhotos || []).map((photoUrl, idx) => (
             <div
               key={idx}
