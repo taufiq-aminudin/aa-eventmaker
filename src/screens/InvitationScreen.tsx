@@ -16,6 +16,7 @@ import {
 import { useEvent } from '../context/EventContext';
 import { InvitationPhotoUploader } from '../components/InvitationPhotoUploader';
 import { TemplateDetailModal } from '../components/TemplateDetailModal';
+import { ShareWhatsAppButton } from '../components/ShareWhatsAppButton';
 import { TemplateItem } from '../types';
 
 export const InvitationScreen: React.FC = () => {
@@ -80,16 +81,28 @@ export const InvitationScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          <ShareWhatsAppButton
+            invitationUrl={`${window.location.origin}/#invitation/${formData.slug}`}
+            eventTitle={formData.title}
+            hosts={formData.hosts}
+            date={formData.date}
+            time={formData.time}
+            venue={formData.venue}
+            address={formData.address}
+            variant="secondary"
+            size="md"
+            label="Share via WhatsApp"
+          />
           <button
             onClick={handleCopyLink}
-            className="px-3.5 py-2 text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors flex items-center space-x-1.5"
+            className="px-3.5 py-2 text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
             <span>{copied ? 'Tersalin' : 'Salin Tautan'}</span>
           </button>
           <button
             onClick={() => setShowPublicPreview(true)}
-            className="px-4 py-2 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-opacity flex items-center space-x-1.5"
+            className="px-4 py-2 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-opacity flex items-center space-x-1.5 cursor-pointer"
           >
             <Eye className="w-4 h-4" />
             <span>Lihat Fullscreen</span>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import {
   Sparkles,
   Calendar,
@@ -31,6 +32,7 @@ import { PWAInstallButton } from '../components/PWAInstallButton';
 import { GoogleAdSlot } from '../components/GoogleAdSlot';
 import { TemplateDetailModal } from '../components/TemplateDetailModal';
 import { PromotionalFeaturesShowcase } from '../components/PromotionalFeaturesShowcase';
+import { ShareWhatsAppButton } from '../components/ShareWhatsAppButton';
 import { TemplateItem } from '../types';
 
 export const PublicPortalScreen: React.FC = () => {
@@ -262,21 +264,41 @@ export const PublicPortalScreen: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-900 text-xs font-bold mb-6 shadow-xs">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: 'easeOut' }}
+              className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-900 text-xs font-bold mb-6 shadow-xs"
+            >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Platform Undangan Digital & Manajemen Tamu Modern No. 1</span>
-            </div>
+            </motion.div>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-950 tracking-tight leading-tight">
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.1, ease: 'easeOut' }}
+              className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-950 tracking-tight leading-tight"
+            >
               Create. Customize. Celebrate.
-            </h1>
+            </motion.h1>
 
-            <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.22, ease: 'easeOut' }}
+              className="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed"
+            >
               Create beautiful animated digital invitations, manage your guests, share instantly, and make every event memorable.
-            </p>
+            </motion.p>
 
-            {/* Primary Call to Actions */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            {/* Primary Call to Actions with entrance animation & Share via WhatsApp */}
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.36, ease: 'easeOut' }}
+              className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5"
+            >
               <button
                 onClick={handleCreateInvitationCTA}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-102"
@@ -301,10 +323,22 @@ export const PublicPortalScreen: React.FC = () => {
                 <Eye className="w-4 h-4 text-pink-600" />
                 <span>Lihat Live Preview</span>
               </button>
-            </div>
 
-            {/* Micro proof badges */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500 font-medium">
+              <ShareWhatsAppButton
+                variant="secondary"
+                size="md"
+                label="Share via WhatsApp"
+                className="w-full sm:w-auto"
+              />
+            </motion.div>
+
+            {/* Micro proof badges with entrance animation */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
+              className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500 font-medium"
+            >
               <div className="flex items-center space-x-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 <span>Google OAuth 2.0 Instant Login</span>
@@ -317,11 +351,16 @@ export const PublicPortalScreen: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 <span>QR Check-in & Buku Tamu Digital</span>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* ANIMATED MOCKUP HERO SHOWCASE (Mobile Phone + Desktop Preview + Floating UI) */}
-          <div className="mt-14 max-w-5xl mx-auto relative">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, delay: 0.62, ease: 'easeOut' }}
+            className="mt-14 max-w-5xl mx-auto relative"
+          >
             {/* Theme Selector Tabs above Mockup */}
             <div className="flex items-center justify-center space-x-2 mb-6 overflow-x-auto no-scrollbar pb-2">
               {heroThemes.map((thm, idx) => (
@@ -440,7 +479,7 @@ export const PublicPortalScreen: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -487,9 +526,11 @@ export const PublicPortalScreen: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTemplates.map((tmpl) => {
               return (
-                <div
+                <motion.div
                   key={tmpl.id}
-                  className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all overflow-hidden flex flex-col justify-between group"
+                  whileHover={{ y: -8, scale: 1.025 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                  className="bg-white rounded-3xl border border-slate-200/90 shadow-md hover:shadow-2xl hover:border-blue-300/80 transition-shadow duration-300 overflow-hidden flex flex-col justify-between group cursor-pointer"
                 >
                   <div>
                     {/* Realistic Visual Thumbnail with Cover Image & Motifs */}
@@ -497,7 +538,7 @@ export const PublicPortalScreen: React.FC = () => {
                       <img
                         src={tmpl.defaultCoverPhoto}
                         alt={tmpl.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out opacity-90"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
@@ -569,7 +610,7 @@ export const PublicPortalScreen: React.FC = () => {
                       <span>Gunakan</span>
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -633,14 +674,24 @@ export const PublicPortalScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedGuestForPass(searchResult);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
-                  >
-                    Buka E-Pass QR
-                  </button>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <ShareWhatsAppButton
+                      guestName={searchResult.name}
+                      tableNumber={searchResult.tableNumber}
+                      checkInCode={searchResult.checkInCode}
+                      variant="secondary"
+                      size="sm"
+                      label="Kirim ke WA"
+                    />
+                    <button
+                      onClick={() => {
+                        setSelectedGuestForPass(searchResult);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 cursor-pointer"
+                    >
+                      Buka E-Pass QR
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-white border border-slate-200 text-center text-xs text-slate-600 animate-in fade-in">

@@ -10,7 +10,7 @@ import {
   Plus,
   AlertCircle,
 } from 'lucide-react';
-import { compressAndOptimizeImage, formatFileSize } from '../utils/imageOptimizer';
+import { resizeAndCompressImage, formatFileSize } from '../utils/imageOptimizer';
 import { useEvent } from '../context/EventContext';
 
 export const InvitationPhotoUploader: React.FC = () => {
@@ -28,14 +28,16 @@ export const InvitationPhotoUploader: React.FC = () => {
 
     try {
       setIsProcessing(true);
-      const result = await compressAndOptimizeImage(file, 1400, 1000, 0.85);
+      const result = await resizeAndCompressImage(file, {
+        maxWidth: 1400,
+        maxHeight: 1000,
+        quality: 0.85,
+      });
       updateInvitation({ coverPhoto: result.dataUrl });
       setLastCompressionInfo(
-        `Foto sampul dioptimalkan (${formatFileSize(result.originalSize)} ➔ ${formatFileSize(
-          result.compressedSize
-        )})`
+        `Foto sampul: ${result.formattedOriginalSize} ➔ ${result.formattedCompressedSize} (Hemat ${result.savingsPercentage}%)`
       );
-      showToast('Foto sampul berhasil diperbarui!');
+      showToast(`Foto sampul dioptimalkan! Ukuran berkurang ${result.savingsPercentage}%`);
     } catch (err: any) {
       showToast(err.message || 'Gagal mengunggah foto.');
     } finally {
@@ -50,14 +52,16 @@ export const InvitationPhotoUploader: React.FC = () => {
 
     try {
       setIsProcessing(true);
-      const result = await compressAndOptimizeImage(file, 800, 800, 0.88);
+      const result = await resizeAndCompressImage(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.88,
+      });
       updateInvitation({ couplePhoto: result.dataUrl });
       setLastCompressionInfo(
-        `Foto mempelai dioptimalkan (${formatFileSize(result.originalSize)} ➔ ${formatFileSize(
-          result.compressedSize
-        )})`
+        `Foto mempelai: ${result.formattedOriginalSize} ➔ ${result.formattedCompressedSize} (Hemat ${result.savingsPercentage}%)`
       );
-      showToast('Foto mempelai berhasil diperbarui!');
+      showToast(`Foto mempelai dioptimalkan! Ukuran berkurang ${result.savingsPercentage}%`);
     } catch (err: any) {
       showToast(err.message || 'Gagal mengunggah foto.');
     } finally {
@@ -74,15 +78,27 @@ export const InvitationPhotoUploader: React.FC = () => {
       setIsProcessing(true);
       const currentGallery = invitation.galleryPhotos || [];
       const newUrls: string[] = [];
+      let totalOriginal = 0;
+      let totalCompressed = 0;
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const res = await compressAndOptimizeImage(file, 900, 900, 0.82);
+        const res = await resizeAndCompressImage(file, {
+          maxWidth: 900,
+          maxHeight: 900,
+          quality: 0.82,
+        });
         newUrls.push(res.dataUrl);
+        totalOriginal += res.originalSize;
+        totalCompressed += res.compressedSize;
       }
 
+      const totalSavings = Math.round(((totalOriginal - totalCompressed) / totalOriginal) * 100);
       updateInvitation({ galleryPhotos: [...currentGallery, ...newUrls] });
-      showToast(`${newUrls.length} foto berhasil ditambahkan ke galeri!`);
+      setLastCompressionInfo(
+        `${newUrls.length} foto galeri: ${formatFileSize(totalOriginal)} ➔ ${formatFileSize(totalCompressed)} (Hemat ${totalSavings}%)`
+      );
+      showToast(`${newUrls.length} foto galeri berhasil dioptimalkan (Hemat ${totalSavings}%)!`);
     } catch (err: any) {
       showToast(err.message || 'Gagal mengunggah beberapa foto.');
     } finally {

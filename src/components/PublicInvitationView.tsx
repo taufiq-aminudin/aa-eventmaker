@@ -25,6 +25,7 @@ import {
 import confetti from 'canvas-confetti';
 import { useEvent } from '../context/EventContext';
 import { globalAudioPlayer } from '../utils/audioPlayer';
+import { ShareWhatsAppButton } from './ShareWhatsAppButton';
 
 export const PublicInvitationView: React.FC = () => {
   const {
@@ -171,9 +172,10 @@ export const PublicInvitationView: React.FC = () => {
     });
   };
 
+  const invitationUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(recipientName)}`;
+
   const handleCopyLink = () => {
-    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(recipientName)}`;
-    navigator.clipboard.writeText(publicUrl);
+    navigator.clipboard.writeText(invitationUrl);
     setCopiedLink(true);
     showToast('Tautan undangan dengan nama tamu berhasil disalin!');
     setTimeout(() => setCopiedLink(false), 2000);
@@ -187,8 +189,7 @@ export const PublicInvitationView: React.FC = () => {
   };
 
   const handleShareWhatsApp = () => {
-    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(recipientName)}`;
-    const text = `Kepada Yth. *${recipientName}*,\n\nTanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).\n\nBuka undangan digital resmi kami melalui tautan berikut:\n${publicUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.`;
+    const text = `Kepada Yth. *${recipientName}*,\n\nTanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).\n\nBuka undangan digital resmi kami melalui tautan berikut:\n${invitationUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -273,21 +274,26 @@ export const PublicInvitationView: React.FC = () => {
         <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           <button
             onClick={handleCopyLink}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors flex items-center space-x-1"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors flex items-center space-x-1 cursor-pointer"
             title="Salin Tautan Khusus Tamu Ini"
           >
             {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{copiedLink ? 'Tersalin' : 'Salin Link'}</span>
           </button>
 
-          <button
-            onClick={handleShareWhatsApp}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center space-x-1"
-            title="Kirim Pesan WhatsApp Personal"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">WhatsApp</span>
-          </button>
+          <ShareWhatsAppButton
+            invitationUrl={invitationUrl}
+            guestName={guestName !== 'Tamu Undangan' ? guestName : undefined}
+            eventTitle={invitation.title}
+            hosts={invitation.hosts}
+            date={invitation.date}
+            time={invitation.time}
+            venue={invitation.venue}
+            address={invitation.address}
+            size="sm"
+            variant="compact"
+            label="WhatsApp"
+          />
 
           {/* Equalizer Audio Toggle */}
           <button
@@ -635,19 +641,35 @@ export const PublicInvitationView: React.FC = () => {
           </div>
 
           {submitted ? (
-            <div className="bg-emerald-950/60 border border-emerald-800 p-6 rounded-2xl text-center space-y-2">
+            <div className="bg-emerald-950/60 border border-emerald-800 p-6 rounded-2xl text-center space-y-3">
               <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
               <h4 className="font-bold text-base text-emerald-200">Terima Kasih Banyak!</h4>
               <p className="text-xs text-emerald-300">
                 Konfirmasi kehadiran atas nama <strong className="text-white">{guestName}</strong>{' '}
                 telah tersimpan di sistem resepsionis.
               </p>
-              <button
-                onClick={() => setSubmitted(false)}
-                className="mt-3 text-xs font-semibold text-emerald-400 underline hover:text-emerald-300"
-              >
-                Kirim Konfirmasi Baru
-              </button>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+                <ShareWhatsAppButton
+                  invitationUrl={invitationUrl}
+                  guestName={guestName !== 'Tamu Undangan' ? guestName : undefined}
+                  eventTitle={invitation.title}
+                  hosts={invitation.hosts}
+                  date={invitation.date}
+                  time={invitation.time}
+                  venue={invitation.venue}
+                  address={invitation.address}
+                  variant="primary"
+                  size="sm"
+                  label="Bagikan Undangan ke Kerabat"
+                />
+                <button
+                  onClick={() => setSubmitted(false)}
+                  className="text-xs font-semibold text-emerald-400 underline hover:text-emerald-300 cursor-pointer"
+                >
+                  Kirim Konfirmasi Baru
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmitRsvp} className="space-y-4">
