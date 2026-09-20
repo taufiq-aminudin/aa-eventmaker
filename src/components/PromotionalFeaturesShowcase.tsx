@@ -388,7 +388,7 @@ export const PromotionalFeaturesShowcase: React.FC<{
                       <span>Publikasikan & Dapatkan Link</span>
                     </div>
                     <div className="text-[11px] text-emerald-400 pl-7 font-mono">
-                      https://aa-eventmaker.com/#invitation/andi-ayu
+                      https://aa-eventmaker.my.id/#invitation/andi-ayu
                     </div>
                   </div>
                 </div>
@@ -721,7 +721,7 @@ export const PromotionalFeaturesShowcase: React.FC<{
                     📍 *Plataran Dharmawangsa Jakarta*
                   </p>
                   <div className="p-2 rounded-lg bg-[#202c33] text-emerald-300 font-mono text-[10px] break-all">
-                    https://aa-eventmaker.com/#invitation/andi-ayu?to=Hendra+Kusuma
+                    https://aa-eventmaker.my.id/#invitation/andi-ayu?to=Hendra+Kusuma
                   </div>
                 </div>
               </div>

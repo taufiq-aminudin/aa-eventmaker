@@ -1,6 +1,6 @@
 {
   "name": "AA : Event Maker",
-  "description": "All-in-one event creation platform for invitations, guest management, planning, budget, and memories",
+  "description": "Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker",
   "requestFramePermissions": [
     "camera"
   ],

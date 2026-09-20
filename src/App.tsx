@@ -6,6 +6,7 @@ import { GuestPassModal } from './components/GuestPassModal';
 import { PublicInvitationView } from './components/PublicInvitationView';
 import { AuthModal } from './components/AuthModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { SeoManager } from './components/SeoManager';
 
 // Screens
 import { HomeScreen } from './screens/HomeScreen';
@@ -32,22 +33,29 @@ const MainAppContent: React.FC = () => {
     showPublicLanding,
   } = useEvent();
 
-  // Listen to hash changes for standalone public invitation link (e.g. #invitation/...)
+  // Listen to hash and pathname changes for standalone public invitation links (e.g. #invitation/... or /invitation/...)
   useEffect(() => {
-    const handleHash = () => {
-      if (window.location.hash.startsWith('#invitation')) {
+    const handleRoute = () => {
+      const hash = window.location.hash;
+      const pathname = window.location.pathname;
+      if (hash.startsWith('#invitation') || pathname.startsWith('/invitation')) {
         setShowPublicPreview(true);
       }
     };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    handleRoute();
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('popstate', handleRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
+    };
   }, [setShowPublicPreview]);
 
   // If user opened Public Web Portal (Tampilan Web/App untuk umum)
   if (showPublicLanding) {
     return (
       <>
+        <SeoManager />
         <PublicPortalScreen />
         <AuthModal />
         <OfflineIndicator />
@@ -58,6 +66,7 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-700">
+      <SeoManager />
       <OfflineIndicator />
 
       {/* Top Navbar */}

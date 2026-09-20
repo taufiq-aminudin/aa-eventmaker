@@ -3,15 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>AA : Event Maker – Platform Manajemen & Undangan Digital Event No. 1</title>
+    <title>AA Event Maker – Create Beautiful Digital Invitations</title>
     
     <!-- Primary Meta Tags -->
-    <meta name="title" content="AA : Event Maker – Platform Manajemen & Undangan Digital Event No. 1" />
-    <meta name="description" content="AA-EventMaker: Solusi lengkap manajemen pernikahan & event modern. Undangan digital eksklusif, buku tamu QR check-in, tracking RSVP otomatis, budgeting vendor, dan creative studio." />
+    <meta name="title" content="AA Event Maker – Create Beautiful Digital Invitations" />
+    <meta name="description" content="Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker." />
     <meta name="keywords" content="AA EventMaker, undangan digital, wedding planner, wedding organizer, rsvp online, qr check-in event, buku tamu digital, kalkulator budget nikah, vendor pernikahan, creative studio" />
     <meta name="author" content="AA-EventMaker" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <link rel="canonical" href="https://aa-eventmaker.com/" />
+    <link rel="canonical" href="https://aa-eventmaker.my.id/" />
+
+    <!-- Canonical Host Enforcement / Safe Redirect -->
+    <script>
+      (function() {
+        try {
+          if (window.location.hostname === 'aa-eventmaker.com' || window.location.hostname === 'www.aa-eventmaker.com') {
+            window.location.replace('https://aa-eventmaker.my.id' + window.location.pathname + window.location.search + window.location.hash);
+          }
+        } catch(e) {}
+      })();
+    </script>
 
     <!-- Google Search Console & Verification -->
     <meta name="google-site-verification" content="google-console-verification-token-aaeventmaker" />
@@ -33,10 +44,10 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://aa-eventmaker.com/" />
-    <meta property="og:title" content="AA : Event Maker – Platform Manajemen & Undangan Digital Event No. 1" />
-    <meta property="og:description" content="Platform all-in-one persiapan acara pernikahan dan event: undangan digital interaktif, QR check-in buku tamu, auto reminder RSVP, dan kalkulator budget." />
-    <meta property="og:image" content="/pwa-512x512.png" />
+    <meta property="og:url" content="https://aa-eventmaker.my.id/" />
+    <meta property="og:title" content="AA Event Maker – Create Beautiful Digital Invitations" />
+    <meta property="og:description" content="Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker." />
+    <meta property="og:image" content="https://aa-eventmaker.my.id/pwa-512x512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="AA-EventMaker" />
@@ -44,10 +55,10 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://aa-eventmaker.com/" />
-    <meta name="twitter:title" content="AA : Event Maker – Platform Manajemen & Undangan Digital Event No. 1" />
-    <meta name="twitter:description" content="Platform all-in-one persiapan acara pernikahan dan event: undangan digital interaktif, QR check-in buku tamu, auto reminder RSVP, dan kalkulator budget." />
-    <meta name="twitter:image" content="/pwa-512x512.png" />
+    <meta name="twitter:url" content="https://aa-eventmaker.my.id/" />
+    <meta name="twitter:title" content="AA Event Maker – Create Beautiful Digital Invitations" />
+    <meta name="twitter:description" content="Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker." />
+    <meta name="twitter:image" content="https://aa-eventmaker.my.id/pwa-512x512.png" />
 
     <!-- Typography Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,36 +66,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 
     <!-- Schema.org Structured Data (JSON-LD) for Google SEO -->
-    <script type="application/ld+json">
+    <script id="seo-schema-structured-data" type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "WebApplication",
-          "@id": "https://aa-eventmaker.com/#app",
-          "name": "AA-EventMaker",
-          "url": "https://aa-eventmaker.com/",
-          "applicationCategory": "BusinessApplication, LifestyleApplication",
-          "operatingSystem": "Android, iOS, Windows, macOS, Web",
-          "browserRequirements": "Requires JavaScript. Requires HTML5.",
-          "description": "Platform all-in-one event and wedding management with digital invitations, QR check-in guestbook, budgeting, and creative studio.",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "IDR"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "1250"
-          }
+          "@type": "WebSite",
+          "@id": "https://aa-eventmaker.my.id/#website",
+          "url": "https://aa-eventmaker.my.id/",
+          "name": "AA Event Maker",
+          "description": "Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker.",
+          "inLanguage": "id-ID"
         },
         {
           "@type": "Organization",
-          "@id": "https://aa-eventmaker.com/#organization",
+          "@id": "https://aa-eventmaker.my.id/#organization",
           "name": "AA-EventMaker",
-          "url": "https://aa-eventmaker.com/",
-          "logo": "https://aa-eventmaker.com/icon.svg",
+          "url": "https://aa-eventmaker.my.id/",
+          "logo": "https://aa-eventmaker.my.id/icon.svg",
           "slogan": "Plan • Manage • Make It Happen",
           "contactPoint": {
             "@type": "ContactPoint",
@@ -92,6 +91,20 @@
             "contactType": "customer service",
             "areaServed": "ID",
             "availableLanguage": ["Indonesian", "English"]
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://aa-eventmaker.my.id/#software",
+          "name": "AA-EventMaker",
+          "url": "https://aa-eventmaker.my.id/",
+          "applicationCategory": "BusinessApplication, LifestyleApplication",
+          "operatingSystem": "All",
+          "description": "Create beautiful animated digital invitations for weddings, engagements, birthdays, and special events with AA Event Maker.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "IDR"
           }
         }
       ]

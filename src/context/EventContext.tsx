@@ -184,7 +184,7 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
   ORGANIZER: {
     id: 'user_eo_01',
     name: 'Dimas & Sinta Wedding Organizer',
-    email: 'organizer@aa-eventmaker.com',
+    email: 'organizer@aa-eventmaker.my.id',
     phone: '+6281234567890',
     role: 'ORGANIZER',
     organizationName: 'Pratama Event & Wedding Planner',
@@ -194,7 +194,7 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
   CLIENT: {
     id: 'user_client_01',
     name: 'Dimas & Sinta (Calon Pengantin)',
-    email: 'klien@aa-eventmaker.com',
+    email: 'klien@aa-eventmaker.my.id',
     phone: '+6281987654321',
     role: 'CLIENT',
     associatedEventId: 'proj-1',
@@ -203,7 +203,7 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
   VENDOR: {
     id: 'user_vendor_01',
     name: 'Mahkota Fotografi & Catering',
-    email: 'vendor@aa-eventmaker.com',
+    email: 'vendor@aa-eventmaker.my.id',
     phone: '+6285712345678',
     role: 'VENDOR',
     organizationName: 'Mahkota Wedding Artistry & Culinary',
@@ -213,7 +213,7 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
   GUEST: {
     id: 'user_guest_01',
     name: 'Bpk. Hendra Gunawan & Partner',
-    email: 'tamu@aa-eventmaker.com',
+    email: 'tamu@aa-eventmaker.my.id',
     phone: '+6281398765432',
     role: 'GUEST',
     associatedEventId: 'proj-1',
