@@ -22,9 +22,8 @@ import {
   Check,
   X,
   AlertCircle,
+  Phone,
   MessageCircle,
-  Share2,
-  Sparkles,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { Guest, CampaignTarget, ScheduleTiming } from '../types';
@@ -70,25 +69,6 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
-  const [showWhatsAppBlastModal, setShowWhatsAppBlastModal] = useState(false);
-  const [waBlastTarget, setWaBlastTarget] = useState<'ALL' | 'PENDING' | 'VIP'>('ALL');
-  const [waTemplateType, setWaTemplateType] = useState<'INVITE' | 'REMINDER_H7' | 'REMINDER_H1' | 'THANK_YOU'>('INVITE');
-
-  // WhatsApp individual sender helper
-  const handleSendIndividualWhatsApp = (guest: Guest) => {
-    const publicUrl = `${window.location.origin}/#invitation/${invitation.slug}?to=${encodeURIComponent(guest.name)}`;
-    const text = `Kepada Yth. *${guest.name}*,\n\nTanpa mengurangi rasa hormat, kami bermaksud mengundang Bapak/Ibu/Saudara/i untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).\n\n🗓️ Tanggal: *${invitation.date}*\n📍 Lokasi: *${invitation.venue}*\n🎫 Kode E-Pass: *${guest.checkInCode}* (Meja: ${guest.tableNumber})\n\nBuka undangan digital resmi Anda di sini:\n${publicUrl}\n\nMohon berkenan mengisi konfirmasi kehadiran (RSVP) melalui undangan tersebut. Terima kasih banyak.`;
-    
-    // Format phone if available
-    let phoneNum = guest.phone.replace(/[^0-9]/g, '');
-    if (phoneNum.startsWith('0')) phoneNum = '62' + phoneNum.slice(1);
-    
-    const waUrl = phoneNum
-      ? `https://wa.me/${phoneNum}?text=${encodeURIComponent(text)}`
-      : `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank');
-    showToast(`Membuka WhatsApp untuk ${guest.name}`);
-  };
 
   // Form State for Add/Edit Guest
   const [guestForm, setGuestForm] = useState({
@@ -225,15 +205,6 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
           >
             <QrCode className="w-4 h-4 text-[#6d28d9]" />
             <span>Scan QR</span>
-          </button>
-
-          <button
-            id="btn-wa-blast"
-            onClick={() => setShowWhatsAppBlastModal(true)}
-            className="px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 rounded-xl transition-colors flex items-center space-x-1.5 shadow-xs"
-          >
-            <MessageCircle className="w-4 h-4 text-emerald-600" />
-            <span>WhatsApp Blast</span>
           </button>
 
           <button
@@ -389,8 +360,164 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
             </div>
           </div>
 
-          {/* Guest Table / Cards */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {/* Guest List: Mobile Cards (< 640px) */}
+          <div className="block sm:hidden space-y-3">
+            {filteredGuests.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200">
+                Tidak ada data tamu yang sesuai filter.
+              </div>
+            ) : (
+              filteredGuests.map((guest) => {
+                const cleanPhone = guest.phone ? guest.phone.replace(/[^0-9]/g, '') : '';
+                const waNumber = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+
+                return (
+                  <div
+                    key={guest.id}
+                    className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-extrabold text-sm text-slate-900">{guest.name}</div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          E-Pass: <span className="text-purple-700 font-bold">{guest.checkInCode}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            guest.rsvpStatus === 'Confirmed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : guest.rsvpStatus === 'Declined'
+                              ? 'bg-rose-100 text-rose-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {guest.rsvpStatus}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-[#6d28d9]">
+                          {guest.group}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Meja:</span>
+                        <span className="font-bold text-slate-800">{guest.tableNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Jumlah Pax:</span>
+                        <span className="font-bold text-slate-800">{guest.pax} Orang</span>
+                      </div>
+                    </div>
+
+                    {/* Check-In Status & Primary Action */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                      <div>
+                        {guest.isCheckedIn ? (
+                          <span className="inline-flex items-center space-x-1 text-emerald-700 font-bold text-xs">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Hadir ({guest.checkInTime || 'Checked-in'})</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">Belum Hadir</span>
+                        )}
+                      </div>
+
+                      {!guest.isCheckedIn ? (
+                        <button
+                          onClick={() => checkInGuest(guest.id)}
+                          className="px-3.5 py-1.5 text-xs font-bold bg-[#6d28d9] text-white rounded-xl shadow-xs active:scale-95 transition-transform"
+                        >
+                          Check-In Sekarang
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedGuestForPass(guest)}
+                          className="px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg flex items-center space-x-1"
+                        >
+                          <QrCode className="w-3.5 h-3.5 text-purple-700" />
+                          <span>E-Pass</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Mobile Quick Action Buttons Bar */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100/80">
+                      <div className="flex items-center space-x-2">
+                        {waNumber && (
+                          <a
+                            href={`https://wa.me/${waNumber}?text=Halo%20${encodeURIComponent(guest.name)},%20berikut%20tiket%20dan%20undangan%20acara%20kami:%20${window.location.origin}%23invitation`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center space-x-1 text-xs font-semibold"
+                            title="Kirim Pesan WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span className="text-[11px]">WA</span>
+                          </a>
+                        )}
+
+                        {guest.phone && (
+                          <a
+                            href={`tel:${guest.phone}`}
+                            className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center space-x-1 text-xs font-semibold"
+                            title="Telepon Tamu"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span className="text-[11px]">Telp</span>
+                          </a>
+                        )}
+
+                        <button
+                          onClick={() => setSelectedGuestForPass(guest)}
+                          className="p-2 rounded-xl bg-purple-50 text-[#6d28d9] hover:bg-purple-100 flex items-center space-x-1 text-xs font-semibold"
+                          title="Lihat Tiket QR"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span className="text-[11px]">E-Pass</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => {
+                            setEditingGuest(guest);
+                            setGuestForm({
+                              name: guest.name,
+                              group: guest.group,
+                              pax: guest.pax,
+                              phone: guest.phone,
+                              email: guest.email,
+                              tableNumber: guest.tableNumber,
+                              rsvpStatus: guest.rsvpStatus,
+                            });
+                            setShowAddGuestModal(true);
+                          }}
+                          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"
+                          title="Edit Tamu"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => deleteGuest(guest.id)}
+                          className="p-2 rounded-xl text-rose-500 hover:bg-rose-50"
+                          title="Hapus Tamu"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop/Tablet Table View (>= 640px) */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -477,14 +604,6 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
                               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-[#6d28d9]"
                             >
                               <QrCode className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={() => handleSendIndividualWhatsApp(guest)}
-                              title="Kirim Undangan WhatsApp Personal"
-                              className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700"
-                            >
-                              <MessageCircle className="w-4 h-4" />
                             </button>
 
                             {guest.rsvpStatus === 'Pending' && (
@@ -1138,192 +1257,6 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* WHATSAPP BLAST MODAL */}
-      {showWhatsAppBlastModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">WhatsApp Broadcast & Blast</h3>
-                  <p className="text-[11px] text-emerald-800">
-                    Kirim undangan digital personal dengan nama tamu ke WhatsApp secara otomatis
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowWhatsAppBlastModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
-              {/* Target Audience */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5">
-                  Target Penerima Pesan
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setWaBlastTarget('ALL')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      waBlastTarget === 'ALL'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold shadow-xs'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    <div className="text-[10px] text-slate-500 uppercase">Semua Tamu</div>
-                    <div className="text-sm font-extrabold">{guests.length} Orang</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setWaBlastTarget('PENDING')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      waBlastTarget === 'PENDING'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold shadow-xs'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    <div className="text-[10px] text-slate-500 uppercase">Pending RSVP</div>
-                    <div className="text-sm font-extrabold">{pendingCount} Orang</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setWaBlastTarget('VIP')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      waBlastTarget === 'VIP'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold shadow-xs'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    <div className="text-[10px] text-slate-500 uppercase">Tamu VIP</div>
-                    <div className="text-sm font-extrabold">
-                      {guests.filter((g) => g.group === 'VIP').length} Orang
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Template Preset Selection */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5">
-                  Pilih Format Pesan WhatsApp
-                </label>
-                <select
-                  value={waTemplateType}
-                  onChange={(e) => setWaTemplateType(e.target.value as any)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium"
-                >
-                  <option value="INVITE">Undangan Resmi Utama (dengan link personal & barcode)</option>
-                  <option value="REMINDER_H7">Pengingat Konfirmasi RSVP H-7</option>
-                  <option value="REMINDER_H1">Pengingat Hari Acara H-1 (Peta & Meja)</option>
-                  <option value="THANK_YOU">Ucapan Terima Kasih (Pasca Acara)</option>
-                </select>
-              </div>
-
-              {/* Live Preview Box */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-bold text-slate-700">Preview Pesan WhatsApp</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold flex items-center space-x-1">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Variabel Dinamis Aktif</span>
-                  </span>
-                </div>
-                <div className="p-3.5 bg-emerald-900/10 border border-emerald-200 rounded-2xl font-mono text-[11px] text-slate-800 leading-relaxed whitespace-pre-line shadow-inner">
-                  {waTemplateType === 'INVITE' && (
-                    `Kepada Yth. *{{Nama Tamu}}*,
-
-Tanpa mengurangi rasa hormat, kami bermaksud mengundang Bapak/Ibu/Saudara/i untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).
-
-🗓️ Tanggal: *${invitation.date}*
-⏰ Waktu: *${invitation.time}*
-📍 Lokasi: *${invitation.venue}*
-🎫 Kode E-Pass: *{{KODE_PASS}}* (Meja: {{NO_MEJA}})
-
-Buka undangan digital resmi Anda di sini:
-${window.location.origin}/#invitation/${invitation.slug}?to={{Nama+Tamu}}
-
-Mohon berkenan mengisi konfirmasi kehadiran (RSVP) melalui link di atas. Terima kasih banyak!`
-                  )}
-                  {waTemplateType === 'REMINDER_H7' && (
-                    `Halo *{{Nama Tamu}}*,
-
-Mengingatkan kembali perayaan *${invitation.title}* (${invitation.hosts}) yang akan berlangsung pada *${invitation.date}*.
-
-Kami sangat menantikan kehadiran Anda. Mohon bantu kami mengatur jamuan dengan mengisi konfirmasi RSVP di link berikut:
-${window.location.origin}/#invitation/${invitation.slug}?to={{Nama+Tamu}}
-
-Salam hangat dari kami sekeluarga.`
-                  )}
-                  {waTemplateType === 'REMINDER_H1' && (
-                    `Sampai jumpa besok, *{{Nama Tamu}}*! 🎉
-
-Perayaan *${invitation.title}* akan diselenggarakan besok pada *${invitation.date}* di *${invitation.venue}*.
-
-Tunjukkan kode E-Pass Anda saat tiba di meja resepsionis:
-🎫 *{{KODE_PASS}}* (Nomor Meja: {{NO_MEJA}})
-
-Petunjuk arah Google Maps:
-${invitation.address}`
-                  )}
-                  {waTemplateType === 'THANK_YOU' && (
-                    `Terima kasih sebesar-besarnya kami ucapkan kepada *{{Nama Tamu}}* atas kehadiran dan doa restu yang diberikan pada perayaan kami.
-
-Kehadiran Anda sungguh memberikan kebahagiaan dan makna mendalam bagi kami sekeluarga.
-
-Hormat kami,
-*${invitation.hosts}*`
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setShowWhatsAppBlastModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Tutup
-                </button>
-                <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sampleGuest = guests[0] || { name: 'Tamu Terhormat', phone: '', checkInCode: 'PASS-01', tableNumber: 'Meja 01' };
-                      handleSendIndividualWhatsApp(sampleGuest as any);
-                    }}
-                    className="px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                  >
-                    Kirim Contoh ke Saya
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      showToast(`Berhasil menjadwalkan WhatsApp Blast ke ${guests.length} tamu.`);
-                      setShowWhatsAppBlastModal(false);
-                    }}
-                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md flex items-center space-x-1.5 transition-all"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Mulai Broadcast Blast</span>
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}

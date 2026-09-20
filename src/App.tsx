@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EventProvider, useEvent } from './context/EventContext';
 import { Navbar } from './components/Navbar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { QrCheckinModal } from './components/QrCheckinModal';
 import { GuestPassModal } from './components/GuestPassModal';
 import { PublicInvitationView } from './components/PublicInvitationView';
 import { AuthModal } from './components/AuthModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
-import { SeoMetadata } from './components/SeoMetadata';
+import { ThemeMood } from './utils/themePresets';
+import { soundManager } from './utils/ambientSound';
 
 // Screens
 import { HomeScreen } from './screens/HomeScreen';
@@ -33,29 +35,33 @@ const MainAppContent: React.FC = () => {
     showPublicLanding,
   } = useEvent();
 
-  // Listen to hash and pathname changes for standalone public invitation links (e.g. #invitation/... or /invitation/...)
+  // Dynamic Theme Atmosphere
+  const [themeMood, setThemeMood] = useState<ThemeMood>('indigo');
+
+  // Ambient Music State
+  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
+
+  const handleToggleMusic = () => {
+    const isNowPlaying = soundManager.toggleAmbientMelody();
+    setIsPlayingMusic(isNowPlaying);
+  };
+
+  // Listen to hash changes for standalone public invitation link (e.g. #invitation/...)
   useEffect(() => {
-    const handleRoute = () => {
-      const hash = window.location.hash;
-      const pathname = window.location.pathname;
-      if (hash.startsWith('#invitation') || pathname.startsWith('/invitation')) {
+    const handleHash = () => {
+      if (window.location.hash.startsWith('#invitation')) {
         setShowPublicPreview(true);
       }
     };
-    handleRoute();
-    window.addEventListener('hashchange', handleRoute);
-    window.addEventListener('popstate', handleRoute);
-    return () => {
-      window.removeEventListener('hashchange', handleRoute);
-      window.removeEventListener('popstate', handleRoute);
-    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, [setShowPublicPreview]);
 
   // If user opened Public Web Portal (Tampilan Web/App untuk umum)
   if (showPublicLanding) {
     return (
       <>
-        <SeoMetadata />
         <PublicPortalScreen />
         <AuthModal />
         <OfflineIndicator />
@@ -66,17 +72,23 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-700">
-      <SeoMetadata />
       <OfflineIndicator />
 
       {/* Top Navbar */}
       <Navbar />
 
-      {/* Main Content Area: Routed by Role */}
-      <main className="flex-1 pb-16 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      {/* Main Content Area: Routed by Role with Mobile-Friendly Bottom Spacing */}
+      <main className="flex-1 pb-28 lg:pb-16 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         {activeRole === 'ORGANIZER' && (
           <>
-            {activeTab === 0 && <HomeScreen />}
+            {activeTab === 0 && (
+              <HomeScreen
+                currentThemeMood={themeMood}
+                onSelectThemeMood={setThemeMood}
+                isPlayingMusic={isPlayingMusic}
+                onToggleMusic={handleToggleMusic}
+              />
+            )}
             {activeTab === 1 && <InvitationScreen />}
             {activeTab === 2 && <GuestScreen />}
             {activeTab === 3 && <PlannerScreen />}
@@ -93,8 +105,16 @@ const MainAppContent: React.FC = () => {
         {activeRole === 'GUEST' && <GuestDashboardScreen />}
       </main>
 
+      {/* Dedicated Mobile Bottom Navigation Dock (< lg) */}
+      <MobileBottomNav
+        currentThemeMood={themeMood}
+        onSelectThemeMood={setThemeMood}
+        isPlayingMusic={isPlayingMusic}
+        onToggleMusic={handleToggleMusic}
+      />
+
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white py-6 px-4 sm:px-8 text-center text-xs text-slate-500">
+      <footer className="hidden sm:block border-t border-slate-200/80 bg-white py-6 px-4 sm:px-8 text-center text-xs text-slate-500 mb-16 lg:mb-0">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="font-black text-slate-900">AA-EventMaker</span>
@@ -115,7 +135,7 @@ const MainAppContent: React.FC = () => {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-slate-800 text-xs font-semibold flex items-center space-x-2 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-slate-800 text-xs font-semibold flex items-center space-x-2 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>{toastMessage}</span>
         </div>

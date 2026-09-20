@@ -337,8 +337,107 @@ export const BudgetScreen: React.FC = () => {
       {/* Historical Spending Trends Graph & List */}
       <BudgetSpendingTrends />
 
-      {/* Budget Items Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      {/* Mobile Budget Items Cards (< 640px) */}
+      <div className="block sm:hidden space-y-3">
+        {budgets.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200">
+            Belum ada item biaya anggaran. Klik &ldquo;Tambah Item Biaya&rdquo; untuk memulai.
+          </div>
+        ) : (
+          budgets.map((item) => {
+            const diff = item.plannedAmount - item.actualAmount;
+            const percent =
+              item.plannedAmount > 0
+                ? Math.round((item.actualAmount / item.plannedAmount) * 100)
+                : 0;
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-extrabold text-sm text-slate-900">{item.category}</div>
+                    {item.notes && (
+                      <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                        {item.notes}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      diff >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                    }`}
+                  >
+                    {diff >= 0 ? `Sisa ${(100 - Math.min(100, percent))}%` : `Over ${percent - 100}%`}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      percent > 100 ? 'bg-rose-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(percent, 100)}%` }}
+                  />
+                </div>
+
+                {/* Numbers breakdown */}
+                <div className="grid grid-cols-3 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl text-center">
+                  <div>
+                    <div className="text-[10px] text-slate-400">Rencana</div>
+                    <div className="font-bold text-slate-800">{formatCost(item.plannedAmount)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Realisasi</div>
+                    <div className="font-bold text-emerald-700">{formatCost(item.actualAmount)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Selisih</div>
+                    <div
+                      className={`font-bold ${
+                        diff >= 0 ? 'text-blue-600' : 'text-rose-600'
+                      }`}
+                    >
+                      {diff >= 0 ? `+${formatCost(diff)}` : `-${formatCost(Math.abs(diff))}`}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setEditingItem(item);
+                      setCategory(item.category);
+                      setPlanned(item.plannedAmount);
+                      setActual(item.actualAmount);
+                      setNotes(item.notes);
+                      setShowModal(true);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 flex items-center space-x-1 text-xs font-semibold"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    onClick={() => deleteBudgetItem(item.id)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 flex items-center space-x-1 text-xs font-semibold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop/Tablet Budget Items Table (>= 640px) */}
+      <div className="hidden sm:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

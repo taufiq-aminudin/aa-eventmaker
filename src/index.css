@@ -22,6 +22,20 @@
   font-family: 'Playfair Display', Georgia, serif;
 }
 
+/* Mobile Safe Area for Modern Smartphone Gesture Bars */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Utility to hide scrollbar on mobile horizontal menus */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

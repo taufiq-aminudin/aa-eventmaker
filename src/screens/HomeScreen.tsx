@@ -14,10 +14,26 @@ import {
   Eye,
   TrendingUp,
   AlertCircle,
+  Zap,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
+import { DynamicEventHeader } from '../components/DynamicEventHeader';
+import { ThemeMood } from '../utils/themePresets';
+import { soundManager } from '../utils/ambientSound';
 
-export const HomeScreen: React.FC = () => {
+interface HomeScreenProps {
+  currentThemeMood?: ThemeMood;
+  onSelectThemeMood?: (mood: ThemeMood) => void;
+  isPlayingMusic?: boolean;
+  onToggleMusic?: () => void;
+}
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({
+  currentThemeMood = 'indigo',
+  onSelectThemeMood = () => {},
+  isPlayingMusic = false,
+  onToggleMusic = () => {},
+}) => {
   const {
     currentProject,
     invitation,
@@ -107,58 +123,14 @@ export const HomeScreen: React.FC = () => {
   ];
 
   return (
-    <div id="home-screen" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Hero Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#4c1d95] via-[#6d28d9] to-[#db2777] p-6 sm:p-8 text-white shadow-xl overflow-hidden">
-        {/* Abstract circles */}
-        <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-        <div className="absolute right-36 -top-12 w-48 h-48 rounded-full bg-pink-400/20 blur-xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>{currentProject.type} Management Dashboard</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-              {currentProject.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-purple-100 pt-1">
-              <div className="flex items-center space-x-1.5">
-                <Calendar className="w-4 h-4 text-purple-200" />
-                <span>{currentProject.date}</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Clock className="w-4 h-4 text-purple-200" />
-                <span>{currentProject.time}</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <MapPin className="w-4 h-4 text-purple-200" />
-                <span className="truncate max-w-xs">{currentProject.location}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0">
-            <button
-              id="home-btn-scanner"
-              onClick={() => setShowQrCheckinModal(true)}
-              className="px-4 py-2.5 bg-white text-[#6d28d9] font-bold text-xs rounded-xl shadow-md hover:bg-purple-50 transition-colors flex items-center space-x-2"
-            >
-              <QrCode className="w-4 h-4" />
-              <span>Scan Check-In</span>
-            </button>
-            <button
-              id="home-btn-preview"
-              onClick={() => setShowPublicPreview(true)}
-              className="px-4 py-2.5 bg-purple-900/40 hover:bg-purple-900/60 border border-white/20 text-white font-bold text-xs rounded-xl transition-colors flex items-center space-x-2 backdrop-blur-md"
-            >
-              <Eye className="w-4 h-4" />
-              <span>Preview Undangan</span>
-            </button>
-          </div>
-        </div>
-      </div>
+    <div id="home-screen" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      {/* Dynamic Visual Hero Header with Real-Time Countdown & Atmosphere Settings */}
+      <DynamicEventHeader
+        currentThemeMood={currentThemeMood}
+        onSelectThemeMood={onSelectThemeMood}
+        isPlayingMusic={isPlayingMusic}
+        onToggleMusic={onToggleMusic}
+      />
 
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
