@@ -24,6 +24,7 @@ import {
   PaymentSubmission,
   PaymentStatus,
   PaymentMethodType,
+  SubscriptionTier,
 } from '../types';
 import {
   INITIAL_PROJECT,
@@ -96,8 +97,33 @@ interface EventContextType {
   // Invitation
   invitation: InvitationData;
   updateInvitation: (updated: Partial<InvitationData>) => void;
-  selectTemplate: (templateName: string) => void;
+  selectTemplate: (templateName: string) => boolean;
   templates: TemplateItem[];
+  canUseTemplate: (templateOrName: string | TemplateItem) => {
+    allowed: boolean;
+    requiredTier: SubscriptionTier;
+    currentTier: SubscriptionTier;
+    reason?: string;
+  };
+  showUpgradeModal: boolean;
+  setShowUpgradeModal: (show: boolean) => void;
+  upgradeModalInfo: {
+    templateName?: string;
+    requiredTier?: SubscriptionTier;
+    featureName?: string;
+  } | null;
+  setUpgradeModalInfo: (
+    info: {
+      templateName?: string;
+      requiredTier?: SubscriptionTier;
+      featureName?: string;
+    } | null
+  ) => void;
+  triggerUpgradePrompt: (params: {
+    templateName?: string;
+    requiredTier?: SubscriptionTier;
+    featureName?: string;
+  }) => void;
 
   // Guests
   guests: Guest[];
@@ -186,6 +212,7 @@ interface EventContextType {
   // Payment Management
   payments: PaymentSubmission[];
   activeSubscriptionTier: 'starter' | 'professional' | 'agency';
+  setActiveSubscriptionTier: (tier: 'starter' | 'professional' | 'agency') => void;
   submitPayment: (data: {
     customerName: string;
     email: string;
@@ -288,6 +315,12 @@ export const PACKAGE_LIMITS = {
   },
 } as const;
 
+export const SUBSCRIPTION_TIER_RANK: Record<SubscriptionTier, number> = {
+  starter: 1,
+  professional: 2,
+  agency: 3,
+};
+
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -296,6 +329,21 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [showQrCheckinModal, setShowQrCheckinModal] = useState<boolean>(false);
   const [selectedGuestForPass, setSelectedGuestForPass] = useState<Guest | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+  const [upgradeModalInfo, setUpgradeModalInfo] = useState<{
+    templateName?: string;
+    requiredTier?: SubscriptionTier;
+    featureName?: string;
+  } | null>(null);
+
+  const triggerUpgradePrompt = (params: {
+    templateName?: string;
+    requiredTier?: SubscriptionTier;
+    featureName?: string;
+  }) => {
+    setUpgradeModalInfo(params);
+    setShowUpgradeModal(true);
+  };
 
   // Auth & Roles State: Default to null for public visitor experience
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
@@ -696,9 +744,65 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Pengaturan undangan berhasil disimpan.');
   };
 
-  const selectTemplate = (templateName: string) => {
+  const canUseTemplate = (
+    templateOrName: string | TemplateItem
+  ): {
+    allowed: boolean;
+    requiredTier: SubscriptionTier;
+    currentTier: SubscriptionTier;
+    reason?: string;
+  } => {
+    let templateObj: TemplateItem | undefined;
+    if (typeof templateOrName === 'string') {
+      templateObj = TEMPLATES_DATA.find(
+        (t: TemplateItem) =>
+          t.title.toLowerCase() === templateOrName.toLowerCase() ||
+          t.id.toLowerCase() === templateOrName.toLowerCase()
+      );
+    } else {
+      templateObj = templateOrName;
+    }
+
+    const reqTier: SubscriptionTier = templateObj?.requiredTier || 'starter';
+    const currentTier: SubscriptionTier = activeSubscriptionTier || 'starter';
+
+    const reqRank = SUBSCRIPTION_TIER_RANK[reqTier] || 1;
+    const currRank = SUBSCRIPTION_TIER_RANK[currentTier] || 1;
+
+    if (currRank >= reqRank) {
+      return {
+        allowed: true,
+        requiredTier: reqTier,
+        currentTier,
+      };
+    }
+
+    const reqTierName = reqTier === 'agency' ? 'EO & Agency' : 'Wedding Professional';
+    const currTierName = currentTier === 'starter' ? 'Starter Free' : 'Wedding Professional';
+
+    return {
+      allowed: false,
+      requiredTier: reqTier,
+      currentTier,
+      reason: `Template "${templateObj?.title || templateOrName}" merupakan koleksi eksklusif untuk paket ${reqTierName}. Paket Anda saat ini: ${currTierName}.`,
+    };
+  };
+
+  const selectTemplate = (templateName: string): boolean => {
+    const check = canUseTemplate(templateName);
+    if (!check.allowed) {
+      showToast(`🔒 Akses Dibatasi: ${check.reason}`);
+      triggerUpgradePrompt({
+        templateName,
+        requiredTier: check.requiredTier,
+        featureName: `Template ${templateName}`,
+      });
+      return false;
+    }
+
     setInvitation((prev) => ({ ...prev, templateName }));
     showToast(`Tema undangan diubah ke: ${templateName}`);
+    return true;
   };
 
   // Guests functions
@@ -1389,6 +1493,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateInvitation,
         selectTemplate,
         templates: TEMPLATES_DATA,
+        canUseTemplate,
+        showUpgradeModal,
+        setShowUpgradeModal,
+        upgradeModalInfo,
+        setUpgradeModalInfo,
+        triggerUpgradePrompt,
 
         guests,
         addGuest,
@@ -1442,6 +1552,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         payments,
         activeSubscriptionTier,
+        setActiveSubscriptionTier,
         submitPayment,
         updatePaymentStatus,
         deletePayment,

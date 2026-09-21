@@ -200,6 +200,11 @@ export interface TemplateItem {
   defaultGallery?: string[];
   accentColor?: string;
   patternType?: 'floral' | 'batik' | 'siger' | 'balinese' | 'modern' | 'ballroom' | 'festive' | 'corporate' | 'stars';
+  requiredTier?: SubscriptionTier;
+  badge?: string;
+  previewVideoUrl?: string;
+  videoAspect?: '9:16' | '16:9';
+  animationStyle?: string;
 }
 
 export interface PhotoPresetItem {

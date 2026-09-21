@@ -11,6 +11,9 @@ import {
   ChevronRight,
   Filter,
   X,
+  Lock,
+  Crown,
+  Zap,
 } from 'lucide-react';
 import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
@@ -21,12 +24,13 @@ import { TemplateDetailModal } from '../../components/TemplateDetailModal';
 import { TemplateItem } from '../../types';
 
 export const TemplatesPage: React.FC = () => {
-  const { templates, selectTemplate } = useEvent();
+  const { templates, selectTemplate, canUseTemplate, activeSubscriptionTier } = useEvent();
   const { navigate } = useRouter();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [selectedStyle, setSelectedStyle] = useState<string>('Semua');
+  const [selectedTier, setSelectedTier] = useState<string>('Semua');
   const [activePreviewTemplate, setActivePreviewTemplate] = useState<TemplateItem | null>(null);
 
   const categories = [
@@ -79,12 +83,21 @@ export const TemplatesPage: React.FC = () => {
       selectedStyle === 'Semua' ||
       t.styleTag.toLowerCase().includes(selectedStyle.toLowerCase());
 
-    return matchesSearch && matchesCategory && matchesStyle;
+    // Tier match
+    const matchesTier =
+      selectedTier === 'Semua' ||
+      (selectedTier === 'starter' && (!t.requiredTier || t.requiredTier === 'starter')) ||
+      (selectedTier === 'professional' && t.requiredTier === 'professional') ||
+      (selectedTier === 'agency' && t.requiredTier === 'agency');
+
+    return matchesSearch && matchesCategory && matchesStyle && matchesTier;
   });
 
   const handleUseTemplate = (tmpl: TemplateItem) => {
-    selectTemplate(tmpl.title);
-    navigate('/create');
+    const success = selectTemplate(tmpl.title);
+    if (success) {
+      navigate('/create');
+    }
   };
 
   return (
@@ -174,6 +187,33 @@ export const TemplatesPage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Subscription Tier Filter */}
+            <div className="pt-2 border-t border-slate-200/60">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Kategori Paket Langganan:
+              </div>
+              <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+                {[
+                  { id: 'Semua', label: 'Semua Paket' },
+                  { id: 'starter', label: 'Starter Free' },
+                  { id: 'professional', label: 'Wedding Professional' },
+                  { id: 'agency', label: 'EO & Agency' },
+                ].map((tier) => (
+                  <button
+                    key={tier.id}
+                    onClick={() => setSelectedTier(tier.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      selectedTier === tier.id
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {tier.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Results Summary */}
@@ -181,98 +221,139 @@ export const TemplatesPage: React.FC = () => {
             <div>
               Menampilkan <strong>{filteredTemplates.length}</strong> tema undangan
               {selectedCategory !== 'Semua' && ` pada kategori "${selectedCategory}"`}
+              {selectedTier !== 'Semua' && ` (Paket ${selectedTier})`}
             </div>
           </div>
 
           {/* Template Cards Grid */}
           {filteredTemplates.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTemplates.map((tmpl) => (
-                <motion.div
-                  key={tmpl.id}
-                  whileHover={{ y: -6 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                  className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
-                >
-                  <div>
-                    {/* Cover Photo */}
-                    <div className="relative h-48 overflow-hidden bg-slate-900">
-                      <img
-                        src={tmpl.defaultCoverPhoto}
-                        alt={tmpl.title}
-                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 opacity-90"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 border border-white/10 shadow-xs">
-                          {tmpl.styleTag}
-                        </span>
-                        <span
-                          className="w-4 h-4 rounded-full border-2 border-white shadow-xs"
-                          style={{ backgroundColor: tmpl.accentColor || '#f59e0b' }}
-                          title="Warna Aksen"
+              {filteredTemplates.map((tmpl) => {
+                const access = canUseTemplate(tmpl);
+                return (
+                  <motion.div
+                    key={tmpl.id}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                    className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                  >
+                    <div>
+                      {/* Cover Photo */}
+                      <div className="relative h-48 overflow-hidden bg-slate-900">
+                        <img
+                          src={tmpl.defaultCoverPhoto}
+                          alt={tmpl.title}
+                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 opacity-90"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+                        {/* Badges */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-amber-300 border border-white/10 shadow-xs">
+                              {tmpl.styleTag}
+                            </span>
+                            {tmpl.requiredTier === 'agency' ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 flex items-center gap-1 shadow-xs">
+                                <Crown className="w-2.5 h-2.5 text-slate-950" />
+                                <span>Agency</span>
+                              </span>
+                            ) : tmpl.requiredTier === 'professional' ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white flex items-center gap-1 shadow-xs">
+                                <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                                <span>Pro</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+                                Free
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className="w-4 h-4 rounded-full border-2 border-white shadow-xs"
+                            style={{ backgroundColor: tmpl.accentColor || '#f59e0b' }}
+                            title="Warna Aksen"
+                          />
+                        </div>
+
+                        {/* Host details */}
+                        <div className="absolute bottom-3 left-3 right-3 text-white">
+                          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
+                            {tmpl.category}
+                          </div>
+                          <h3 className="text-base font-serif font-bold text-white truncate">
+                            {tmpl.sampleHosts || tmpl.title}
+                          </h3>
+                        </div>
                       </div>
 
-                      {/* Host details */}
-                      <div className="absolute bottom-3 left-3 right-3 text-white">
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
-                          {tmpl.category}
+                      {/* Body */}
+                      <div className="p-5 space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {tmpl.title}
+                            </h4>
+                            {!access.allowed && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>Paket {tmpl.requiredTier === 'agency' ? 'Agency' : 'Pro'}</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                            {tmpl.description}
+                          </p>
                         </div>
-                        <h3 className="text-base font-serif font-bold text-white truncate">
-                          {tmpl.sampleHosts || tmpl.title}
-                        </h3>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px] text-slate-600">
+                          <div className="flex items-center space-x-1.5 truncate">
+                            <Calendar className="w-3 h-3 text-blue-500 shrink-0" />
+                            <span>{tmpl.sampleDate || 'Sabtu, 24 Oktober 2026'}</span>
+                          </div>
+                          <div className="flex items-center space-x-1.5 truncate">
+                            <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                            <span className="truncate">{tmpl.sampleVenue || 'Ballroom Hotel Indonesia'}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Body */}
-                    <div className="p-5 space-y-3">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                          {tmpl.title}
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {tmpl.description}
-                        </p>
-                      </div>
+                    {/* Actions */}
+                    <div className="p-5 pt-0 flex items-center space-x-2 border-t border-slate-100 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setActivePreviewTemplate(tmpl)}
+                        className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Preview Realistis</span>
+                      </button>
 
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px] text-slate-600">
-                        <div className="flex items-center space-x-1.5 truncate">
-                          <Calendar className="w-3 h-3 text-blue-500 shrink-0" />
-                          <span>{tmpl.sampleDate || 'Sabtu, 24 Oktober 2026'}</span>
-                        </div>
-                        <div className="flex items-center space-x-1.5 truncate">
-                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
-                          <span className="truncate">{tmpl.sampleVenue || 'Ballroom Hotel Indonesia'}</span>
-                        </div>
-                      </div>
+                      {access.allowed ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUseTemplate(tmpl)}
+                          className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Gunakan</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleUseTemplate(tmpl)}
+                          className="flex-1 py-2.5 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                          title="Klik untuk membuka paket langganan"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-amber-200" />
+                          <span>Buka Paket {tmpl.requiredTier === 'agency' ? 'Agency' : 'Pro'}</span>
+                        </button>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="p-5 pt-0 flex items-center space-x-2 border-t border-slate-100 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setActivePreviewTemplate(tmpl)}
-                      className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Preview Realistis</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleUseTemplate(tmpl)}
-                      className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Gunakan</span>
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto">

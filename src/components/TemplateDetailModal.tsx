@@ -16,6 +16,11 @@ import {
   Send,
   Camera,
   Share2,
+  Lock,
+  Crown,
+  Play,
+  Video,
+  Eye,
 } from 'lucide-react';
 import { TemplateItem, InvitationData } from '../types';
 import { useEvent } from '../context/EventContext';
@@ -34,6 +39,8 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
   const {
     invitation,
     selectTemplate,
+    canUseTemplate,
+    triggerUpgradePrompt,
     currentUser,
     setShowAuthModal,
     setShowPublicLanding,
@@ -42,6 +49,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
   } = useEvent();
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
+  const [activePreviewTab, setActivePreviewTab] = useState<'interactive' | 'video'>('interactive');
   const [isPlayingMusic, setIsPlayingMusic] = useState(true);
   const [rsvpName, setRsvpName] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<'Hadir' | 'Tidak Hadir' | 'Ragu-ragu'>('Hadir');
@@ -51,8 +59,14 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
 
   if (!template) return null;
 
+  const accessCheck = canUseTemplate(template);
+
   const handleApplyTemplate = () => {
-    selectTemplate(template.title);
+    const success = selectTemplate(template.title);
+    if (!success) {
+      // User blocked by subscription requirement - selectTemplate triggered upgrade prompt
+      return;
+    }
     if (onUseTemplate) {
       onUseTemplate(template);
     }
@@ -103,18 +117,33 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
       <div className="relative w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         {/* Top Control Bar */}
-        <div className="bg-slate-900/90 border-b border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
+        <div className="bg-slate-900/95 border-b border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center space-x-3">
             <div
-              className="w-3.5 h-3.5 rounded-full ring-2 ring-white/20"
+              className="w-3.5 h-3.5 rounded-full ring-2 ring-white/20 shrink-0"
               style={{ backgroundColor: template.accentColor || '#f59e0b' }}
             />
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                 <span className="text-sm font-bold text-white">{template.title}</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-slate-300">
                   {template.category} • {template.styleTag}
                 </span>
+                {template.requiredTier === 'agency' ? (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                    <Crown className="w-3 h-3 text-amber-400" />
+                    <span>Paket EO & Agency</span>
+                  </span>
+                ) : template.requiredTier === 'professional' ? (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-blue-400" />
+                    <span>Paket Pro</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    Starter Free
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 hidden sm:block truncate max-w-md">
                 {template.description}
@@ -123,40 +152,73 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* View Mode Toggle: Mobile vs Desktop */}
-            <div className="hidden sm:flex items-center bg-slate-800 rounded-xl p-1 border border-slate-700">
+            {/* Tabs: Interactive vs Video */}
+            <div className="flex items-center bg-slate-800 rounded-xl p-1 border border-slate-700">
               <button
                 type="button"
-                onClick={() => setPreviewDevice('mobile')}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  previewDevice === 'mobile'
+                onClick={() => setActivePreviewTab('interactive')}
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activePreviewTab === 'interactive'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Tampilan Smartphone"
+                title="Preview Undangan Web Interaktif"
               >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Mobile</span>
+                <Eye className="w-3.5 h-3.5" />
+                <span>Interaktif</span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setPreviewDevice('desktop')}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  previewDevice === 'desktop'
-                    ? 'bg-blue-600 text-white shadow-xs'
+                onClick={() => setActivePreviewTab('video')}
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activePreviewTab === 'video'
+                    ? 'bg-purple-600 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Tampilan Desktop / Layar Penuh"
+                title="Preview Animasi & Video Teaser"
               >
-                <Monitor className="w-3.5 h-3.5" />
-                <span>Desktop</span>
+                <Video className="w-3.5 h-3.5 text-pink-300" />
+                <span>Video & Animasi</span>
               </button>
             </div>
+
+            {/* View Mode Toggle (Mobile / Desktop) only on interactive */}
+            {activePreviewTab === 'interactive' && (
+              <div className="hidden sm:flex items-center bg-slate-800 rounded-xl p-1 border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice('mobile')}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    previewDevice === 'mobile'
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Tampilan Smartphone"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice('desktop')}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    previewDevice === 'desktop'
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Tampilan Desktop / Layar Penuh"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Desktop</span>
+                </button>
+              </div>
+            )}
 
             {/* Music Toggle */}
             <button
               onClick={() => setIsPlayingMusic(!isPlayingMusic)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
               title="Musik Tema"
             >
               {isPlayingMusic ? (
@@ -166,19 +228,32 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
               )}
             </button>
 
-            {/* Apply Template Button */}
-            <button
-              onClick={handleApplyTemplate}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Gunakan Template Ini</span>
-            </button>
+            {/* Apply or Upgrade Button in Header */}
+            {accessCheck.allowed ? (
+              <button
+                type="button"
+                onClick={handleApplyTemplate}
+                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Gunakan</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApplyTemplate}
+                className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-200" />
+                <span>Buka Paket {accessCheck.requiredTier === 'agency' ? 'Agency' : 'Pro'}</span>
+              </button>
+            )}
 
             {/* Close Button */}
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Tutup Preview"
             >
               <X className="w-5 h-5" />
@@ -186,15 +261,106 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
           </div>
         </div>
 
+        {/* Access Warning Banner if not permitted */}
+        {!accessCheck.allowed && (
+          <div className="bg-amber-950/70 border-b border-amber-500/30 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200 shrink-0">
+            <div className="flex items-center space-x-2">
+              <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Akses Pratinjau Terbuka:</strong> {accessCheck.reason} Anda bebas meninjau animasi & layout template di bawah.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                triggerUpgradePrompt({
+                  templateName: template.title,
+                  requiredTier: accessCheck.requiredTier,
+                  featureName: `Template ${template.title}`,
+                })
+              }
+              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] whitespace-nowrap transition-colors cursor-pointer shrink-0"
+            >
+              Lihat Opsi Upgrade
+            </button>
+          </div>
+        )}
+
         {/* Scrollable Preview Area */}
         <div className="overflow-y-auto flex-1 bg-slate-950 p-3 sm:p-6 flex justify-center items-start">
-          <div
-            className={`transition-all duration-300 w-full ${
-              previewDevice === 'mobile'
-                ? 'max-w-[410px] rounded-[36px] border-[6px] border-slate-800 shadow-2xl overflow-hidden'
-                : 'max-w-2xl rounded-2xl border border-slate-800 shadow-xl overflow-hidden'
-            }`}
-          >
+          {activePreviewTab === 'video' ? (
+            <div className="w-full max-w-3xl bg-slate-900 rounded-3xl border border-slate-800 p-5 sm:p-7 space-y-6 shadow-2xl animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+                <div>
+                  <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold mb-2 border border-purple-500/30">
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Pratinjau Animasi & Cuplikan Sinematik</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <span>{template.title}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Gaya Animasi: <strong className="text-purple-300">{template.animationStyle || 'Parallax Smooth Scroll'}</strong> • Aspek Video: <strong className="text-slate-200">{template.videoAspect || '16:9'}</strong>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-slate-800 text-slate-300 border border-slate-700">
+                    Full HD 1080p
+                  </span>
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Auto-Loop
+                  </span>
+                </div>
+              </div>
+
+              {/* Video Player Container */}
+              <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-2xl flex items-center justify-center group">
+                <video
+                  src={template.previewVideoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-bride-and-groom-holding-each-other-42861-large.mp4'}
+                  poster={displayCover}
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Animation details and highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Transisi Ornamen</div>
+                  <div className="font-bold text-white">{template.animationStyle || 'Royal Fade & Slide'}</div>
+                  <div className="text-[11px] text-slate-400">Efek ornamen khas yang muncul halus saat tamu menggulir layar.</div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Kualitas Tampilan</div>
+                  <div className="font-bold text-white">60fps Mobile-Ready</div>
+                  <div className="text-[11px] text-slate-400">Kompatibel di semua browser Android & iOS tanpa lag.</div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Paket Minimum</div>
+                  <div className="font-bold text-amber-300">
+                    {template.requiredTier === 'agency' ? 'EO & Agency' : template.requiredTier === 'professional' ? 'Wedding Professional' : 'Starter Free'}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {accessCheck.allowed ? 'Aktif dan siap digunakan' : 'Dapat dibuka dengan upgrade'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`transition-all duration-300 w-full ${
+                previewDevice === 'mobile'
+                  ? 'max-w-[410px] rounded-[36px] border-[6px] border-slate-800 shadow-2xl overflow-hidden'
+                  : 'max-w-2xl rounded-2xl border border-slate-800 shadow-xl overflow-hidden'
+              }`}
+            >
             {/* Mobile Top Notch if in mobile mode */}
             {previewDevice === 'mobile' && (
               <div className="bg-black/90 py-1 px-4 flex items-center justify-between text-[10px] text-slate-400 font-mono">
@@ -459,6 +625,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Modal Bottom Action Bar */}
@@ -473,18 +640,28 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
           <div className="flex items-center space-x-2 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="w-1/2 sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              className="w-1/2 sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
               Kembali
             </button>
 
-            <button
-              onClick={handleApplyTemplate}
-              className="w-1/2 sm:w-auto px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2"
-            >
-              <span>Gunakan Template Ini</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {accessCheck.allowed ? (
+              <button
+                onClick={handleApplyTemplate}
+                className="w-1/2 sm:w-auto px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <span>Gunakan Template Ini</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleApplyTemplate}
+                className="w-1/2 sm:w-auto px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Lock className="w-4 h-4 text-amber-200" />
+                <span>Buka Paket {accessCheck.requiredTier === 'agency' ? 'Agency' : 'Pro'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

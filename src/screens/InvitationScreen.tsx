@@ -12,6 +12,8 @@ import {
   Camera,
   Heart,
   ImageIcon,
+  Lock,
+  Crown,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { InvitationPhotoUploader } from '../components/InvitationPhotoUploader';
@@ -25,6 +27,7 @@ export const InvitationScreen: React.FC = () => {
     invitation,
     updateInvitation,
     selectTemplate,
+    canUseTemplate,
     templates,
     currentProject,
     setShowPublicPreview,
@@ -149,6 +152,7 @@ export const InvitationScreen: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTemplates.map((tmpl) => {
             const isSelected = invitation.templateName === tmpl.title;
+            const access = canUseTemplate(tmpl);
             return (
               <div
                 key={tmpl.id}
@@ -169,21 +173,45 @@ export const InvitationScreen: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     <div className="absolute top-2 left-2 right-2 flex justify-between items-center">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white">
-                        {tmpl.styleTag}
-                      </span>
-                      {isSelected && (
+                      <div className="flex items-center space-x-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white">
+                          {tmpl.styleTag}
+                        </span>
+                        {tmpl.requiredTier === 'agency' ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 flex items-center gap-0.5">
+                            <Crown className="w-2.5 h-2.5 text-slate-950" />
+                            <span>Agency</span>
+                          </span>
+                        ) : tmpl.requiredTier === 'professional' ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-600 text-white flex items-center gap-0.5">
+                            <span>Pro</span>
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {isSelected ? (
                         <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </div>
-                      )}
+                      ) : !access.allowed ? (
+                        <div className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shadow-md" title={access.reason}>
+                          <Lock className="w-3 h-3 text-slate-950" />
+                        </div>
+                      ) : null}
                     </div>
                     <div className="absolute bottom-2 left-2 right-2 text-xs font-serif font-bold text-white drop-shadow-sm truncate">
                       {tmpl.title}
                     </div>
                   </div>
 
-                  <h3 className="text-sm font-bold text-slate-900">{tmpl.title}</h3>
+                  <div className="flex items-start justify-between gap-1">
+                    <h3 className="text-sm font-bold text-slate-900">{tmpl.title}</h3>
+                    {!access.allowed && (
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md shrink-0">
+                        {tmpl.requiredTier === 'agency' ? 'Agency' : 'Pro'}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">{tmpl.description}</p>
                 </div>
 
@@ -196,8 +224,8 @@ export const InvitationScreen: React.FC = () => {
                         e.stopPropagation();
                         setPreviewingTemplate(tmpl);
                       }}
-                      className="text-xs font-semibold px-2.5 py-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center space-x-1"
-                      title="Lihat Preview Realistis"
+                      className="text-xs font-semibold px-2.5 py-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                      title="Lihat Preview Realistis & Video"
                     >
                       <Eye className="w-3 h-3" />
                       <span>Preview</span>
@@ -208,13 +236,24 @@ export const InvitationScreen: React.FC = () => {
                         e.stopPropagation();
                         selectTemplate(tmpl.title);
                       }}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 ${
                         isSelected
                           ? 'bg-[#6d28d9] text-white'
+                          : !access.allowed
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white'
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
-                      {isSelected ? 'Terpilih' : 'Terapkan'}
+                      {!access.allowed && !isSelected ? (
+                        <>
+                          <Lock className="w-3 h-3" />
+                          <span>Buka</span>
+                        </>
+                      ) : isSelected ? (
+                        'Terpilih'
+                      ) : (
+                        'Terapkan'
+                      )}
                     </button>
                   </div>
                 </div>

@@ -70,6 +70,9 @@ const PublicInvitationView = React.lazy(() =>
 const AuthModal = React.lazy(() =>
   import('./components/AuthModal').then((m) => ({ default: m.AuthModal }))
 );
+const UpgradeModal = React.lazy(() =>
+  import('./components/UpgradeModal').then((m) => ({ default: m.UpgradeModal }))
+);
 
 const PageLoaderFallback: React.FC = () => (
   <div className="min-h-[400px] flex flex-col items-center justify-center p-8 space-y-3">
@@ -265,6 +268,7 @@ export const App: React.FC = () => {
         <QrCheckinModal />
         <GuestPassModal />
         <AuthModal />
+        <UpgradeModal />
       </Suspense>
 
       {/* Toast Notification */}
