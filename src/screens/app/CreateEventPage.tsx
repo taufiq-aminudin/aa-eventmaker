@@ -208,7 +208,7 @@ export const CreateEventPage: React.FC = () => {
       time: formData.time,
       venue: formData.venue,
       address: formData.address,
-      openingGreeting: formData.openingGreeting,
+      opening: formData.openingGreeting,
       quote: formData.quote,
       category: currentCategory?.name,
       eventType: mappedType,
@@ -379,10 +379,10 @@ export const CreateEventPage: React.FC = () => {
                   key={typeItem.id}
                   onClick={() => {
                     if (isLocked || isProLocked) {
-                      triggerUpgradePrompt(
-                        typeItem.requiredTier || 'professional',
-                        `Tipe acara "${typeItem.name}" membutuhkan paket ${typeItem.requiredTier?.toUpperCase()}.`
-                      );
+                      triggerUpgradePrompt({
+                        requiredTier: typeItem.requiredTier || 'professional',
+                        featureName: `Tipe acara "${typeItem.name}" membutuhkan paket ${typeItem.requiredTier?.toUpperCase()}.`,
+                      });
                       return;
                     }
                     handleSelectType(typeItem.id);
@@ -523,7 +523,7 @@ export const CreateEventPage: React.FC = () => {
                     }`}
                   >
                     <div className="text-xs font-bold">{style.label}</div>
-                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{style.musicStyle}</div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{style.description}</div>
                   </button>
                 );
               })}
@@ -746,7 +746,11 @@ export const CreateEventPage: React.FC = () => {
                   key={tmpl.id}
                   onClick={() => {
                     if (!tierCheck.allowed) {
-                      triggerUpgradePrompt(tierCheck.requiredTier, tierCheck.reason);
+                      triggerUpgradePrompt({
+                        requiredTier: tierCheck.requiredTier,
+                        featureName: tierCheck.reason,
+                        templateName: tmpl.title,
+                      });
                       return;
                     }
                     setSelectedTemplateName(tmpl.title);
@@ -811,7 +815,11 @@ export const CreateEventPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         if (!tierCheck.allowed) {
-                          triggerUpgradePrompt(tierCheck.requiredTier, tierCheck.reason);
+                          triggerUpgradePrompt({
+                            requiredTier: tierCheck.requiredTier,
+                            featureName: tierCheck.reason,
+                            templateName: tmpl.title,
+                          });
                           return;
                         }
                         setSelectedTemplateName(tmpl.title);
