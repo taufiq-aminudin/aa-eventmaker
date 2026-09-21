@@ -13,6 +13,7 @@ import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
 import { TemplateDetailModal } from '../../components/TemplateDetailModal';
 import { TemplateItem } from '../../types';
+import { validateInvitationCreationForm } from '../../utils/validation';
 
 export const CreateEventPage: React.FC = () => {
   const {
@@ -34,15 +35,45 @@ export const CreateEventPage: React.FC = () => {
     address: invitation.address || 'Jl. Dharmawangsa VIII No.26, Jakarta Selatan',
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
   const [selectedTemplateName, setSelectedTemplateName] = useState<string>(invitation.templateName || 'Javanese Heritage');
   const [previewTemplate, setPreviewTemplate] = useState<TemplateItem | null>(null);
 
+  const handleBlur = (fieldName: string) => {
+    setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
+    const result = validateInvitationCreationForm(formData);
+    setFormErrors(result.errors);
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    const updated = { ...formData, [field]: value };
+    setFormData(updated);
+    if (touchedFields[field]) {
+      const result = validateInvitationCreationForm(updated);
+      setFormErrors(result.errors);
+    }
+  };
+
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.hosts) {
-      showToast('Mohon masukkan nama mempelai atau tuan rumah.');
+    setTouchedFields({
+      title: true,
+      hosts: true,
+      date: true,
+      venue: true,
+    });
+
+    const result = validateInvitationCreationForm(formData);
+    if (!result.isValid) {
+      setFormErrors(result.errors);
+      const firstError = Object.values(result.errors)[0];
+      showToast(firstError || 'Mohon lengkapi semua kolom yang wajib diisi.');
       return;
     }
+
+    setFormErrors({});
     updateInvitation(formData);
     setStep(2);
   };
@@ -99,52 +130,79 @@ export const CreateEventPage: React.FC = () => {
 
           <form onSubmit={handleNextStep} className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Judul Undangan / Acara</label>
+              <label className="block font-bold text-slate-700 mb-1">
+                Judul Undangan / Acara <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
-                required
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                onBlur={() => handleBlur('title')}
                 placeholder="Contoh: The Wedding of Andi & Ayu"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                className={`w-full px-3.5 py-2.5 rounded-xl border transition-colors ${
+                  formErrors.title && touchedFields.title
+                    ? 'border-rose-500 bg-rose-50/30 focus:ring-2 focus:ring-rose-500'
+                    : 'border-slate-300 focus:ring-2 focus:ring-blue-600'
+                } focus:outline-hidden`}
               />
+              {formErrors.title && touchedFields.title && (
+                <p className="text-[11px] font-medium text-rose-600 mt-1">{formErrors.title}</p>
+              )}
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Nama Mempelai / Tuan Rumah</label>
+              <label className="block font-bold text-slate-700 mb-1">
+                Nama Mempelai / Tuan Rumah <span className="text-rose-500">*</span>
+              </label>
               <div className="relative">
                 <Heart className="w-4 h-4 text-rose-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  required
                   value={formData.hosts}
-                  onChange={(e) => setFormData({ ...formData, hosts: e.target.value })}
+                  onChange={(e) => handleFieldChange('hosts', e.target.value)}
+                  onBlur={() => handleBlur('hosts')}
                   placeholder="Contoh: Andi Pratama & Ayu Maharani"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  className={`w-full pl-9 pr-3 py-2.5 rounded-xl border transition-colors ${
+                    formErrors.hosts && touchedFields.hosts
+                      ? 'border-rose-500 bg-rose-50/30 focus:ring-2 focus:ring-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-blue-600'
+                  } focus:outline-hidden`}
                 />
               </div>
+              {formErrors.hosts && touchedFields.hosts && (
+                <p className="text-[11px] font-medium text-rose-600 mt-1">{formErrors.hosts}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Tanggal Acara</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Tanggal Acara <span className="text-rose-500">*</span>
+                </label>
                 <div className="relative">
                   <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="date"
-                    required
                     value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden bg-white"
+                    onChange={(e) => handleFieldChange('date', e.target.value)}
+                    onBlur={() => handleBlur('date')}
+                    className={`w-full pl-9 pr-3 py-2.5 rounded-xl border transition-colors ${
+                      formErrors.date && touchedFields.date
+                        ? 'border-rose-500 bg-rose-50/30 focus:ring-2 focus:ring-rose-500'
+                        : 'border-slate-300 focus:ring-2 focus:ring-blue-600'
+                    } focus:outline-hidden bg-white`}
                   />
                 </div>
+                {formErrors.date && touchedFields.date && (
+                  <p className="text-[11px] font-medium text-rose-600 mt-1">{formErrors.date}</p>
+                )}
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Waktu Pelaksanaan</label>
                 <input
                   type="text"
                   value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  onChange={(e) => handleFieldChange('time', e.target.value)}
                   placeholder="Contoh: 10:00 - 14:00 WIB"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
                 />
@@ -152,18 +210,27 @@ export const CreateEventPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Nama Venue / Tempat</label>
+              <label className="block font-bold text-slate-700 mb-1">
+                Nama Venue / Tempat <span className="text-rose-500">*</span>
+              </label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-rose-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  required
                   value={formData.venue}
-                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                  onChange={(e) => handleFieldChange('venue', e.target.value)}
+                  onBlur={() => handleBlur('venue')}
                   placeholder="Contoh: Plataran Dharmawangsa Jakarta"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  className={`w-full pl-9 pr-3 py-2.5 rounded-xl border transition-colors ${
+                    formErrors.venue && touchedFields.venue
+                      ? 'border-rose-500 bg-rose-50/30 focus:ring-2 focus:ring-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-blue-600'
+                  } focus:outline-hidden`}
                 />
               </div>
+              {formErrors.venue && touchedFields.venue && (
+                <p className="text-[11px] font-medium text-rose-600 mt-1">{formErrors.venue}</p>
+              )}
             </div>
 
             <div>
@@ -171,7 +238,7 @@ export const CreateEventPage: React.FC = () => {
               <textarea
                 rows={2}
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) => handleFieldChange('address', e.target.value)}
                 placeholder="Jl. Dharmawangsa VIII No. 26, Jakarta Selatan"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
               />
