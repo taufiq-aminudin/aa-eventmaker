@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Coins,
   Download,
+  Shield,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { UserRole } from '../types';
@@ -69,10 +70,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const currentTheme = THEME_PRESETS[currentThemeMood] || THEME_PRESETS.indigo;
 
   const roleLabels: Record<UserRole, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
-    ORGANIZER: { label: 'EO / Admin', icon: Briefcase, color: 'text-blue-600 bg-blue-50' },
+    ORGANIZER: { label: 'EO / Planner', icon: Briefcase, color: 'text-blue-600 bg-blue-50' },
     CLIENT: { label: 'Klien / Pengantin', icon: Heart, color: 'text-pink-600 bg-pink-50' },
     VENDOR: { label: 'Vendor Partner', icon: Camera, color: 'text-orange-600 bg-orange-50' },
     GUEST: { label: 'Tamu Undangan', icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
+    ADMIN: { label: 'Platform Admin', icon: Shield, color: 'text-purple-600 bg-purple-50' },
   };
 
   const handleTabClick = (tabId: number) => {
@@ -369,7 +371,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <div className="space-y-1.5 pt-1">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dasbor Berdasarkan Peran:</div>
               <div className="grid grid-cols-2 gap-2">
-                {(['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST'] as UserRole[]).map((role) => {
+                {(['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST', 'ADMIN'] as UserRole[]).map((role) => {
                   const info = roleLabels[role];
                   const Icon = info.icon;
                   const isRoleActive = activeRole === role;

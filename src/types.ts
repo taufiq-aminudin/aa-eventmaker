@@ -1,4 +1,4 @@
-export type UserRole = 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST';
+export type UserRole = 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST' | 'ADMIN';
 
 export type PaymentStatus = 'Pending' | 'Under Review' | 'Approved' | 'Paid' | 'Rejected' | 'Refunded';
 
@@ -65,12 +65,94 @@ export type EventType =
   | 'Corporate'
   | 'Baby Shower'
   | 'Graduation'
-  | 'Custom Event';
+  | 'Custom Event'
+  | string;
+
+export type CulturalStyleType =
+  | 'Modern'
+  | 'Elegant'
+  | 'Minimalist'
+  | 'Traditional'
+  | 'Islamic'
+  | 'Javanese'
+  | 'Sundanese'
+  | 'Balinese'
+  | 'Minangkabau'
+  | 'Batak'
+  | 'Bugis/Makassar'
+  | 'Malay'
+  | 'Contemporary Indonesian'
+  | string;
+
+export interface EventRecommendedSections {
+  showCountdown: boolean;
+  showLoveStory?: boolean;
+  showAgenda?: boolean;
+  showRsvp: boolean;
+  showWishes: boolean;
+  showDigitalGift: boolean;
+  showMaps: boolean;
+  showGallery: boolean;
+  showVideo: boolean;
+  customSectionTitle?: string;
+}
+
+export interface EventSpecificFieldDef {
+  fieldKey: string;
+  label: string;
+  placeholder: string;
+  type?: 'text' | 'date' | 'select';
+  options?: string[];
+}
+
+export interface EventTypeDefaultContent {
+  titleTemplate: string;
+  hostsLabel: string;
+  defaultOpening: string;
+  defaultQuote?: string;
+  recommendedSections: EventRecommendedSections;
+  eventSpecificFields?: EventSpecificFieldDef[];
+}
+
+export interface EventTypeDefinition {
+  id: string;
+  categoryId: string;
+  name: string;
+  subtypes?: string[];
+  description: string;
+  culturalTags?: string[];
+  themeTags?: string[];
+  defaultAnimation?: string;
+  defaultColorPalette?: string[];
+  defaultTypography?: string;
+  defaultMusicStyle?: string;
+  recommendedTemplates: string[];
+  requiredTier?: SubscriptionTier;
+  isPremium?: boolean;
+  displayOrder: number;
+  isActive: boolean;
+  defaultContent: EventTypeDefaultContent;
+}
+
+export interface EventCategoryDefinition {
+  id: string;
+  name: string;
+  indonesianName: string;
+  icon: string;
+  description: string;
+  displayOrder: number;
+  isActive: boolean;
+  eventTypes: EventTypeDefinition[];
+}
 
 export interface EventProject {
   id: string;
   name: string;
   type: EventType;
+  category?: string;
+  eventType?: string;
+  subtype?: string;
+  culturalStyle?: string;
   date: string;
   time: string;
   location: string;
@@ -93,6 +175,11 @@ export interface InvitationData {
   templateName: string;
   isPublished: boolean;
   views: number;
+  category?: string;
+  eventType?: string;
+  eventSubtype?: string;
+  culturalStyle?: string;
+  eventSpecificData?: Record<string, string>;
   coverPhoto?: string;
   couplePhoto?: string;
   groomPhoto?: string;
@@ -185,6 +272,11 @@ export interface TemplateItem {
   id: string;
   title: string;
   category: string;
+  eventTypeId?: string;
+  culturalStyle?: string;
+  colorName?: string;
+  isPopular?: boolean;
+  isNewest?: boolean;
   styleTag: string;
   gradientTheme: string;
   gradientColors: string[];
@@ -199,7 +291,20 @@ export interface TemplateItem {
   defaultCouplePhoto?: string;
   defaultGallery?: string[];
   accentColor?: string;
-  patternType?: 'floral' | 'batik' | 'siger' | 'balinese' | 'modern' | 'ballroom' | 'festive' | 'corporate' | 'stars';
+  patternType?:
+    | 'floral'
+    | 'batik'
+    | 'siger'
+    | 'balinese'
+    | 'modern'
+    | 'ballroom'
+    | 'festive'
+    | 'corporate'
+    | 'stars'
+    | 'traditional'
+    | 'geometric'
+    | 'islamic'
+    | string;
   requiredTier?: SubscriptionTier;
   badge?: string;
   previewVideoUrl?: string;

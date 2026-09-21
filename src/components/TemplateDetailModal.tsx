@@ -88,9 +88,12 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
   };
 
   // Thematic elements based on template pattern
-  const isJawa = template.patternType === 'batik' || template.title.toLowerCase().includes('jawa');
-  const isSunda = template.patternType === 'siger' || template.title.toLowerCase().includes('sunda');
-  const isBali = template.patternType === 'balinese' || template.title.toLowerCase().includes('bali');
+  const isJawa = template.patternType === 'batik' || template.title.toLowerCase().includes('jawa') || template.culturalStyle === 'Jawa';
+  const isSunda = template.patternType === 'siger' || template.title.toLowerCase().includes('sunda') || template.culturalStyle === 'Sunda';
+  const isBali = template.patternType === 'balinese' || template.title.toLowerCase().includes('bali') || template.culturalStyle === 'Bali';
+  const isMinang = template.patternType === 'minang' || template.title.toLowerCase().includes('minang') || template.culturalStyle === 'Minangkabau';
+  const isBatak = template.patternType === 'ulos' || template.title.toLowerCase().includes('batak') || template.culturalStyle === 'Batak';
+  const isIslamic = template.patternType === 'geometric' || template.culturalStyle === 'Islamic' || template.category.toLowerCase().includes('islamic');
   const isFloral = template.patternType === 'floral' || template.title.toLowerCase().includes('garden');
   const isFestive = template.patternType === 'festive' || template.category === 'Birthday';
   const isCorporate = template.patternType === 'corporate' || template.category === 'Corporate';
@@ -127,6 +130,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
               <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                 <span className="text-sm font-bold text-white">{template.title}</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-slate-300">
+                  {template.culturalStyle ? `Adat ${template.culturalStyle} • ` : ''}
                   {template.category} • {template.styleTag}
                 </span>
                 {template.requiredTier === 'agency' ? (

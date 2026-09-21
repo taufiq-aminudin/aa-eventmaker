@@ -35,29 +35,27 @@ export const TemplatesPage: React.FC = () => {
 
   const categories = [
     'Semua',
-    'Wedding',
-    'Adat Jawa',
-    'Adat Sunda',
-    'Adat Bali',
-    'Traditional',
-    'Modern',
-    'Minimalist',
-    'Luxury',
-    'Islamic',
-    'Engagement',
-    'Birthday',
-    'Corporate',
+    'Pernikahan',
+    'Ulang Tahun',
+    'Aqiqah & Bayi',
+    'Religius & Islami',
+    'Adat Nusantara',
+    'Khitanan',
+    'Wisuda & Akademik',
+    'Korporat & Bisnis',
+    'Syukuran Rumah',
+    'Memorial',
   ];
 
-  const styleTags = [
-    'Semua',
-    'Heritage Royal',
-    'Gold Luxury',
-    'Floral Romantic',
-    'Modern Minimalist',
-    'Emerald Grace',
-    'Sunset Tropical',
-    'Midnight Elegance',
+  const culturalStyles = [
+    'Semua Gaya',
+    'Jawa',
+    'Sunda',
+    'Bali',
+    'Minangkabau',
+    'Batak',
+    'Islamic',
+    'Modern',
   ];
 
   const filteredTemplates = templates.filter((t) => {
@@ -69,18 +67,30 @@ export const TemplatesPage: React.FC = () => {
       t.description.toLowerCase().includes(query) ||
       t.category.toLowerCase().includes(query) ||
       t.styleTag.toLowerCase().includes(query) ||
+      (t.culturalStyle && t.culturalStyle.toLowerCase().includes(query)) ||
+      (t.eventTypeId && t.eventTypeId.toLowerCase().includes(query)) ||
       (t.sampleHosts && t.sampleHosts.toLowerCase().includes(query));
 
     // Category match
     const matchesCategory =
       selectedCategory === 'Semua' ||
-      t.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-      (selectedCategory === 'Traditional' && (t.category.includes('Adat') || t.category.includes('Heritage'))) ||
-      (selectedCategory === 'Luxury' && (t.styleTag.toLowerCase().includes('gold') || t.styleTag.toLowerCase().includes('luxury')));
+      (selectedCategory === 'Pernikahan' && (t.category.includes('Wedding') || t.category.includes('Pernikahan') || t.category.includes('Adat'))) ||
+      (selectedCategory === 'Ulang Tahun' && (t.category.includes('Birthday') || t.title.toLowerCase().includes('birthday'))) ||
+      (selectedCategory === 'Aqiqah & Bayi' && (t.category.includes('Baby') || t.title.toLowerCase().includes('aqiqah') || t.title.toLowerCase().includes('mitoni'))) ||
+      (selectedCategory === 'Religius & Islami' && (t.category.includes('Islamic') || t.title.toLowerCase().includes('pengajian') || t.title.toLowerCase().includes('syukuran'))) ||
+      (selectedCategory === 'Adat Nusantara' && (t.category.includes('Adat') || t.category.includes('Traditional') || !!t.culturalStyle)) ||
+      (selectedCategory === 'Khitanan' && (t.category.includes('Circumcision') || t.title.toLowerCase().includes('khitan'))) ||
+      (selectedCategory === 'Wisuda & Akademik' && (t.category.includes('Graduation') || t.category.includes('Education') || t.title.toLowerCase().includes('wisuda'))) ||
+      (selectedCategory === 'Korporat & Bisnis' && (t.category.includes('Corporate') || t.title.toLowerCase().includes('corporate'))) ||
+      (selectedCategory === 'Syukuran Rumah' && (t.category.includes('Housewarming') || t.title.toLowerCase().includes('rumah'))) ||
+      (selectedCategory === 'Memorial' && (t.category.includes('Memorial') || t.title.toLowerCase().includes('tahlilan') || t.title.toLowerCase().includes('doa')));
 
-    // Style match
+    // Cultural Style match
     const matchesStyle =
-      selectedStyle === 'Semua' ||
+      selectedStyle === 'Semua Gaya' ||
+      (t.culturalStyle && t.culturalStyle.toLowerCase() === selectedStyle.toLowerCase()) ||
+      t.category.toLowerCase().includes(selectedStyle.toLowerCase()) ||
+      t.title.toLowerCase().includes(selectedStyle.toLowerCase()) ||
       t.styleTag.toLowerCase().includes(selectedStyle.toLowerCase());
 
     // Tier match
@@ -183,6 +193,28 @@ export const TemplatesPage: React.FC = () => {
                     }`}
                   >
                     {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cultural Style Filter */}
+            <div className="pt-2 border-t border-slate-200/60">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Gaya Adat & Tradisi:
+              </div>
+              <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+                {culturalStyles.map((style) => (
+                  <button
+                    key={style}
+                    onClick={() => setSelectedStyle(style)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      selectedStyle === style
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {style}
                   </button>
                 ))}
               </div>
@@ -304,6 +336,18 @@ export const TemplatesPage: React.FC = () => {
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                             {tmpl.description}
                           </p>
+
+                          {/* Cultural Style & Category tags */}
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {tmpl.culturalStyle && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                                Adat {tmpl.culturalStyle}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                              {tmpl.category}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px] text-slate-600">

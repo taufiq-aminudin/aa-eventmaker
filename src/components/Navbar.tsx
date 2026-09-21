@@ -84,10 +84,11 @@ export const Navbar: React.FC = () => {
   };
 
   const roleBadges: Record<UserRole, { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-    ORGANIZER: { label: 'EO / Admin', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', icon: Briefcase },
+    ORGANIZER: { label: 'EO / Planner', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', icon: Briefcase },
     CLIENT: { label: 'Klien / Pengantin', bg: 'bg-pink-50 border-pink-200', text: 'text-pink-700', icon: Heart },
     VENDOR: { label: 'Vendor Partner', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700', icon: Camera },
     GUEST: { label: 'Tamu Undangan', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', icon: Ticket },
+    ADMIN: { label: 'Platform Admin', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700', icon: Shield },
   };
 
   const CurrentRoleIcon = roleBadges[activeRole].icon;

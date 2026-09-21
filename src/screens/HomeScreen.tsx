@@ -40,6 +40,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     guests,
     tasks,
     budgets,
+    addTask,
+    showToast,
     setActiveTab,
     setShowPublicPreview,
     setShowQrCheckinModal,
@@ -369,6 +371,123 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Recommended Specific Event Tasks */}
+      <div className="bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white rounded-2xl p-5 sm:p-6 border border-purple-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-wider mb-1">
+              <Sparkles className="w-3 h-3 text-purple-600" />
+              <span>Rekomendasi Spesifik Acara</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900">
+              Agenda & Persiapan Khas: {currentProject.name}
+            </h3>
+            <p className="text-xs text-slate-500">
+              Disesuaikan untuk {currentProject.category || currentProject.type} {currentProject.culturalStyle ? `(Adat ${currentProject.culturalStyle})` : ''}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setActiveTab(3)}
+            className="text-xs font-bold text-purple-700 hover:text-purple-800 bg-white hover:bg-purple-50 px-3.5 py-1.5 rounded-xl border border-purple-200 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+          >
+            Buka Checklist Planner →
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {(() => {
+            const catLower = (currentProject.category || currentProject.type || '').toLowerCase();
+            let items = [
+              { title: 'Finalisasi Rundown Akad & Resepsi', tag: 'Acara', assignee: 'Wedding Planner' },
+              { title: 'Konfirmasi Menu Katering & Food Tasting', tag: 'Katering', assignee: 'Keluarga' },
+              { title: 'Persiapan Kotak Mahar & Seserahan Adat', tag: 'Perlengkapan', assignee: 'Calon Pengantin' },
+              { title: 'Fitting Busana Adat & MUA Pengantin', tag: 'Busana & Rias', assignee: 'Mempelai' },
+            ];
+
+            if (catLower.includes('birthday') || catLower.includes('ulang tahun')) {
+              items = [
+                { title: 'Pemesanan Kue Ulang Tahun & Lilin', tag: 'Konsumsi', assignee: 'Tuan Rumah' },
+                { title: 'Dekorasi Balon, Backdrop & Photobooth', tag: 'Dekorasi', assignee: 'EO' },
+                { title: 'Pengadaan Goodie Bag & Souvenir', tag: 'Souvenir', assignee: 'Panitia' },
+                { title: 'Persiapan MC & Playlist Musik', tag: 'Hiburan', assignee: 'MC' },
+              ];
+            } else if (catLower.includes('baby') || catLower.includes('aqiqah') || catLower.includes('kelahiran')) {
+              items = [
+                { title: 'Pemesanan Kambing Aqiqah Bersertifikat', tag: 'Aqiqah', assignee: 'Ayah' },
+                { title: 'Pengadaan Paket Nasi Box Berkat', tag: 'Katering', assignee: 'Keluarga' },
+                { title: 'Perlengkapan Cukur Rambut Bayi', tag: 'Tradisi', assignee: 'Ibu' },
+                { title: 'Cetak Buku Doa & Souvenir Tasyakuran', tag: 'Souvenir', assignee: 'Panitia' },
+              ];
+            } else if (catLower.includes('khitan') || catLower.includes('circumcision')) {
+              items = [
+                { title: 'Konfirmasi Dokter / Medis Khitan Modern', tag: 'Medis', assignee: 'Orang Tua' },
+                { title: 'Pakaian Khitan Lengkap (Koko & Sarung)', tag: 'Busana', assignee: 'Ibu' },
+                { title: 'Hadiah / Santunan untuk Anak', tag: 'Hadiah', assignee: 'Keluarga' },
+                { title: 'Pemesanan Tumpeng Walimah Khitan', tag: 'Konsumsi', assignee: 'Tuan Rumah' },
+              ];
+            } else if (catLower.includes('corporate') || catLower.includes('seminar') || catLower.includes('education')) {
+              items = [
+                { title: 'Booking Venue Hall & Sound System LED', tag: 'Venue', assignee: 'Event Manager' },
+                { title: 'Konfirmasi Keynote Speaker & Moderator', tag: 'Narasumber', assignee: 'Divisi Acara' },
+                { title: 'Registrasi Peserta & ID Card Lanyard', tag: 'Registrasi', assignee: 'Sekretariat' },
+                { title: 'Pemesanan Coffee Break & Lunch Box', tag: 'Konsumsi', assignee: 'Logistik' },
+              ];
+            }
+
+            return items.map((item, idx) => {
+              const alreadyAdded = tasks.some((t) => t.title.toLowerCase() === item.title.toLowerCase());
+              return (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-xl bg-white border border-purple-100 shadow-2xs flex flex-col justify-between space-y-2 hover:border-purple-300 transition-all"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700">
+                        {item.tag}
+                      </span>
+                      <span className="text-slate-400">PIC: {item.assignee}</span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-800 leading-snug">{item.title}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (alreadyAdded) {
+                        showToast(`Agenda "${item.title}" sudah ada di planner.`);
+                        return;
+                      }
+                      const dueDate = currentProject.date || '2026-11-20';
+                      addTask(item.title, item.tag, dueDate, item.assignee);
+                      showToast(`✓ Ditambahkan ke checklist: "${item.title}"`);
+                    }}
+                    className={`w-full py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center space-x-1 ${
+                      alreadyAdded
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200'
+                    }`}
+                  >
+                    {alreadyAdded ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Sudah Ditambahkan</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3 h-3 text-purple-600" />
+                        <span>+ Tambah ke Planner</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </div>

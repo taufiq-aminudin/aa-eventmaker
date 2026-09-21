@@ -105,8 +105,21 @@ export const DynamicEventHeader: React.FC<DynamicEventHeaderProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] font-bold tracking-wide uppercase">
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" style={{ animationDuration: '8s' }} />
-              <span>{currentProject.type} Management</span>
+              <span>{currentProject.type}</span>
             </div>
+
+            {currentProject.category && (
+              <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold text-white">
+                <span>{currentProject.category}</span>
+                {currentProject.subtype && <span>• {currentProject.subtype}</span>}
+              </span>
+            )}
+
+            {currentProject.culturalStyle && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-400/30 border border-amber-300/40 text-amber-200 text-[11px] font-black">
+                Adat {currentProject.culturalStyle}
+              </span>
+            )}
 
             {/* Atmosphere Mood Pill */}
             <button

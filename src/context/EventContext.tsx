@@ -25,6 +25,8 @@ import {
   PaymentStatus,
   PaymentMethodType,
   SubscriptionTier,
+  EventCategoryDefinition,
+  EventTypeDefinition,
 } from '../types';
 import {
   INITIAL_PROJECT,
@@ -41,6 +43,7 @@ import {
   INITIAL_AUTO_RSVP_CONFIG,
   INITIAL_AI_CONCEPT,
 } from '../data/initialData';
+import { INITIAL_EVENT_CATEGORIES } from '../data/eventCatalog';
 import { filterGuestsByTarget } from '../utils/templateEngine';
 import { formatCurrency, formatCurrencyShort, getCurrencyConfig } from '../utils/currency';
 
@@ -90,15 +93,34 @@ interface EventContextType {
     type: EventType,
     date: string,
     time: string,
-    location: string
+    location: string,
+    extraOptions?: {
+      category?: string;
+      subtype?: string;
+      culturalStyle?: string;
+      notes?: string;
+    }
   ) => EventProject | null;
   updateProject: (updated: EventProject) => void;
+
+  // Event Categories & Types Catalog
+  eventCategories: EventCategoryDefinition[];
+  addEventCategory: (cat: Omit<EventCategoryDefinition, 'id'>) => EventCategoryDefinition;
+  updateEventCategory: (cat: EventCategoryDefinition) => void;
+  deleteEventCategory: (id: string) => void;
+  addEventType: (categoryId: string, eventType: Omit<EventTypeDefinition, 'id'>) => EventTypeDefinition;
+  updateEventType: (eventType: EventTypeDefinition) => void;
+  deleteEventType: (eventTypeId: string) => void;
+  assignTemplatesToEventType: (eventTypeId: string, templateTitles: string[]) => void;
+  toggleEventTypeActive: (eventTypeId: string) => void;
+  resetEventCatalogToDefault: () => void;
 
   // Invitation
   invitation: InvitationData;
   updateInvitation: (updated: Partial<InvitationData>) => void;
   selectTemplate: (templateName: string) => boolean;
   templates: TemplateItem[];
+  updateTemplate: (updated: TemplateItem) => void;
   canUseTemplate: (templateOrName: string | TemplateItem) => {
     allowed: boolean;
     requiredTier: SubscriptionTier;
@@ -273,6 +295,15 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
     role: 'GUEST',
     associatedEventId: 'proj-1',
     createdAt: 1717000000000,
+  },
+  ADMIN: {
+    id: 'user_admin_01',
+    name: 'AA Event Maker Super Admin',
+    email: 'admin@aa-eventmaker.my.id',
+    phone: '+6281100009999',
+    role: 'ADMIN',
+    organizationName: 'AA Event Maker Platform HQ',
+    createdAt: 1714000000000,
   },
 };
 
@@ -559,6 +590,24 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (saved as CurrencyCode) || 'IDR';
   });
 
+  const [eventCategories, setEventCategories] = useState<EventCategoryDefinition[]>(() => {
+    const saved = localStorage.getItem('aa_event_categories');
+    return saved ? JSON.parse(saved) : INITIAL_EVENT_CATEGORIES;
+  });
+
+  const [templates, setTemplates] = useState<TemplateItem[]>(() => {
+    const saved = localStorage.getItem('aa_templates');
+    return saved ? JSON.parse(saved) : TEMPLATES_DATA;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('aa_event_categories', JSON.stringify(eventCategories));
+  }, [eventCategories]);
+
+  useEffect(() => {
+    localStorage.setItem('aa_templates', JSON.stringify(templates));
+  }, [templates]);
+
   const INITIAL_PAYMENTS: PaymentSubmission[] = [
     {
       id: 'pay_sub_01',
@@ -694,7 +743,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     type: EventType,
     date: string,
     time: string,
-    location: string
+    location: string,
+    extraOptions?: {
+      category?: string;
+      subtype?: string;
+      culturalStyle?: string;
+      notes?: string;
+    }
   ): EventProject | null => {
     const limits = PACKAGE_LIMITS[activeSubscriptionTier];
     if (projects.length >= limits.maxProjects) {
@@ -708,11 +763,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: `proj-${Date.now()}`,
       name,
       type,
+      category: extraOptions?.category,
+      eventType: type,
+      subtype: extraOptions?.subtype,
+      culturalStyle: extraOptions?.culturalStyle,
       date,
       time,
       location,
       status: 'Planning',
-      notes: '',
+      notes: extraOptions?.notes || '',
       createdAt: Date.now(),
     };
     setProjects((prev) => [newProj, ...prev]);
@@ -724,6 +783,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       date,
       time,
       venue: location,
+      category: extraOptions?.category,
+      eventType: type,
+      eventSubtype: extraOptions?.subtype,
+      culturalStyle: extraOptions?.culturalStyle,
       slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     }));
     showToast(`Proyek baru "${name}" berhasil dibuat!`);
@@ -736,6 +799,101 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentProject(updated);
     }
     showToast('Detail proyek diperbarui.');
+  };
+
+  // Event Categories & Types Catalog Management
+  const addEventCategory = (cat: Omit<EventCategoryDefinition, 'id'>) => {
+    const newCat: EventCategoryDefinition = {
+      ...cat,
+      id: `cat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    setEventCategories((prev) => [...prev, newCat]);
+    showToast(`Kategori acara "${newCat.name}" berhasil ditambahkan.`);
+    return newCat;
+  };
+
+  const updateEventCategory = (cat: EventCategoryDefinition) => {
+    setEventCategories((prev) => prev.map((c) => (c.id === cat.id ? cat : c)));
+    showToast(`Kategori "${cat.name}" berhasil diperbarui.`);
+  };
+
+  const deleteEventCategory = (id: string) => {
+    setEventCategories((prev) => prev.filter((c) => c.id !== id));
+    showToast('Kategori acara berhasil dihapus.');
+  };
+
+  const addEventType = (categoryId: string, eventType: Omit<EventTypeDefinition, 'id'>) => {
+    const newType: EventTypeDefinition = {
+      ...eventType,
+      id: `type-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      categoryId,
+    };
+    setEventCategories((prev) =>
+      prev.map((c) =>
+        c.id === categoryId
+          ? { ...c, eventTypes: [...c.eventTypes, newType] }
+          : c
+      )
+    );
+    showToast(`Tipe acara "${newType.name}" berhasil ditambahkan.`);
+    return newType;
+  };
+
+  const updateEventType = (eventType: EventTypeDefinition) => {
+    setEventCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        eventTypes: c.eventTypes.map((t) => (t.id === eventType.id ? eventType : t)),
+      }))
+    );
+    showToast(`Tipe acara "${eventType.name}" berhasil diperbarui.`);
+  };
+
+  const deleteEventType = (eventTypeId: string) => {
+    setEventCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        eventTypes: c.eventTypes.filter((t) => t.id !== eventTypeId),
+      }))
+    );
+    showToast('Tipe acara berhasil dihapus.');
+  };
+
+  const assignTemplatesToEventType = (eventTypeId: string, templateTitles: string[]) => {
+    setEventCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        eventTypes: c.eventTypes.map((t) =>
+          t.id === eventTypeId ? { ...t, recommendedTemplates: templateTitles } : t
+        ),
+      }))
+    );
+    showToast('Rekomendasi templat berhasil diperbarui.');
+  };
+
+  const toggleEventTypeActive = (eventTypeId: string) => {
+    setEventCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        eventTypes: c.eventTypes.map((t) =>
+          t.id === eventTypeId ? { ...t, isActive: !t.isActive } : t
+        ),
+      }))
+    );
+    showToast('Status aktif tipe acara diperbarui.');
+  };
+
+  const updateTemplate = (updated: TemplateItem) => {
+    setTemplates((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    showToast(`Templat "${updated.title}" berhasil diperbarui.`);
+  };
+
+  const resetEventCatalogToDefault = () => {
+    setEventCategories(INITIAL_EVENT_CATEGORIES);
+    setTemplates(TEMPLATES_DATA);
+    localStorage.removeItem('aa_event_categories');
+    localStorage.removeItem('aa_templates');
+    showToast('Katalog kategori & templat dikembalikan ke pengaturan default.');
   };
 
   // Invitation functions
@@ -754,11 +912,17 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   } => {
     let templateObj: TemplateItem | undefined;
     if (typeof templateOrName === 'string') {
-      templateObj = TEMPLATES_DATA.find(
-        (t: TemplateItem) =>
-          t.title.toLowerCase() === templateOrName.toLowerCase() ||
-          t.id.toLowerCase() === templateOrName.toLowerCase()
-      );
+      templateObj =
+        templates.find(
+          (t: TemplateItem) =>
+            t.title.toLowerCase() === templateOrName.toLowerCase() ||
+            t.id.toLowerCase() === templateOrName.toLowerCase()
+        ) ||
+        TEMPLATES_DATA.find(
+          (t: TemplateItem) =>
+            t.title.toLowerCase() === templateOrName.toLowerCase() ||
+            t.id.toLowerCase() === templateOrName.toLowerCase()
+        );
     } else {
       templateObj = templateOrName;
     }
@@ -1489,10 +1653,23 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createProject,
         updateProject,
 
+        // Event Categories & Types Catalog
+        eventCategories,
+        addEventCategory,
+        updateEventCategory,
+        deleteEventCategory,
+        addEventType,
+        updateEventType,
+        deleteEventType,
+        assignTemplatesToEventType,
+        toggleEventTypeActive,
+        resetEventCatalogToDefault,
+
         invitation,
         updateInvitation,
         selectTemplate,
-        templates: TEMPLATES_DATA,
+        templates,
+        updateTemplate,
         canUseTemplate,
         showUpgradeModal,
         setShowUpgradeModal,
