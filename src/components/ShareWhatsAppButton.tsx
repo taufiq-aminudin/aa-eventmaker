@@ -274,7 +274,7 @@ export const ShareWhatsAppButton: React.FC<ShareWhatsAppButtonProps> = ({
                   type="tel"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="Contoh: 08123456789 atau 628123456789"
+                  placeholder="Contoh: 081382000412 atau 6281382000412"
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden bg-white text-slate-900"
                 />
                 <span className="text-[10px] text-slate-500 mt-0.5 block">

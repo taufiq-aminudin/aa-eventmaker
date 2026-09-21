@@ -14,6 +14,8 @@ export interface PaymentSubmission {
   packageName: string;
   amount: number;
   amountFormatted: string;
+  currency?: CurrencyCode;
+  amountInIdr?: number;
   paymentMethod: PaymentMethodType;
   paymentDate: string;
   referenceNumber: string;
@@ -41,6 +43,8 @@ export interface PackagePlan {
   isPopular?: boolean;
 }
 
+export type SubscriptionTier = 'starter' | 'professional' | 'agency';
+
 export interface AppUser {
   id: string;
   name: string;
@@ -50,7 +54,8 @@ export interface AppUser {
   avatar?: string;
   organizationName?: string;
   associatedEventId?: string;
-  subscriptionTier?: 'starter' | 'professional' | 'agency';
+  subscriptionTier?: SubscriptionTier;
+  desiredPackageId?: string;
   createdAt: number;
 }
 
@@ -93,6 +98,8 @@ export interface InvitationData {
   groomPhoto?: string;
   bridePhoto?: string;
   galleryPhotos?: string[];
+  videoUrl?: string;
+  videoTitle?: string;
   quote?: string;
   loveStory?: { year: string; title: string; desc: string }[];
   musicUrl?: string;
@@ -123,7 +130,7 @@ export interface TaskItem {
   isCompleted: boolean;
 }
 
-export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'GBP' | 'AUD' | 'JPY';
+export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'MYR' | 'GBP' | 'AUD' | 'JPY';
 
 export interface CurrencyConfig {
   code: CurrencyCode;

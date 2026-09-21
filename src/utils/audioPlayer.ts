@@ -136,6 +136,10 @@ class AmbientMusicPlayer {
     if (this.onStateChange) this.onStateChange(false);
   }
 
+  public pause() {
+    this.stop();
+  }
+
   public toggle(): boolean {
     if (this.isPlaying) {
       this.stop();

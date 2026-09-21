@@ -53,6 +53,8 @@ export const INITIAL_INVITATION: InvitationData = {
     'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=600&q=80',
     'https://images.unsplash.com/photo-1519225429712-421b9ec76fbe?auto=format&fit=crop&w=600&q=80',
   ],
+  videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  videoTitle: 'Kisah Perjalanan & Harapan Masa Depan',
   quote: 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya.',
   loveStory: [
     { year: '2021', title: 'Pertemuan Pertama', desc: 'Berkenalan di ruang diskusi arsitektur Universitas Indonesia.' },
@@ -68,7 +70,7 @@ export const INITIAL_GUESTS: Guest[] = [
     name: 'Bpk. Hendra Kusuma & Partner',
     group: 'VIP',
     pax: 2,
-    phone: '081234567890',
+    phone: '081382000412',
     email: 'hendra.kusuma@gmail.com',
     tableNumber: 'VIP 01',
     rsvpStatus: 'Confirmed',

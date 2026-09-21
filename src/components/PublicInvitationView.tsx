@@ -19,6 +19,9 @@ import {
   CreditCard,
   QrCode,
   Play,
+  Pause,
+  Maximize2,
+  Film,
   MailOpen,
   Share2,
 } from 'lucide-react';
@@ -51,6 +54,25 @@ export const PublicInvitationView: React.FC = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
+  const rawVideoUrl = invitation.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+  const videoTitle = invitation.videoTitle || 'Kisah Perjalanan & Harapan Masa Depan';
+  const isYouTube = rawVideoUrl.includes('youtube.com') || rawVideoUrl.includes('youtu.be');
+  const isVimeo = rawVideoUrl.includes('vimeo.com');
+
+  const getEmbedVideoUrl = (url: string, autoPlay = true) => {
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?${autoPlay ? 'autoplay=1&' : ''}rel=0&playsinline=1`;
+    }
+    const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)(?:$|\/|\?)/i);
+    if (vimeoMatch && vimeoMatch[3]) {
+      return `https://player.vimeo.com/video/${vimeoMatch[3]}${autoPlay ? '?autoplay=1' : ''}`;
+    }
+    return url;
+  };
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -526,21 +548,137 @@ export const PublicInvitationView: React.FC = () => {
           </div>
 
           <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-center group">
-            <img
-              src={displayCover}
-              alt="Video Thumbnail"
-              className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            <div className="relative z-10 w-14 h-14 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-              <Play className="w-6 h-6 ml-0.5" />
+            {isPlayingVideo ? (
+              isYouTube || isVimeo ? (
+                <iframe
+                  src={getEmbedVideoUrl(rawVideoUrl, true)}
+                  title={videoTitle}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={rawVideoUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                >
+                  Browser Anda tidak mendukung pemutar video HTML5.
+                </video>
+              )
+            ) : (
+              <div
+                onClick={() => {
+                  if (isPlayingMusic) {
+                    globalAudioPlayer.stop();
+                    setIsPlayingMusic(false);
+                  }
+                  setIsPlayingVideo(true);
+                }}
+                className="w-full h-full cursor-pointer relative flex items-center justify-center"
+              >
+                <img
+                  src={displayCover}
+                  alt="Video Thumbnail"
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="relative z-10 w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                  <Play className="w-6 h-6 ml-0.5" />
+                </div>
+                <div className="absolute bottom-3 left-4 text-white text-xs text-left">
+                  <div className="font-bold">{videoTitle}</div>
+                  <div className="text-[10px] text-slate-300">Klik untuk memutar video (Sinematografi 4K)</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isPlayingMusic) {
+                      globalAudioPlayer.stop();
+                      setIsPlayingMusic(false);
+                    }
+                    setShowVideoModal(true);
+                  }}
+                  className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs flex items-center space-x-1 backdrop-blur-xs transition-colors"
+                  title="Putar Layar Penuh"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold hidden sm:inline">Layar Penuh</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {isPlayingVideo && (
+            <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+              <span className="truncate">{videoTitle}</span>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(true)}
+                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center space-x-1 cursor-pointer"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  <span>Layar Penuh</span>
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => setIsPlayingVideo(false)}
+                  className="hover:text-white underline cursor-pointer"
+                >
+                  Tutup Pemutar
+                </button>
+              </div>
             </div>
-            <div className="absolute bottom-3 left-4 text-white text-xs">
-              <div className="font-bold">Kisah Perjalanan & Harapan Masa Depan</div>
-              <div className="text-[10px] text-slate-300">Sinematografi 4K Ultra HD</div>
+          )}
+        </div>
+
+        {/* Video Cinematic Modal for Fullscreen Experience */}
+        {showVideoModal && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in">
+            <div className="relative w-full max-w-4xl bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
+              <div className="flex items-center justify-between p-4 border-b border-slate-800 text-white">
+                <div className="flex items-center space-x-2">
+                  <Film className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold truncate">{videoTitle}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="relative aspect-video w-full bg-black">
+                {isYouTube || isVimeo ? (
+                  <iframe
+                    src={getEmbedVideoUrl(rawVideoUrl, true)}
+                    title={videoTitle}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    src={rawVideoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                  >
+                    Browser Anda tidak mendukung video HTML5.
+                  </video>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Gallery Section */}
         <div className="px-6 py-10 bg-slate-900/50 border-t border-slate-800">

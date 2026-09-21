@@ -42,7 +42,7 @@ export const ContactPage: React.FC = () => {
     const text = encodeURIComponent(
       `Halo AA Event Maker, saya ${formData.name || 'Pengguna'} ingin berkonsultasi mengenai undangan acara ${formData.eventType}.`
     );
-    window.open(`https://wa.me/6281234567890?text=${text}`, '_blank');
+    window.open(`https://wa.me/6281382000412?text=${text}`, '_blank');
   };
 
   return (
@@ -86,7 +86,7 @@ export const ContactPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-bold text-slate-900">WhatsApp Resmi</div>
-                      <div className="text-slate-600 mt-0.5">+62 812-3456-7890</div>
+                      <div className="text-slate-600 mt-0.5">+62 813-8200-0412</div>
                       <div className="text-[10px] text-emerald-600 font-semibold mt-1">
                         Respons Cepat: Setiap Hari (08.00 - 22.00 WIB)
                       </div>

@@ -8,21 +8,28 @@ import {
   ShieldCheck,
   Zap,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 import { useRouter } from '../../context/RouterContext';
+import { useEvent } from '../../context/EventContext';
+import { CurrencyCode } from '../../types';
+import { SUPPORTED_CURRENCIES } from '../../utils/currency';
 import { PublicHeader } from '../../components/PublicHeader';
 import { PublicFooter } from '../../components/PublicFooter';
 import { SeoMetadata } from '../../components/SeoMetadata';
 
 export const PricingPage: React.FC = () => {
   const { navigate } = useRouter();
+  const { currency, setCurrency, formatCost } = useEvent();
+
+  const primaryCurrencies: CurrencyCode[] = ['IDR', 'USD', 'MYR', 'SGD'];
 
   const plans = [
     {
       id: 'starter',
       name: 'Starter Free',
       badge: 'Syukuran & Keluarga',
-      price: 'Rp 0',
+      priceInIdr: 0,
       period: 'Gratis Selamanya',
       description: 'Cocok untuk acara keluarga kecil, syukuran khitanan, atau perayaan ulang tahun sederhana.',
       features: [
@@ -42,7 +49,7 @@ export const PricingPage: React.FC = () => {
       id: 'professional',
       name: 'Wedding Professional',
       badge: 'Paling Favorit',
-      price: 'Rp 299.000',
+      priceInIdr: 299000,
       period: 'Sekali Bayar / Acara',
       description: 'Pilihan utama calon pengantin modern yang menginginkan kemewahan visual dan integrasi lengkap.',
       features: [
@@ -63,7 +70,7 @@ export const PricingPage: React.FC = () => {
       id: 'agency',
       name: 'EO & Agency',
       badge: 'Wedding Organizer',
-      price: 'Rp 899.000',
+      priceInIdr: 899000,
       period: 'Lisensi 1 Tahun / Organizer',
       description: 'Didesain untuk Wedding Organizer, Event Planner, dan Agensi yang menangani banyak klien sekaligus.',
       features: [
@@ -111,7 +118,7 @@ export const PricingPage: React.FC = () => {
       <main className="flex-1 py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header Banner */}
-          <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="text-center max-w-3xl mx-auto mb-10">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold mb-3">
               <CreditCard className="w-3.5 h-3.5" />
               <span>Biaya Transparan & Fleksibel</span>
@@ -122,6 +129,34 @@ export const PricingPage: React.FC = () => {
             <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
               Pilih paket yang paling tepat sesuai skala acara Anda. Dari syukuran hangat keluarga hingga resepsi akbar bernuansa keraton.
             </p>
+
+            {/* Multi-Currency Selector */}
+            <div className="mt-6 inline-flex items-center p-1.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+              <div className="flex items-center space-x-1.5 px-2.5 py-1 text-slate-400 text-xs font-bold border-r border-slate-200 mr-1">
+                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-slate-600 hidden sm:inline">Mata Uang:</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                {primaryCurrencies.map((cCode) => {
+                  const cfg = SUPPORTED_CURRENCIES.find((item) => item.code === cCode);
+                  const isSelected = currency === cCode;
+                  return (
+                    <button
+                      key={cCode}
+                      onClick={() => setCurrency(cCode)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{cfg?.flag}</span>
+                      <span>{cCode}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Pricing Cards Grid */}
@@ -152,7 +187,14 @@ export const PricingPage: React.FC = () => {
                   </p>
 
                   <div className="mt-6">
-                    <div className="text-3xl sm:text-4xl font-black">{p.price}</div>
+                    <div className="text-3xl sm:text-4xl font-black">
+                      {p.priceInIdr === 0 ? formatCost(0) : formatCost(p.priceInIdr)}
+                    </div>
+                    {currency !== 'IDR' && p.priceInIdr > 0 && (
+                      <div className={`text-[11px] font-semibold mt-1 ${p.isPopular ? 'text-blue-200' : 'text-slate-500'}`}>
+                        ≈ Rp {p.priceInIdr.toLocaleString('id-ID')}
+                      </div>
+                    )}
                     <div className={`text-xs mt-1 ${p.isPopular ? 'text-blue-200' : 'text-slate-400'}`}>
                       {p.period}
                     </div>

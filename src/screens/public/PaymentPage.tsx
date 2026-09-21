@@ -11,9 +11,12 @@ import {
   X,
   Sparkles,
   ChevronDown,
+  Globe,
 } from 'lucide-react';
 import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
+import { CurrencyCode } from '../../types';
+import { SUPPORTED_CURRENCIES } from '../../utils/currency';
 import { PublicHeader } from '../../components/PublicHeader';
 import { PublicFooter } from '../../components/PublicFooter';
 import { SeoMetadata } from '../../components/SeoMetadata';
@@ -24,7 +27,9 @@ import { PaymentMethodType, PaymentSubmission } from '../../types';
 
 export const PaymentPage: React.FC = () => {
   const { queryParams, navigate } = useRouter();
-  const { showToast } = useEvent();
+  const { showToast, currency, setCurrency, formatCost } = useEvent();
+
+  const primaryCurrencies: CurrencyCode[] = ['IDR', 'USD', 'MYR', 'SGD'];
 
   // Selected package from query parameter (?package=...) or default to 'professional'
   const initialPackageKey =
@@ -122,7 +127,7 @@ export const PaymentPage: React.FC = () => {
           </div>
 
           {/* Header Banner */}
-          <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="text-center max-w-2xl mx-auto mb-8">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold mb-3">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Pembayaran Resmi &amp; Terpercaya</span>
@@ -133,6 +138,34 @@ export const PaymentPage: React.FC = () => {
             <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
               Selesaikan transaksi menggunakan nomor rekening atau nomor DANA resmi di bawah ini, kemudian kirimkan konfirmasi untuk verifikasi dan aktivasi paket Anda.
             </p>
+
+            {/* Currency Selector */}
+            <div className="mt-5 inline-flex items-center p-1.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+              <div className="flex items-center space-x-1.5 px-2.5 py-1 text-slate-400 text-xs font-bold border-r border-slate-200 mr-1">
+                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-slate-600 hidden sm:inline">Mata Uang:</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                {primaryCurrencies.map((cCode) => {
+                  const cfg = SUPPORTED_CURRENCIES.find((item) => item.code === cCode);
+                  const isSelected = currency === cCode;
+                  return (
+                    <button
+                      key={cCode}
+                      onClick={() => setCurrency(cCode)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{cfg?.flag}</span>
+                      <span>{cCode}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Main 2-Column Grid */}
@@ -152,8 +185,13 @@ export const PaymentPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-black text-blue-600">
-                      {selectedPackage.priceFormatted}
+                      {formatCost(selectedPackage.price)}
                     </div>
+                    {currency !== 'IDR' && selectedPackage.price > 0 && (
+                      <div className="text-[11px] font-semibold text-slate-500">
+                        ≈ Rp {selectedPackage.price.toLocaleString('id-ID')}
+                      </div>
+                    )}
                     <div className="text-[11px] text-slate-400 font-medium">
                       {selectedPackage.period}
                     </div>
@@ -177,7 +215,7 @@ export const PaymentPage: React.FC = () => {
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
                       >
-                        {pkg.name} ({pkg.priceFormatted})
+                        {pkg.name} ({formatCost(pkg.price)})
                       </button>
                     );
                   })}

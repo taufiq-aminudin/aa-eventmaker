@@ -38,6 +38,15 @@ export const SUPPORTED_CURRENCIES: CurrencyConfig[] = [
     decimalPlaces: 2,
   },
   {
+    code: 'MYR',
+    symbol: 'RM',
+    name: 'Malaysian Ringgit',
+    flag: '🇲🇾',
+    rateAgainstIdr: 3500,
+    locale: 'ms-MY',
+    decimalPlaces: 2,
+  },
+  {
     code: 'GBP',
     symbol: '£',
     name: 'British Pound',
@@ -77,6 +86,9 @@ export const convertFromIdr = (
   amountInIdr: number,
   targetCurrency: CurrencyCode
 ): number => {
+  if (typeof amountInIdr !== 'number' || isNaN(amountInIdr) || !isFinite(amountInIdr)) {
+    return 0;
+  }
   const config = getCurrencyConfig(targetCurrency);
   if (config.rateAgainstIdr === 1) return amountInIdr;
   return amountInIdr / config.rateAgainstIdr;
@@ -86,6 +98,9 @@ export const convertToIdr = (
   amountInTarget: number,
   sourceCurrency: CurrencyCode
 ): number => {
+  if (typeof amountInTarget !== 'number' || isNaN(amountInTarget) || !isFinite(amountInTarget)) {
+    return 0;
+  }
   const config = getCurrencyConfig(sourceCurrency);
   if (config.rateAgainstIdr === 1) return amountInTarget;
   return amountInTarget * config.rateAgainstIdr;
@@ -99,6 +114,9 @@ export const formatCurrency = (
     includeCode?: boolean;
   }
 ): string => {
+  if (typeof amountInIdr !== 'number' || isNaN(amountInIdr) || !isFinite(amountInIdr)) {
+    amountInIdr = 0;
+  }
   const config = getCurrencyConfig(currency);
   const converted = convertFromIdr(amountInIdr, currency);
 
@@ -106,7 +124,7 @@ export const formatCurrency = (
     return `Rp ${Math.round(amountInIdr).toLocaleString('id-ID')}`;
   }
 
-  const isWhole = Math.abs(converted % 1) < 0.01;
+  const isWhole = Math.abs(converted % 1) < 0.0001;
   const decimals =
     options?.showDecimals !== undefined
       ? options.showDecimals

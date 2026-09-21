@@ -75,6 +75,7 @@ interface EventContextType {
     phone: string;
     role: UserRole;
     organizationName?: string;
+    packageId?: string;
   }) => AppUser;
   logout: () => void;
   switchRole: (role: UserRole) => void;
@@ -89,7 +90,7 @@ interface EventContextType {
     date: string,
     time: string,
     location: string
-  ) => EventProject;
+  ) => EventProject | null;
   updateProject: (updated: EventProject) => void;
 
   // Invitation
@@ -108,7 +109,7 @@ interface EventContextType {
     email: string;
     tableNumber: string;
     rsvpStatus?: 'Confirmed' | 'Pending' | 'Declined' | 'Maybe';
-  }) => Guest;
+  }) => Guest | null;
   updateGuest: (updated: Guest) => void;
   deleteGuest: (guestId: string) => void;
   checkInGuest: (guestId: string) => Guest | null;
@@ -193,6 +194,8 @@ interface EventContextType {
     packageName: string;
     amount: number;
     amountFormatted: string;
+    currency?: CurrencyCode;
+    amountInIdr?: number;
     paymentMethod: PaymentMethodType;
     paymentDate: string;
     referenceNumber: string;
@@ -210,7 +213,7 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
     id: 'user_eo_01',
     name: 'Dimas & Sinta Wedding Organizer',
     email: 'organizer@aa-eventmaker.my.id',
-    phone: '+6281234567890',
+    phone: '+6281382000412',
     role: 'ORGANIZER',
     organizationName: 'Pratama Event & Wedding Planner',
     associatedEventId: 'proj-1',
@@ -245,6 +248,45 @@ export const DEFAULT_USERS: Record<UserRole, AppUser> = {
     createdAt: 1717000000000,
   },
 };
+
+export const PACKAGE_LIMITS = {
+  starter: {
+    name: 'Starter Free',
+    maxGuests: 100,
+    maxGalleryPhotos: 3,
+    maxProjects: 1,
+    canUseVideo: false,
+    canCustomMusic: false,
+    canAutoRsvpBlast: false,
+    canMultiCurrency: false,
+    canExportExcelPdf: false,
+    canVendorPortal: false,
+  },
+  professional: {
+    name: 'Wedding Professional',
+    maxGuests: 100000,
+    maxGalleryPhotos: 20,
+    maxProjects: 3,
+    canUseVideo: true,
+    canCustomMusic: true,
+    canAutoRsvpBlast: true,
+    canMultiCurrency: false,
+    canExportExcelPdf: true,
+    canVendorPortal: false,
+  },
+  agency: {
+    name: 'EO & Agency',
+    maxGuests: 100000,
+    maxGalleryPhotos: 100000,
+    maxProjects: 100000,
+    canUseVideo: true,
+    canCustomMusic: true,
+    canAutoRsvpBlast: true,
+    canMultiCurrency: true,
+    canExportExcelPdf: true,
+    canVendorPortal: true,
+  },
+} as const;
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
@@ -339,7 +381,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     phone: string;
     role: UserRole;
     organizationName?: string;
+    packageId?: string;
   }): AppUser => {
+    const isFree = !data.packageId || data.packageId === 'starter';
+
     const newUser: AppUser = {
       id: `usr_${Date.now()}`,
       name: data.name,
@@ -348,6 +393,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       role: data.role,
       organizationName: data.organizationName,
       associatedEventId: currentProject.id,
+      subscriptionTier: 'starter',
+      desiredPackageId: data.packageId,
       createdAt: Date.now(),
     };
 
@@ -356,9 +403,23 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLastRegisteredUser(newUser);
     localStorage.setItem('aa_current_user', JSON.stringify(newUser));
     localStorage.setItem('aa_active_role', newUser.role);
+
+    if (isFree) {
+      setActiveSubscriptionTier('starter');
+      localStorage.setItem('aa_active_subscription_tier', 'starter');
+      showToast(`Pendaftaran berhasil! Akun ${newUser.role} Anda aktif dengan paket Starter Free.`);
+    } else {
+      setActiveSubscriptionTier('starter');
+      localStorage.setItem('aa_active_subscription_tier', 'starter');
+      showToast(
+        `Pendaftaran berhasil! Akun Anda siap. Lakukan konfirmasi pembayaran untuk mengaktifkan paket ${
+          data.packageId === 'agency' ? 'EO & Agency' : 'Wedding Professional'
+        }.`
+      );
+    }
+
     setShowPublicLanding(false);
     setShowAuthModal(false);
-    showToast(`Pendaftaran berhasil! Akun ${newUser.role} Anda telah aktif.`);
     return newUser;
   };
 
@@ -586,7 +647,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     date: string,
     time: string,
     location: string
-  ): EventProject => {
+  ): EventProject | null => {
+    const limits = PACKAGE_LIMITS[activeSubscriptionTier];
+    if (projects.length >= limits.maxProjects) {
+      showToast(
+        `Batas proyek untuk paket ${limits.name} (${limits.maxProjects} proyek) telah tercapai. Silakan upgrade ke paket EO & Agency untuk membuat proyek tanpa batas!`
+      );
+      return null;
+    }
+
     const newProj: EventProject = {
       id: `proj-${Date.now()}`,
       name,
@@ -641,7 +710,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     email: string;
     tableNumber: string;
     rsvpStatus?: 'Confirmed' | 'Pending' | 'Declined' | 'Maybe';
-  }): Guest => {
+  }): Guest | null => {
+    const limits = PACKAGE_LIMITS[activeSubscriptionTier];
+    if (guests.length >= limits.maxGuests) {
+      showToast(
+        `Batas kuota tamu untuk paket ${limits.name} (${limits.maxGuests} tamu) telah tercapai. Upgrade ke paket Wedding Professional untuk menambah tamu tanpa batas!`
+      );
+      return null;
+    }
+
     const id = `guest-${Date.now()}`;
     const codeHash = Math.abs(id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0))
       .toString(36)
@@ -1188,6 +1265,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     packageName: string;
     amount: number;
     amountFormatted: string;
+    currency?: CurrencyCode;
+    amountInIdr?: number;
     paymentMethod: PaymentMethodType;
     paymentDate: string;
     referenceNumber: string;
@@ -1212,8 +1291,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updatePaymentStatus = (paymentId: string, status: PaymentStatus, adminNotes?: string) => {
-    setPayments((prev) =>
-      prev.map((item) => {
+    setPayments((prev) => {
+      const updatedList = prev.map((item) => {
         if (item.id === paymentId) {
           const nowStr = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) + ' WIB';
           const updated: PaymentSubmission = {
@@ -1223,21 +1302,44 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             reviewedBy: currentUser ? currentUser.name : 'Taufiq Aminudin (Admin)',
             reviewedAt: nowStr,
           };
-
-          // If approved & Paid, activate the appropriate paid package
-          if (status === 'Paid' || status === 'Approved') {
-            if (item.packageId === 'agency') {
-              setActiveSubscriptionTier('agency');
-            } else if (item.packageId === 'professional' && activeSubscriptionTier !== 'agency') {
-              setActiveSubscriptionTier('professional');
-            }
-          }
-
           return updated;
         }
         return item;
-      })
-    );
+      });
+
+      const targetItem = updatedList.find((p) => p.id === paymentId);
+
+      if (status === 'Paid' || status === 'Approved') {
+        const newTier: 'starter' | 'professional' | 'agency' =
+          targetItem?.packageId === 'agency' ? 'agency' : 'professional';
+        setActiveSubscriptionTier(newTier);
+        if (currentUser) {
+          const updatedUser = { ...currentUser, subscriptionTier: newTier };
+          setCurrentUser(updatedUser);
+          localStorage.setItem('aa_current_user', JSON.stringify(updatedUser));
+        }
+      } else if (status === 'Rejected' || status === 'Refunded') {
+        const hasAgency = updatedList.some(
+          (p) => (p.status === 'Paid' || p.status === 'Approved') && p.packageId === 'agency'
+        );
+        const hasPro = updatedList.some(
+          (p) => (p.status === 'Paid' || p.status === 'Approved') && p.packageId === 'professional'
+        );
+        const fallbackTier: 'starter' | 'professional' | 'agency' = hasAgency
+          ? 'agency'
+          : hasPro
+          ? 'professional'
+          : 'starter';
+        setActiveSubscriptionTier(fallbackTier);
+        if (currentUser) {
+          const updatedUser = { ...currentUser, subscriptionTier: fallbackTier };
+          setCurrentUser(updatedUser);
+          localStorage.setItem('aa_current_user', JSON.stringify(updatedUser));
+        }
+      }
+
+      return updatedList;
+    });
     showToast(`Status pembayaran diperbarui: ${status}`);
   };
 

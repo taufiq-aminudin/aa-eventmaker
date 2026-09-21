@@ -24,8 +24,10 @@ import {
   AlertCircle,
   Phone,
   MessageCircle,
+  Crown,
 } from 'lucide-react';
-import { useEvent } from '../context/EventContext';
+import { useEvent, PACKAGE_LIMITS } from '../context/EventContext';
+import { useRouter } from '../context/RouterContext';
 import { Guest, CampaignTarget, ScheduleTiming } from '../types';
 import { exportCsvReport, printPdfReport, GuestExportFilter } from '../utils/reportExporter';
 import { renderEmailTemplate, AVAILABLE_TAGS } from '../utils/templateEngine';
@@ -33,6 +35,7 @@ import { renderEmailTemplate, AVAILABLE_TAGS } from '../utils/templateEngine';
 export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
   initialOpenScanner,
 }) => {
+  const { navigate } = useRouter();
   const {
     guests,
     addGuest,
@@ -53,6 +56,7 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
     emailTemplates,
     invitation,
     currentProject,
+    activeSubscriptionTier,
     showToast,
   } = useEvent();
 
@@ -238,6 +242,35 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
           </button>
         </div>
       </div>
+
+      {/* Package Tier Capacity Badge */}
+      {activeSubscriptionTier === 'starter' && (
+        <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
+              <Crown className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <span>Paket Starter Free: Kuota Tamu Aktif</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900 text-[10px] font-extrabold">
+                  {guests.length} / 100 Tamu
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-700/90 mt-0.5">
+                Paket Starter dibatasi maksimal 100 tamu dan tanpa ekspor laporan CSV/PDF. Upgrade ke <strong>Wedding Professional</strong> untuk tamu tanpa batas dan otomasi RSVP blast!
+              </p>
+            </div>
+          </div>
+          <button
+            id="btn-upgrade-from-guests"
+            onClick={() => navigate('/payment?package=professional')}
+            className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-all"
+          >
+            Upgrade Unlimited ➔
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
@@ -658,6 +691,28 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
       {/* SUB-TAB 2: AUTO RSVP SCHEDULER */}
       {activeSubTab === 'auto_rsvp' && (
         <div className="space-y-6">
+          {!PACKAGE_LIMITS[activeSubscriptionTier].canAutoRsvpBlast && (
+            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 border border-purple-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-start space-x-3">
+                <div className="p-2.5 bg-[#6d28d9] text-white rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                  <Crown className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Fitur Eksklusif Wedding Professional: Auto RSVP Scheduler</h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    Aktifkan otomatisasi pengiriman pesan pengingat berkala ke tamu pending via WhatsApp dan Email agar tingkat konfirmasi kehadiran Anda optimal.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/payment?package=professional')}
+                className="px-4 py-2 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs shrink-0 hover:opacity-95"
+              >
+                Upgrade Sekarang ➔
+              </button>
+            </div>
+          )}
+
           {/* Master Switch Card */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -837,6 +892,28 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
       {/* SUB-TAB 3: CAMPAIGNS */}
       {activeSubTab === 'campaigns' && (
         <div className="space-y-4">
+          {!PACKAGE_LIMITS[activeSubscriptionTier].canAutoRsvpBlast && (
+            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 border border-purple-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-start space-x-3">
+                <div className="p-2.5 bg-[#6d28d9] text-white rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                  <Crown className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Broadcast & Blast WhatsApp Multi-Penerima</h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    Kirim blast pesan massal personalisasi dengan tag nama, meja, dan link E-Pass QR unik ke ratusan tamu sekaligus di paket <strong>Wedding Professional</strong>.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/payment?package=professional')}
+                className="px-4 py-2 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs shrink-0 hover:opacity-95"
+              >
+                Upgrade Sekarang ➔
+              </button>
+            </div>
+          )}
+
           <div className="flex justify-between items-center">
             <div className="text-xs text-slate-500">
               Kirim broadcast undangan resmi, pengingat, petunjuk jalan, atau ucapan terima kasih.
@@ -958,7 +1035,7 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="081234567890"
+                    placeholder="081382000412"
                     value={guestForm.phone}
                     onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })}
                     className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg"
@@ -1094,31 +1171,55 @@ export const GuestScreen: React.FC<{ initialOpenScanner?: boolean }> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    exportCsvReport(guests, invitation, currentProject, exportFilter);
-                    setShowExportModal(false);
-                  }}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1.5"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Unduh CSV Excel</span>
-                </button>
+              {!PACKAGE_LIMITS[activeSubscriptionTier].canExportExcelPdf ? (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-2.5">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-amber-900 text-xs">Fitur Ekspor Laporan Premium</div>
+                    <div className="text-[11px] text-amber-700 mt-1 leading-relaxed">
+                      Ekspor laporan kehadiran tamu, filter RSVP, dan daftar meja dalam format <strong>CSV Excel</strong> dan <strong>PDF Berstandar Cetak</strong> tersedia pada paket <strong>Wedding Professional</strong> dan <strong>EO & Agency</strong>.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      navigate('/payment?package=professional');
+                    }}
+                    className="w-full py-2.5 bg-gradient-to-r from-[#6d28d9] to-[#ec4899] text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-opacity"
+                  >
+                    Upgrade ke Wedding Professional ➔
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportCsvReport(guests, invitation, currentProject, exportFilter);
+                      setShowExportModal(false);
+                    }}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1.5"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Unduh CSV Excel</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    printPdfReport(guests, invitation, currentProject, exportFilter);
-                    setShowExportModal(false);
-                  }}
-                  className="px-4 py-2.5 bg-[#6d28d9] hover:bg-[#5b21b6] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1.5"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Cetak PDF</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      printPdfReport(guests, invitation, currentProject, exportFilter);
+                      setShowExportModal(false);
+                    }}
+                    className="px-4 py-2.5 bg-[#6d28d9] hover:bg-[#5b21b6] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1.5"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak PDF</span>
+                  </button>
+                </div>
+              )}
 
               <div className="flex justify-end pt-2">
                 <button

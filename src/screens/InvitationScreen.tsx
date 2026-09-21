@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { InvitationPhotoUploader } from '../components/InvitationPhotoUploader';
+import { InvitationVideoUploader } from '../components/InvitationVideoUploader';
 import { TemplateDetailModal } from '../components/TemplateDetailModal';
 import { ShareWhatsAppButton } from '../components/ShareWhatsAppButton';
 import { TemplateItem } from '../types';
@@ -112,6 +113,9 @@ export const InvitationScreen: React.FC = () => {
 
       {/* Upload Photos Component */}
       <InvitationPhotoUploader />
+
+      {/* Video Teaser Prewedding Component */}
+      <InvitationVideoUploader />
 
       {/* Template Gallery Section */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">

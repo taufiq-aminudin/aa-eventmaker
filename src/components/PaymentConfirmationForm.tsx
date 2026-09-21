@@ -30,7 +30,7 @@ export const PaymentConfirmationForm: React.FC<PaymentConfirmationFormProps> = (
   onSuccess,
   className = '',
 }) => {
-  const { submitPayment, showToast, currentUser } = useEvent();
+  const { submitPayment, showToast, currentUser, currency, formatCost } = useEvent();
 
   // Customer Details
   const [customerName, setCustomerName] = useState(currentUser?.name || '');
@@ -163,7 +163,9 @@ export const PaymentConfirmationForm: React.FC<PaymentConfirmationFormProps> = (
         packageId: selectedPackage.id,
         packageName: selectedPackage.name,
         amount: selectedPackage.price,
-        amountFormatted: selectedPackage.priceFormatted,
+        amountFormatted: formatCost(selectedPackage.price),
+        currency,
+        amountInIdr: selectedPackage.price,
         paymentMethod,
         paymentDate,
         referenceNumber: referenceNumber.trim(),
@@ -249,7 +251,7 @@ export const PaymentConfirmationForm: React.FC<PaymentConfirmationFormProps> = (
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="081234567890"
+                placeholder="081382000412"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-hidden bg-slate-50/60"
               />
             </div>
@@ -272,9 +274,9 @@ export const PaymentConfirmationForm: React.FC<PaymentConfirmationFormProps> = (
                 onChange={(e) => setPackageId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-blue-600 outline-hidden bg-slate-50/60"
               >
-                <option value="starter">Starter Free (Rp 0)</option>
-                <option value="professional">Wedding Pro (Rp 299.000)</option>
-                <option value="agency">EO &amp; Agency (Rp 899.000)</option>
+                <option value="starter">Starter Free ({formatCost(0)})</option>
+                <option value="professional">Wedding Pro ({formatCost(299000)})</option>
+                <option value="agency">EO &amp; Agency ({formatCost(899000)})</option>
               </select>
             </div>
 
@@ -299,7 +301,12 @@ export const PaymentConfirmationForm: React.FC<PaymentConfirmationFormProps> = (
                 Nominal Transfer (Sesuai Paket)
               </label>
               <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-black text-blue-700 bg-blue-50/40">
-                {selectedPackage.priceFormatted}
+                {formatCost(selectedPackage.price)}
+                {currency !== 'IDR' && selectedPackage.price > 0 && (
+                  <span className="text-[10px] text-slate-500 font-normal ml-1.5">
+                    (≈ Rp {selectedPackage.price.toLocaleString('id-ID')})
+                  </span>
+                )}
               </div>
             </div>
 

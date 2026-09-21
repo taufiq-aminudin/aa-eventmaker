@@ -50,11 +50,11 @@ export const PAYMENT_CONFIG = {
     ]
   },
   supportWhatsApp: {
-    rawNumber: '6281234567890',
-    displayNumber: '+62 812-3456-7890',
+    rawNumber: '6281382000412',
+    displayNumber: '081382000412',
     getHelpUrl: (contextText = 'Halo tim AA Event Maker, saya butuh bantuan mengenai pembayaran paket:') => {
       const text = encodeURIComponent(`${contextText}`);
-      return `https://wa.me/6281234567890?text=${text}`;
+      return `https://wa.me/6281382000412?text=${text}`;
     }
   }
 };

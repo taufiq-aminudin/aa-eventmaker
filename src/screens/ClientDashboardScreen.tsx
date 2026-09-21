@@ -255,7 +255,7 @@ export const ClientDashboardScreen: React.FC = () => {
 
           <div className="space-y-2">
             <a
-              href="https://wa.me/6281234567890"
+              href="https://wa.me/6281382000412"
               target="_blank"
               rel="noreferrer"
               className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-2 transition-colors"
@@ -264,7 +264,7 @@ export const ClientDashboardScreen: React.FC = () => {
               <span>Hubungi via WhatsApp</span>
             </a>
             <button
-              onClick={() => alert('Menghubungi Hotline EO: +62 812-3456-7890')}
+              onClick={() => alert('Menghubungi Hotline EO: +62 813-8200-0412')}
               className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center space-x-2 transition-colors"
             >
               <PhoneCall className="w-4 h-4" />

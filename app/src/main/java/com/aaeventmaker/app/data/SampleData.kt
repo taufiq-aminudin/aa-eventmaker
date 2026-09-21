@@ -278,7 +278,7 @@ object SampleData {
                 name = "Bpk. Hendra Kusuma & Partner",
                 group = "VIP",
                 pax = 2,
-                phone = "081234567890",
+                phone = "081382000412",
                 email = "hendra.kusuma@gmail.com",
                 tableNumber = "VIP 01",
                 rsvpStatus = "Confirmed",
