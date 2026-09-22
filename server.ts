@@ -1614,7 +1614,9 @@ async function startServer() {
         model: 'veo-3.1-fast-generate-preview',
       });
     } catch (err: any) {
-      return safeErrorResponse(res, err, 'Gagal memulai proses render video AI.');
+      console.error('[VEO_START_ERROR]', err?.message || err);
+      const msg = err?.message || 'Gagal memulai proses render video AI.';
+      return res.status(500).json({ error: msg });
     }
   });
 
@@ -1638,7 +1640,9 @@ async function startServer() {
         hasVideo: Boolean(updated.response?.generatedVideos?.[0]?.video?.uri),
       });
     } catch (err: any) {
-      return safeErrorResponse(res, err, 'Gagal memeriksa status video AI.');
+      console.error('[VEO_STATUS_ERROR]', err?.message || err);
+      const msg = err?.message || 'Gagal memeriksa status video AI.';
+      return res.status(500).json({ error: msg });
     }
   });
 
@@ -1696,8 +1700,10 @@ async function startServer() {
         })
       );
     } catch (err: any) {
+      console.error('[VEO_DOWNLOAD_ERROR]', err?.message || err);
       if (!res.headersSent) {
-        return safeErrorResponse(res, err, 'Gagal mengunduh video.');
+        const msg = err?.message || 'Gagal mengunduh video.';
+        return res.status(500).json({ error: msg });
       }
     }
   });
