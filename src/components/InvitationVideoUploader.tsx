@@ -15,7 +15,7 @@ import { useEvent } from '../context/EventContext';
 import { useRouter } from '../context/RouterContext';
 
 export const InvitationVideoUploader: React.FC = () => {
-  const { invitation, updateInvitation, activeSubscriptionTier, showToast } = useEvent();
+  const { invitation, updateInvitation, activeSubscriptionTier, showToast, setActiveTab } = useEvent();
   const { navigate } = useRouter();
 
   const [inputUrl, setInputUrl] = useState(invitation.videoUrl || '');
@@ -221,6 +221,18 @@ export const InvitationVideoUploader: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
               <span>Gunakan Video Demo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab(5);
+                showToast('Membuka Creative Studio: Generate video from text (Veo 3)...');
+              }}
+              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Generate Video dari Teks (Veo 3)</span>
             </button>
 
             {invitation.videoUrl && (
