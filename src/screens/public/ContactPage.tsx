@@ -42,7 +42,14 @@ export const ContactPage: React.FC = () => {
     const text = encodeURIComponent(
       `Halo AA Event Maker, saya ${formData.name || 'Pengguna'} ingin berkonsultasi mengenai undangan acara ${formData.eventType}.`
     );
-    window.open(`https://wa.me/6281382000412?text=${text}`, '_blank');
+    const waUrl = `https://wa.me/6281382000412?text=${text}`;
+    const a = document.createElement('a');
+    a.href = waUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (

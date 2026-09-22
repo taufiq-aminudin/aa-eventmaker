@@ -263,13 +263,13 @@ export const ClientDashboardScreen: React.FC = () => {
               <MessageCircle className="w-4 h-4" />
               <span>Hubungi via WhatsApp</span>
             </a>
-            <button
-              onClick={() => alert('Menghubungi Hotline EO: +62 813-8200-0412')}
+            <a
+              href="tel:+6281382000412"
               className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center space-x-2 transition-colors"
             >
               <PhoneCall className="w-4 h-4" />
-              <span>Telepon Langsung PIC</span>
-            </button>
+              <span>Telepon Langsung PIC (+62 813-8200-0412)</span>
+            </a>
           </div>
         </div>
       </div>

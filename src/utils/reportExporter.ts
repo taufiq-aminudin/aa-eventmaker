@@ -227,9 +227,27 @@ export function printPdfReport(
 </body>
 </html>`;
 
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
+  const printIframe = document.createElement('iframe');
+  printIframe.style.position = 'fixed';
+  printIframe.style.right = '0';
+  printIframe.style.bottom = '0';
+  printIframe.style.width = '0';
+  printIframe.style.height = '0';
+  printIframe.style.border = '0';
+  document.body.appendChild(printIframe);
+  const doc = printIframe.contentWindow?.document;
+  if (doc) {
+    doc.open();
+    doc.write(html);
+    doc.close();
+    printIframe.contentWindow?.focus();
+    try {
+      printIframe.contentWindow?.print();
+    } catch {}
+    setTimeout(() => {
+      try {
+        document.body.removeChild(printIframe);
+      } catch {}
+    }, 1500);
   }
 }

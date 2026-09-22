@@ -46,13 +46,13 @@ export const GoogleAdSlot: React.FC<GoogleAdSlotProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={() => alert('Ini adalah slot penempatan Google AdSense / Partner Sponsor resmi.')}
+          <a
+            href="/pricing"
             className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors flex items-center space-x-1 shrink-0"
           >
-            <span>Lihat Promo</span>
+            <span>Lihat Paket</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
-          </button>
+          </a>
         </div>
       </div>
     </div>

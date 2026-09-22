@@ -213,7 +213,14 @@ export const PublicInvitationView: React.FC = () => {
 
   const handleShareWhatsApp = () => {
     const text = `Kepada Yth. *${recipientName}*,\n\nTanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri perayaan *${invitation.title}* (${invitation.hosts}).\n\nBuka undangan digital resmi kami melalui tautan berikut:\n${invitationUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    const a = document.createElement('a');
+    a.href = waUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleClose = () => {
