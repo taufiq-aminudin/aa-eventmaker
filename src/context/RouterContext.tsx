@@ -10,6 +10,8 @@ export type AppRoute =
   | '/about'
   | '/contact'
   | '/help'
+  | '/privacy'
+  | '/terms'
   | '/login'
   | '/signup'
   | '/dashboard'
@@ -19,7 +21,18 @@ export type AppRoute =
   | '/guests'
   | '/settings'
   | '/admin'
+  | '/admin/dashboard'
   | '/admin/payments'
+  | '/admin/payment-verification'
+  | '/admin/transactions'
+  | '/admin/customers'
+  | '/admin/invitations'
+  | '/admin/packages'
+  | '/admin/templates'
+  | '/admin/categories'
+  | '/admin/revenue'
+  | '/admin/reports'
+  | '/admin/settings'
   | '/invitation/:slug';
 
 interface RouteMatch {
@@ -36,6 +49,7 @@ interface RouterContextType {
   queryParams: Record<string, string>;
   navigate: (to: string, options?: { replace?: boolean }) => void;
   isPublicRoute: boolean;
+  isAdminRoute: boolean;
 }
 
 const RouterContext = createContext<RouterContextType | undefined>(undefined);
@@ -86,6 +100,8 @@ function matchRoute(rawPath: string): RouteMatch {
     '/about',
     '/contact',
     '/help',
+    '/privacy',
+    '/terms',
     '/login',
     '/signup',
     '/dashboard',
@@ -95,7 +111,18 @@ function matchRoute(rawPath: string): RouteMatch {
     '/guests',
     '/settings',
     '/admin',
+    '/admin/dashboard',
     '/admin/payments',
+    '/admin/payment-verification',
+    '/admin/transactions',
+    '/admin/customers',
+    '/admin/invitations',
+    '/admin/packages',
+    '/admin/templates',
+    '/admin/categories',
+    '/admin/revenue',
+    '/admin/reports',
+    '/admin/settings',
   ];
 
   if (staticRoutes.includes(path as AppRoute)) {
@@ -174,12 +201,15 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     '/about',
     '/contact',
     '/help',
+    '/privacy',
+    '/terms',
     '/login',
     '/signup',
     '/invitation/:slug',
   ];
 
   const isPublicRoute = publicRoutes.includes(match.route);
+  const isAdminRoute = match.path === '/admin' || match.path.startsWith('/admin/');
 
   return (
     <RouterContext.Provider
@@ -190,6 +220,7 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         queryParams: match.queryParams,
         navigate,
         isPublicRoute,
+        isAdminRoute,
       }}
     >
       {children}

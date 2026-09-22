@@ -403,6 +403,84 @@ async function startServer() {
     }
   });
 
+  // Helper to parse cookies from request header
+  function parseCookies(cookieHeader?: string): Record<string, string> {
+    const list: Record<string, string> = {};
+    if (!cookieHeader) return list;
+    cookieHeader.split(';').forEach((cookie) => {
+      const parts = cookie.split('=');
+      const name = parts[0]?.trim();
+      if (!name) return;
+      const value = parts.slice(1).join('=').trim();
+      list[name] = decodeURIComponent(value);
+    });
+    return list;
+  }
+
+  // Server-side Route Guard for Admin console paths
+  app.use((req, res, next) => {
+    const reqPath = req.path;
+    const isHtmlRequest = req.headers.accept?.includes('text/html');
+
+    if ((reqPath === '/admin' || reqPath.startsWith('/admin/')) && isHtmlRequest) {
+      const cookies = parseCookies(req.headers.cookie);
+      const userRole = cookies['aa_user_role'];
+      const currentUserRaw = cookies['aa_current_user'];
+
+      let parsedUser: any = null;
+      if (currentUserRaw) {
+        try {
+          parsedUser = JSON.parse(currentUserRaw);
+        } catch {
+          // ignore parsing error
+        }
+      }
+
+      // Check if explicitly non-admin
+      if (userRole && userRole !== 'ADMIN' && parsedUser?.email !== 'admin@aa-eventmaker.my.id') {
+        res.status(403);
+        return res.send(`
+          <!DOCTYPE html>
+          <html lang="id">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>403 - Akses Administrator Ditolak | AA Event Maker</title>
+            <style>
+              body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+              .card { max-width: 480px; width: 100%; background: #131b2e; border: 1px solid #1e293b; border-radius: 24px; padding: 36px 28px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+              .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px; }
+              h1 { font-size: 22px; font-weight: 800; margin: 0 0 12px 0; color: #ffffff; letter-spacing: -0.02em; }
+              p { font-size: 13px; line-height: 1.6; color: #94a3b8; margin: 0 0 28px 0; }
+              .btn-group { display: flex; flex-direction: column; gap: 10px; }
+              .btn { display: block; padding: 13px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s ease; }
+              .btn-primary { background: #2563eb; color: #ffffff; }
+              .btn-primary:hover { background: #1d4ed8; }
+              .btn-secondary { background: #1e293b; color: #cbd5e1; }
+              .btn-secondary:hover { background: #334155; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="badge">
+                <span>🛡️ Akses Ditolak (403 Forbidden)</span>
+              </div>
+              <h1>Area Khusus Administrator</h1>
+              <p>Akun Anda terdaftar sebagai <strong>${userRole || 'Pengguna'}</strong> dan tidak memiliki hak akses administrator platform AA Event Maker. Silakan kembali ke dasbor Anda atau masuk dengan akun admin.</p>
+              <div class="btn-group">
+                <a href="/dashboard" class="btn btn-primary">Kembali ke Dasbor Saya</a>
+                <a href="/login?redirect=${encodeURIComponent(req.originalUrl)}" class="btn btn-secondary">Masuk dengan Akun Admin</a>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+    }
+
+    next();
+  });
+
   // Vite middleware for development vs static build in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

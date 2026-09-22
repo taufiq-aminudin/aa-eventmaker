@@ -49,6 +49,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     activeTab,
     setActiveTab,
     activeRole,
+    currentUser,
     switchRole,
     guests,
     tasks,
@@ -371,7 +372,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <div className="space-y-1.5 pt-1">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dasbor Berdasarkan Peran:</div>
               <div className="grid grid-cols-2 gap-2">
-                {(['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST', 'ADMIN'] as UserRole[]).map((role) => {
+                {((currentUser?.role === 'ADMIN'
+                  ? ['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST', 'ADMIN']
+                  : ['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST']) as UserRole[]).map((role) => {
                   const info = roleLabels[role];
                   const Icon = info.icon;
                   const isRoleActive = activeRole === role;

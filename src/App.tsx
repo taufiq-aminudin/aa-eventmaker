@@ -17,13 +17,16 @@ import { AboutPage } from './screens/public/AboutPage';
 import { ContactPage } from './screens/public/ContactPage';
 import { HelpPage } from './screens/public/HelpPage';
 import { PaymentPage } from './screens/public/PaymentPage';
+import { PrivacyPolicyPage } from './screens/public/PrivacyPolicyPage';
+import { TermsOfServicePage } from './screens/public/TermsOfServicePage';
 import { AuthPage } from './screens/auth/AuthPage';
 
 // App Pages
 import { ProjectsPage } from './screens/app/ProjectsPage';
 import { CreateEventPage } from './screens/app/CreateEventPage';
 import { SettingsPage } from './screens/app/SettingsPage';
-import { AdminPaymentManagementScreen } from './screens/admin/AdminPaymentManagementScreen';
+import { AdminSuiteScreen } from './screens/admin/AdminSuiteScreen';
+import { AdminTab } from './components/admin/AdminLayout';
 
 // Lazy Loaded Workspace Screens & Modals for performance
 const HomeScreen = React.lazy(() =>
@@ -182,15 +185,38 @@ const MainRouter: React.FC = () => {
       return <ContactPage />;
     case '/help':
       return <HelpPage />;
+    case '/privacy':
+      return <PrivacyPolicyPage />;
+    case '/terms':
+      return <TermsOfServicePage />;
     case '/login':
       return <AuthPage initialMode="login" />;
     case '/signup':
       return <AuthPage initialMode="signup" />;
 
-    // Admin Pages
+    // Admin Console Pages (Full Admin Suite with strict access control)
     case '/admin':
+    case '/admin/dashboard':
+      return <AdminSuiteScreen initialTab="dashboard" />;
     case '/admin/payments':
-      return <AdminPaymentManagementScreen />;
+    case '/admin/payment-verification':
+      return <AdminSuiteScreen initialTab="payments" />;
+    case '/admin/transactions':
+      return <AdminSuiteScreen initialTab="transactions" />;
+    case '/admin/customers':
+      return <AdminSuiteScreen initialTab="customers" />;
+    case '/admin/invitations':
+      return <AdminSuiteScreen initialTab="invitations" />;
+    case '/admin/packages':
+      return <AdminSuiteScreen initialTab="packages" />;
+    case '/admin/templates':
+    case '/admin/categories':
+      return <AdminSuiteScreen initialTab="templates" />;
+    case '/admin/revenue':
+    case '/admin/reports':
+      return <AdminSuiteScreen initialTab="revenue" />;
+    case '/admin/settings':
+      return <AdminSuiteScreen initialTab="settings" />;
 
     // App & Workspace Dedicated Pages
     case '/projects':

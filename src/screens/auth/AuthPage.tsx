@@ -33,6 +33,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [role, setRole] = useState<UserRole>('ORGANIZER');
 
   const selectedPackageId = queryParams.package as string | undefined;
+  const redirectTarget = queryParams.redirect as string | undefined;
+  const authRequiredNotice = queryParams.auth === 'required' || queryParams.error === 'auth_required';
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,26 +43,38 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       return;
     }
 
+    const effectiveRole = email.toLowerCase().trim() === 'admin@aa-eventmaker.my.id' ? 'ADMIN' : role;
+
     if (mode === 'signup') {
       register({
         name: name || email.split('@')[0],
         email,
         phone: phone.trim() || '081382000412',
-        role,
+        role: effectiveRole,
         packageId: selectedPackageId,
       });
       showToast('Pendaftaran berhasil! Selamat datang di AA Event Maker.');
     } else {
-      login(email, role);
+      login(email, effectiveRole);
       showToast('Berhasil masuk ke akun Anda.');
     }
-    navigate('/dashboard');
+
+    const dest = redirectTarget || (effectiveRole === 'ADMIN' ? '/admin' : '/dashboard');
+    navigate(dest);
   };
 
   const handleGoogleLogin = () => {
     login('google-user@gmail.com', role);
     showToast('Masuk instan via Google berhasil!');
-    navigate('/dashboard');
+    const dest = redirectTarget || (role === 'ADMIN' ? '/admin' : '/dashboard');
+    navigate(dest);
+  };
+
+  const handleQuickLogin = (demoRole: UserRole, demoEmail: string) => {
+    login(demoEmail, demoRole);
+    showToast(`Masuk sebagai ${demoRole} (${demoEmail})`);
+    const dest = redirectTarget || (demoRole === 'ADMIN' ? '/admin' : '/dashboard');
+    navigate(dest);
   };
 
   return (
@@ -99,6 +113,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 : 'Buat undangan digital impian Anda secara praktis dalam hitungan menit.'}
             </p>
           </div>
+
+          {authRequiredNotice && (
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center space-x-2">
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Sesi ini memerlukan masuk terlebih dahulu untuk mengakses halaman tujuan.</span>
+            </div>
+          )}
 
           {/* Mode Switcher Tabs */}
           <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-bold">
@@ -240,6 +261,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 <option value="CLIENT">Calon Pengantin / Tuan Rumah</option>
                 <option value="VENDOR">Vendor Acara (Fotografer/Katering)</option>
                 <option value="GUEST">Tamu Undangan</option>
+                {mode === 'login' && (
+                  <option value="ADMIN">Administrator Platform (Konsol Admin)</option>
+                )}
               </select>
             </div>
 
@@ -251,6 +275,43 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
               <span>{mode === 'login' ? 'Masuk ke Dasbor' : 'Daftar Sekarang'}</span>
             </button>
           </form>
+
+          {/* Quick Demo Access Bar */}
+          <div className="pt-4 border-t border-slate-100 space-y-2.5">
+            <span className="text-[11px] font-bold text-slate-500 block text-center uppercase tracking-wider">
+              Akses Cepat Pengujian (1-Klik):
+            </span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('ADMIN', 'admin@aa-eventmaker.my.id')}
+                className="py-2 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold border border-purple-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
+              >
+                <span>🛡️ Super Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('ORGANIZER', 'organizer@aa-eventmaker.my.id')}
+                className="py-2 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold border border-blue-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
+              >
+                <span>📅 Organizer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('CLIENT', 'klien@aa-eventmaker.my.id')}
+                className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold border border-rose-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
+              >
+                <span>💍 Pengantin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('VENDOR', 'vendor@aa-eventmaker.my.id')}
+                className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
+              >
+                <span>📸 Vendor</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -5,7 +5,6 @@ import { AALogo } from './AALogo';
 import { Heart, Sparkles, Shield, Smartphone, QrCode } from 'lucide-react';
 
 export const PublicFooter: React.FC = () => {
-  const { showToast } = useEvent();
   const { navigate } = useRouter();
 
   return (
@@ -93,30 +92,14 @@ export const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/admin/payments" className="text-amber-400/90 hover:text-amber-300 transition-colors flex items-center space-x-1 font-medium">
-                  <Shield className="w-3 h-3" />
-                  <span>Verifikasi Pembayaran (Admin)</span>
+                <Link to="/privacy" className="hover:text-white transition-colors">
+                  Kebijakan Privasi
                 </Link>
               </li>
               <li>
-                <button
-                  onClick={() =>
-                    showToast('Kebijakan Privasi: Data tamu dan privasi acara Anda terlindungi secara ketat.')
-                  }
-                  className="hover:text-white text-left transition-colors cursor-pointer"
-                >
-                  Kebijakan Privasi
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() =>
-                    showToast('Ketentuan Layanan AA Event Maker berlaku untuk seluruh pengguna terdaftar.')
-                  }
-                  className="hover:text-white text-left transition-colors cursor-pointer"
-                >
+                <Link to="/terms" className="hover:text-white transition-colors">
                   Ketentuan Layanan
-                </button>
+                </Link>
               </li>
             </ul>
           </div>

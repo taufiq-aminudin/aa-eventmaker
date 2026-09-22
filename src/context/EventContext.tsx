@@ -427,6 +427,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveRole(targetRole);
     localStorage.setItem('aa_current_user', JSON.stringify(googleUser));
     localStorage.setItem('aa_active_role', targetRole);
+    if (typeof document !== 'undefined') {
+      document.cookie = `aa_user_role=${targetRole}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(googleUser))}; path=/; max-age=604800; SameSite=Lax`;
+    }
     setShowAuthModal(false);
     setShowPublicLanding(false);
     showToast(`Berhasil masuk dengan Google sebagai ${googleUser.name}!`);
@@ -434,7 +438,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const login = (email: string, role?: UserRole): boolean => {
-    const targetRole = role || 'ORGANIZER';
+    let targetRole = role || 'ORGANIZER';
+    if (email.toLowerCase().trim() === 'admin@aa-eventmaker.my.id' || (role as string) === 'ADMIN') {
+      targetRole = 'ADMIN';
+    }
     const matchedUser: AppUser = DEFAULT_USERS[targetRole] || {
       id: `usr_${Date.now()}`,
       name: email.split('@')[0],
@@ -448,6 +455,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveRole(targetRole);
     localStorage.setItem('aa_current_user', JSON.stringify(matchedUser));
     localStorage.setItem('aa_active_role', targetRole);
+    if (typeof document !== 'undefined') {
+      document.cookie = `aa_user_role=${targetRole}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(matchedUser))}; path=/; max-age=604800; SameSite=Lax`;
+    }
     setShowAuthModal(false);
     setShowPublicLanding(false);
     showToast(`Selamat datang kembali, ${matchedUser.name}!`);
@@ -482,6 +493,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLastRegisteredUser(newUser);
     localStorage.setItem('aa_current_user', JSON.stringify(newUser));
     localStorage.setItem('aa_active_role', newUser.role);
+    if (typeof document !== 'undefined') {
+      document.cookie = `aa_user_role=${newUser.role}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(newUser))}; path=/; max-age=604800; SameSite=Lax`;
+    }
 
     if (isFree) {
       setActiveSubscriptionTier('starter');
@@ -505,6 +520,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('aa_current_user');
+    if (typeof document !== 'undefined') {
+      document.cookie = `aa_user_role=; path=/; max-age=0; SameSite=Lax`;
+      document.cookie = `aa_current_user=; path=/; max-age=0; SameSite=Lax`;
+    }
     setShowPublicLanding(true);
     showToast('Anda telah keluar dari akun.');
   };
@@ -512,9 +531,14 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const switchRole = (newRole: UserRole) => {
     setActiveRole(newRole);
     localStorage.setItem('aa_active_role', newRole);
-    if (DEFAULT_USERS[newRole]) {
-      setCurrentUser(DEFAULT_USERS[newRole]);
-      localStorage.setItem('aa_current_user', JSON.stringify(DEFAULT_USERS[newRole]));
+    const u = DEFAULT_USERS[newRole];
+    if (u) {
+      setCurrentUser(u);
+      localStorage.setItem('aa_current_user', JSON.stringify(u));
+      if (typeof document !== 'undefined') {
+        document.cookie = `aa_user_role=${newRole}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(u))}; path=/; max-age=604800; SameSite=Lax`;
+      }
     }
     showToast(`Beralih ke Dashboard ${newRole}`);
   };

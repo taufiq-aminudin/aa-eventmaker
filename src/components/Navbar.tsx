@@ -334,16 +334,16 @@ export const Navbar: React.FC = () => {
                     </button>
 
                     <div className="border-t border-slate-100 my-1 pt-1">
-                      {activeRole === 'ORGANIZER' && (
+                      {currentUser?.role === 'ADMIN' && (
                         <button
                           onClick={() => {
                             setShowUserMenu(false);
-                            navigate('/admin/payments');
+                            navigate('/admin');
                           }}
-                          className="w-full px-3.5 py-2 text-xs flex items-center space-x-2 text-left hover:bg-slate-50 text-blue-700 font-bold"
+                          className="w-full px-3.5 py-2 text-xs flex items-center space-x-2 text-left hover:bg-slate-50 text-purple-700 font-bold"
                         >
-                          <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Verifikasi Pembayaran (Admin)</span>
+                          <Shield className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Konsol Administrator</span>
                         </button>
                       )}
 
@@ -390,25 +390,33 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Sub-Navigation Bar (Shown for Organizer) */}
         {activeRole === 'ORGANIZER' && (
-          <div className="lg:hidden flex overflow-x-auto border-t border-slate-100 px-2 py-1.5 no-scrollbar bg-slate-50">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs whitespace-nowrap font-medium transition-colors ${
-                    isActive
-                      ? 'bg-white text-blue-700 font-bold shadow-xs border border-blue-100'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-700' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="lg:hidden relative border-t border-slate-200/80 bg-slate-50/95 overflow-hidden">
+            {/* Subtle right gradient fade affordance to visually indicate scrollability */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-100 to-transparent z-10" />
+
+            <div
+              className="flex items-center overflow-x-auto scroll-smooth px-3 py-2 space-x-1.5 scrollbar-none pr-10"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap font-bold min-w-max transition-all active:scale-95 ${
+                      isActive
+                        ? 'bg-white text-blue-700 shadow-xs border border-blue-200'
+                        : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-400'}`} />
+                    <span className="shrink-0">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </header>
