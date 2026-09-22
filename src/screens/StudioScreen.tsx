@@ -12,14 +12,23 @@ import {
   Clock,
   Layers,
   FileImage,
+  Film,
+  Image as ImageIcon,
+  MessageSquare,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { PHOTO_PRESETS, VIDEO_TEMPLATES } from '../data/initialData';
+import { AiImageStudio } from '../components/studio/AiImageStudio';
+import { VeoVideoStudio } from '../components/studio/VeoVideoStudio';
+import { LyriaMusicStudio } from '../components/studio/LyriaMusicStudio';
+import { GeminiChatbot } from '../components/studio/GeminiChatbot';
 
 export const StudioScreen: React.FC = () => {
   const { aiConcept, generateAiConcept, showToast } = useEvent();
 
-  const [activeTab, setActiveTab] = useState<'photo' | 'video' | 'ai' | 'design'>('photo');
+  const [activeTab, setActiveTab] = useState<
+    'ai-image' | 'veo-video' | 'lyria-music' | 'gemini-chat' | 'photo' | 'video' | 'ai' | 'design'
+  >('ai-image');
   const [selectedPresetId, setSelectedPresetId] = useState(PHOTO_PRESETS[0].id);
   const [selectedVideoId, setSelectedVideoId] = useState(VIDEO_TEMPLATES[0].id);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -59,12 +68,16 @@ export const StudioScreen: React.FC = () => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
+        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar max-w-full">
           {[
+            { id: 'ai-image', label: 'AI Foto & Edit', icon: ImageIcon, badge: 'Gemini' },
+            { id: 'veo-video', label: 'Veo 3 Video', icon: Film, badge: 'Veo' },
+            { id: 'lyria-music', label: 'Lyria Musik', icon: Music, badge: 'Lyria' },
+            { id: 'gemini-chat', label: 'Gemini Chatbot', icon: MessageSquare, badge: 'Chat' },
             { id: 'photo', label: 'Preset Foto', icon: Camera },
-            { id: 'video', label: 'Storyboard Video', icon: Video },
+            { id: 'video', label: 'Storyboard', icon: Video },
             { id: 'ai', label: 'AI Concept', icon: Wand2 },
-            { id: 'design', label: 'Design Stationery', icon: Palette },
+            { id: 'design', label: 'Stationery', icon: Palette },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -72,7 +85,7 @@ export const StudioScreen: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-white text-[#6d28d9] shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -80,11 +93,28 @@ export const StudioScreen: React.FC = () => {
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
+                {tab.badge && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase ${
+                      isActive
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* NEW GENERATIVE AI STUDIOS */}
+      {activeTab === 'ai-image' && <AiImageStudio />}
+      {activeTab === 'veo-video' && <VeoVideoStudio />}
+      {activeTab === 'lyria-music' && <LyriaMusicStudio />}
+      {activeTab === 'gemini-chat' && <GeminiChatbot />}
 
       {/* TAB 1: PRESET FOTO */}
       {activeTab === 'photo' && (

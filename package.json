@@ -5,8 +5,9 @@
   "type": "module",
   "description": "AA : Event Maker - All-in-one event creation platform for invitations, guest management, planning, budget, and memories",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 3000",
-    "build": "vite build",
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
@@ -14,7 +15,9 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "canvas-confetti": "^1.9.4",
+    "express": "^5.2.1",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.16.0",
     "motion": "^12.4.0",
@@ -26,11 +29,14 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.9",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/express": "^5.0.6",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.28.2",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.0.9",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.3.0",
