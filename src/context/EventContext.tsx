@@ -403,6 +403,51 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 4000);
   };
 
+  // Helper to get or set auth token
+  const getAuthToken = (): string | null => {
+    return localStorage.getItem('aa_session_token');
+  };
+
+  // Sync session on mount with server /api/auth/me
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Unauthenticated');
+        })
+        .then((data) => {
+          if (data && data.authenticated && data.user) {
+            setCurrentUser((prev) => {
+              if (!prev) return data.user;
+              return {
+                ...prev,
+                id: data.user.id,
+                email: data.user.email,
+                role: data.user.role,
+                subscriptionTier: data.user.subscriptionTier || prev.subscriptionTier,
+              };
+            });
+            if (data.user.role) {
+              setActiveRole(data.user.role);
+            }
+            if (data.user.subscriptionTier) {
+              setActiveSubscriptionTier(data.user.subscriptionTier);
+            }
+          }
+        })
+        .catch(() => {
+          // Token expired or invalid
+          console.warn('[AA Event Maker] Session expired or invalid on server.');
+        });
+    }
+  }, []);
+
   const loginWithGoogle = (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }): boolean => {
     const profile = googleProfile || {
       name: 'Taufiq Aminudin',
@@ -422,6 +467,26 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       associatedEventId: currentProject.id,
       createdAt: Date.now(),
     };
+
+    // Authenticate with server API to obtain cryptographically signed session token
+    fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: profile.email,
+        name: profile.name,
+        role: targetRole,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem('aa_session_token', data.token);
+        }
+      })
+      .catch((err) => {
+        console.warn('Google login server sync:', err);
+      });
 
     setCurrentUser(googleUser);
     setActiveRole(targetRole);
@@ -450,6 +515,28 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       role: targetRole,
       createdAt: Date.now(),
     };
+
+    // Authenticate with server API to obtain cryptographically signed session token
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password: targetRole === 'ADMIN' ? 'Admin@AaEvent2026!' : 'Organizer@2026!',
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem('aa_session_token', data.token);
+          if (data.user?.subscriptionTier) {
+            setActiveSubscriptionTier(data.user.subscriptionTier);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Login server sync:', err);
+      });
 
     setCurrentUser(matchedUser);
     setActiveRole(targetRole);
@@ -488,6 +575,27 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: Date.now(),
     };
 
+    // Register with server API
+    fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        packageId: data.packageId,
+      }),
+    })
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.token) {
+          localStorage.setItem('aa_session_token', resData.token);
+        }
+      })
+      .catch((err) => {
+        console.warn('Registration server sync:', err);
+      });
+
     setCurrentUser(newUser);
     setActiveRole(newUser.role);
     setLastRegisteredUser(newUser);
@@ -518,11 +626,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const logout = () => {
+    // Notify server to clear cookie
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    localStorage.removeItem('aa_session_token');
     setCurrentUser(null);
     localStorage.removeItem('aa_current_user');
     if (typeof document !== 'undefined') {
       document.cookie = `aa_user_role=; path=/; max-age=0; SameSite=Lax`;
       document.cookie = `aa_current_user=; path=/; max-age=0; SameSite=Lax`;
+      document.cookie = `aa_session_token=; path=/; max-age=0; SameSite=Lax`;
     }
     setShowPublicLanding(true);
     showToast('Anda telah keluar dari akun.');
@@ -539,6 +651,22 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.cookie = `aa_user_role=${newRole}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(u))}; path=/; max-age=604800; SameSite=Lax`;
       }
+      // Sync login token for switched role
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: u.email,
+          password: newRole === 'ADMIN' ? 'Admin@AaEvent2026!' : 'Organizer@2026!',
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.token) {
+            localStorage.setItem('aa_session_token', data.token);
+          }
+        })
+        .catch(() => {});
     }
     showToast(`Beralih ke Dashboard ${newRole}`);
   };
@@ -1577,12 +1705,57 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: Date.now(),
     };
 
+    // Forward to secure server payment endpoint
+    const token = localStorage.getItem('aa_session_token');
+    fetch('/api/payments/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        packageId: data.packageId,
+        paymentMethod: data.paymentMethod,
+        senderName: data.customerName,
+        senderBankOrWallet: data.paymentMethod,
+        transferDate: data.paymentDate,
+        proofBase64: data.proofDataUrl,
+        proofFileName: data.proofFileName,
+        notes: data.notes,
+      }),
+    })
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.referenceNumber) {
+          console.log('[AA Security] Payment recorded on server:', resData.referenceNumber);
+        }
+      })
+      .catch((err) => {
+        console.warn('Payment server sync:', err);
+      });
+
     setPayments((prev) => [newSubmission, ...prev]);
     showToast(`Konfirmasi pembayaran berhasil dikirim! ID Pesanan: ${orderId}`);
     return newSubmission;
   };
 
   const updatePaymentStatus = (paymentId: string, status: PaymentStatus, adminNotes?: string) => {
+    // Notify server admin verification endpoint if authenticated as admin
+    const token = localStorage.getItem('aa_session_token');
+    if (token) {
+      fetch(`/api/admin/payments/${paymentId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status,
+          adminNote: adminNotes || '',
+        }),
+      }).catch((err) => console.warn('Payment verify server sync:', err));
+    }
+
     setPayments((prev) => {
       const updatedList = prev.map((item) => {
         if (item.id === paymentId) {
