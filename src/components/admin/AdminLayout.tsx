@@ -52,10 +52,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const { navigate } = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Strict Admin Authorization Check
+  // Strict Admin Authorization Check: Must be authenticated with verified ADMIN role
   const isAuthorizedAdmin =
-    Boolean(currentUser) &&
-    (currentUser?.role === 'ADMIN' || currentUser?.email === 'admin@aa-eventmaker.my.id');
+    Boolean(currentUser) && currentUser?.role === 'ADMIN';
 
   // If not logged in or not authorized admin
   if (!isAuthorizedAdmin) {
@@ -93,10 +92,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </button>
             ) : (
               <button
-                onClick={() => navigate('/login?redirect=/admin')}
+                onClick={() => navigate('/admin/login')}
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center space-x-2"
               >
-                <span>Masuk ke Akun Admin</span>
+                <span>Masuk ke Konsol Admin Privat</span>
               </button>
             )}
 

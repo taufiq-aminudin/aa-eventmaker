@@ -26,6 +26,7 @@ import { ProjectsPage } from './screens/app/ProjectsPage';
 import { CreateEventPage } from './screens/app/CreateEventPage';
 import { SettingsPage } from './screens/app/SettingsPage';
 import { AdminSuiteScreen } from './screens/admin/AdminSuiteScreen';
+import { AdminLoginScreen } from './screens/admin/AdminLoginScreen';
 import { AdminTab } from './components/admin/AdminLayout';
 
 // Lazy Loaded Workspace Screens & Modals for performance
@@ -193,6 +194,10 @@ const MainRouter: React.FC = () => {
       return <AuthPage initialMode="login" />;
     case '/signup':
       return <AuthPage initialMode="signup" />;
+
+    // Dedicated Isolated Admin Authentication Route
+    case '/admin/login':
+      return <AdminLoginScreen />;
 
     // Admin Console Pages (Full Admin Suite with strict access control)
     case '/admin':

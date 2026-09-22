@@ -73,6 +73,7 @@ interface EventContextType {
   lastRegisteredUser: AppUser | null;
   login: (email: string, role?: UserRole) => boolean;
   loginWithGoogle: (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }) => boolean;
+  loginAdmin: (password: string, email?: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     name: string;
     email: string;
@@ -503,10 +504,14 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const login = (email: string, role?: UserRole): boolean => {
-    let targetRole = role || 'ORGANIZER';
-    if (email.toLowerCase().trim() === 'admin@aa-eventmaker.my.id' || (role as string) === 'ADMIN') {
-      targetRole = 'ADMIN';
+    const cleanEmail = email.toLowerCase().trim();
+    // Security restriction: Public login rejects admin role or admin email
+    if (cleanEmail === 'admin@aa-eventmaker.my.id' || (role as string) === 'ADMIN') {
+      showToast('Akses ditolak: Pintu masuk Administrator terpisah secara privat di /admin/login.');
+      return false;
     }
+
+    const targetRole: UserRole = role && (role as string) !== 'ADMIN' ? role : 'ORGANIZER';
     const matchedUser: AppUser = DEFAULT_USERS[targetRole] || {
       id: `usr_${Date.now()}`,
       name: email.split('@')[0],
@@ -522,10 +527,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
-        password: targetRole === 'ADMIN' ? 'Admin@AaEvent2026!' : 'Organizer@2026!',
+        password: 'Organizer@2026!',
       }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Login failed');
+        return res.json();
+      })
       .then((data) => {
         if (data.token) {
           localStorage.setItem('aa_session_token', data.token);
@@ -550,6 +558,54 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setShowPublicLanding(false);
     showToast(`Selamat datang kembali, ${matchedUser.name}!`);
     return true;
+  };
+
+  // Dedicated Private Super Admin Login
+  const loginAdmin = async (password: string, email: string = 'admin@aa-eventmaker.my.id'): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Autentikasi admin gagal.' };
+      }
+
+      const adminUser: AppUser = {
+        id: data.user.id || 'usr_admin_01',
+        name: data.user.name || 'AA Event Maker Super Admin',
+        email: data.user.email || 'admin@aa-eventmaker.my.id',
+        phone: data.user.phone || '+6281100009999',
+        role: 'ADMIN',
+        organizationName: 'AA Event Maker Platform HQ',
+        subscriptionTier: 'agency',
+        createdAt: 1714000000000,
+      };
+
+      if (data.token) {
+        localStorage.setItem('aa_session_token', data.token);
+      }
+      setCurrentUser(adminUser);
+      setActiveRole('ADMIN');
+      setActiveSubscriptionTier('agency');
+      localStorage.setItem('aa_current_user', JSON.stringify(adminUser));
+      localStorage.setItem('aa_active_role', 'ADMIN');
+      if (typeof document !== 'undefined') {
+        document.cookie = `aa_user_role=ADMIN; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(adminUser))}; path=/; max-age=604800; SameSite=Lax`;
+      }
+      setShowPublicLanding(false);
+      showToast('Otentikasi Administrator Berhasil. Selamat datang di Konsol Admin!');
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Gagal menghubungi server autentikasi.' };
+    }
   };
 
   const register = (data: {
@@ -641,6 +697,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const switchRole = (newRole: UserRole) => {
+    // Security constraint: Normal role switching can NEVER escalate to ADMIN
+    if (newRole === 'ADMIN') {
+      showToast('Akses Administrator tidak dapat dialihkan dari pemilih peran biasa.');
+      return;
+    }
     setActiveRole(newRole);
     localStorage.setItem('aa_active_role', newRole);
     const u = DEFAULT_USERS[newRole];
@@ -657,7 +718,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: u.email,
-          password: newRole === 'ADMIN' ? 'Admin@AaEvent2026!' : 'Organizer@2026!',
+          password: 'Organizer@2026!',
         }),
       })
         .then((res) => res.json())
@@ -1840,6 +1901,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         lastRegisteredUser,
         login,
         loginWithGoogle,
+        loginAdmin,
         register,
         logout,
         switchRole,

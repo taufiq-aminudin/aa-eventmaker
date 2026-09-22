@@ -12,6 +12,7 @@ import {
   generateQrTicketSignature,
   verifyQrTicketSignature,
   authRateLimiter,
+  adminAuthRateLimiter,
   aiRateLimiter,
   paymentRateLimiter,
   uploadRateLimiter,
@@ -356,6 +357,22 @@ async function startServer() {
       return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
     }
 
+    // Security requirement: Super Admin cannot log in via the public login endpoint
+    if (user.role === 'ADMIN') {
+      auditLogger.log({
+        actorId: user.id,
+        actorEmail: user.email,
+        action: 'AUTH_ADMIN_PUBLIC_LOGIN_REJECTED',
+        resource: '/api/auth/login',
+        ip: req.ip || 'unknown',
+        status: 'BLOCKED',
+        details: 'Admin user attempted to authenticate via public login endpoint',
+      });
+      return res.status(403).json({
+        error: 'Akses tidak diizinkan. Akun Administrator memiliki pintu masuk autentikasi terpisah yang aman.',
+      });
+    }
+
     // Verify password if user has password credentials set
     if (user.passwordSalt && user.passwordHash && password) {
       const isValid = verifyPassword(password, user.passwordSalt, user.passwordHash);
@@ -412,7 +429,7 @@ async function startServer() {
     });
   });
 
-  // Google Login / OAuth simulation
+  // Google Login / OAuth simulation (Normal users only)
   app.post('/api/auth/google', (req, res) => {
     const { email, name, role = 'ORGANIZER' } = req.body;
     if (!email || !isValidEmail(email)) {
@@ -422,9 +439,14 @@ async function startServer() {
     const cleanEmail = email.toLowerCase().trim();
     let user = serverStore.findUserByEmail(cleanEmail);
 
-    // Super Admin privilege is only granted if email explicitly matches official admin
-    const isAdminEmail = cleanEmail === 'admin@aa-eventmaker.my.id';
-    const effectiveRole: UserRole = isAdminEmail ? 'ADMIN' : (role === 'ADMIN' ? 'ORGANIZER' : (role as UserRole));
+    // Normal public flow never creates or escalates to ADMIN role
+    const effectiveRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : (role as UserRole);
+
+    if (user && user.role === 'ADMIN') {
+      return res.status(403).json({
+        error: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
+      });
+    }
 
     if (!user) {
       user = serverStore.createUser({
@@ -432,7 +454,7 @@ async function startServer() {
         name: sanitizeInputString(name, 60) || cleanEmail.split('@')[0],
         email: cleanEmail,
         role: effectiveRole,
-        subscriptionTier: effectiveRole === 'ADMIN' ? 'agency' : 'starter',
+        subscriptionTier: 'starter',
         createdAt: Date.now(),
       });
     }
@@ -459,6 +481,106 @@ async function startServer() {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+      },
+    });
+  });
+
+  // Dedicated Private Admin Console Authentication Endpoint
+  app.post('/api/auth/admin-login', (req, res) => {
+    const clientKey = req.ip || 'anonymous';
+    const rate = adminAuthRateLimiter.check(clientKey);
+    if (!rate.allowed) {
+      auditLogger.log({
+        actorId: 'anonymous',
+        actorEmail: req.body?.email || 'unknown',
+        action: 'ADMIN_AUTH_RATE_LIMITED',
+        resource: '/api/auth/admin-login',
+        ip: req.ip || 'unknown',
+        status: 'BLOCKED',
+        details: 'Too many admin authentication attempts',
+      });
+      return res.status(429).json({
+        error: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
+      });
+    }
+
+    const { email, password } = req.body;
+    if (!email || !isValidEmail(email) || !password) {
+      return res.status(400).json({ error: 'Kredensial administrator tidak lengkap.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = serverStore.findUserByEmail(cleanEmail);
+
+    // Verify user exists and has explicit ADMIN role
+    if (!user || user.role !== 'ADMIN') {
+      auditLogger.log({
+        actorId: 'anonymous',
+        actorEmail: cleanEmail,
+        action: 'ADMIN_LOGIN_UNAUTHORIZED_ACCOUNT',
+        resource: '/api/auth/admin-login',
+        ip: req.ip || 'unknown',
+        status: 'FAILED',
+        details: 'Non-admin or non-existent user attempted to access admin login',
+      });
+      return res.status(401).json({ error: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.' });
+    }
+
+    // Verify password strictly against salt and hash
+    if (!user.passwordSalt || !user.passwordHash) {
+      return res.status(500).json({ error: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.' });
+    }
+
+    const isMatch = verifyPassword(password, user.passwordSalt, user.passwordHash);
+    if (!isMatch) {
+      auditLogger.log({
+        actorId: user.id,
+        actorEmail: user.email,
+        action: 'ADMIN_LOGIN_FAILED_CREDENTIALS',
+        resource: '/api/auth/admin-login',
+        ip: req.ip || 'unknown',
+        status: 'FAILED',
+        details: 'Invalid password for admin user',
+      });
+      return res.status(401).json({ error: 'Kredensial administrator tidak sah atau kata sandi salah.' });
+    }
+
+    // Sign session token strictly with ADMIN role
+    const token = signSessionToken({
+      userId: user.id,
+      email: user.email,
+      role: 'ADMIN',
+      subscriptionTier: user.subscriptionTier,
+    });
+
+    const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
+    res.cookie('aa_session_token', token, {
+      httpOnly: true,
+      secure: isHttps,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    auditLogger.log({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'ADMIN_LOGIN_SUCCESS',
+      resource: '/api/auth/admin-login',
+      ip: req.ip || 'unknown',
+      status: 'SUCCESS',
+      details: 'Administrator successfully authenticated to console',
+    });
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
         role: user.role,
         subscriptionTier: user.subscriptionTier,
       },

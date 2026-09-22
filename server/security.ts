@@ -219,6 +219,7 @@ export class RateLimiter {
 }
 
 export const authRateLimiter = new RateLimiter(12, 5 * 60 * 1000); // 12 attempts / 5 mins
+export const adminAuthRateLimiter = new RateLimiter(5, 15 * 60 * 1000); // 5 attempts / 15 mins for Admin Console
 export const aiRateLimiter = new RateLimiter(20, 60 * 1000); // 20 requests / 1 min
 export const paymentRateLimiter = new RateLimiter(10, 5 * 60 * 1000); // 10 / 5 mins
 export const uploadRateLimiter = new RateLimiter(25, 5 * 60 * 1000); // 25 / 5 mins

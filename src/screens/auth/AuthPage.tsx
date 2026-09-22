@@ -43,37 +43,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       return;
     }
 
-    const effectiveRole = email.toLowerCase().trim() === 'admin@aa-eventmaker.my.id' ? 'ADMIN' : role;
+    // Public login and registration must only assign normal user roles
+    const safeRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : role;
 
     if (mode === 'signup') {
       register({
         name: name || email.split('@')[0],
         email,
         phone: phone.trim() || '081382000412',
-        role: effectiveRole,
+        role: safeRole,
         packageId: selectedPackageId,
       });
       showToast('Pendaftaran berhasil! Selamat datang di AA Event Maker.');
     } else {
-      login(email, effectiveRole);
+      login(email, safeRole);
       showToast('Berhasil masuk ke akun Anda.');
     }
 
-    const dest = redirectTarget || (effectiveRole === 'ADMIN' ? '/admin' : '/dashboard');
+    const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
 
   const handleGoogleLogin = () => {
-    login('google-user@gmail.com', role);
+    const safeRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : role;
+    login('google-user@gmail.com', safeRole);
     showToast('Masuk instan via Google berhasil!');
-    const dest = redirectTarget || (role === 'ADMIN' ? '/admin' : '/dashboard');
+    const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
 
   const handleQuickLogin = (demoRole: UserRole, demoEmail: string) => {
-    login(demoEmail, demoRole);
-    showToast(`Masuk sebagai ${demoRole} (${demoEmail})`);
-    const dest = redirectTarget || (demoRole === 'ADMIN' ? '/admin' : '/dashboard');
+    // Normal roles only for public login
+    const safeRole: UserRole = demoRole === 'ADMIN' ? 'ORGANIZER' : demoRole;
+    login(demoEmail, safeRole);
+    showToast(`Masuk sebagai ${safeRole} (${demoEmail})`);
+    const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
 
@@ -261,9 +265,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 <option value="CLIENT">Calon Pengantin / Tuan Rumah</option>
                 <option value="VENDOR">Vendor Acara (Fotografer/Katering)</option>
                 <option value="GUEST">Tamu Undangan</option>
-                {mode === 'login' && (
-                  <option value="ADMIN">Administrator Platform (Konsol Admin)</option>
-                )}
               </select>
             </div>
 
@@ -281,20 +282,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             <span className="text-[11px] font-bold text-slate-500 block text-center uppercase tracking-wider">
               Akses Cepat Pengujian (1-Klik):
             </span>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('ADMIN', 'admin@aa-eventmaker.my.id')}
-                className="py-2 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold border border-purple-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
-              >
-                <span>🛡️ Super Admin</span>
-              </button>
+            <div className="grid grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => handleQuickLogin('ORGANIZER', 'organizer@aa-eventmaker.my.id')}
                 className="py-2 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold border border-blue-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
               >
-                <span>📅 Organizer</span>
+                <span>📋 Organizer</span>
               </button>
               <button
                 type="button"
@@ -308,7 +302,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 onClick={() => handleQuickLogin('VENDOR', 'vendor@aa-eventmaker.my.id')}
                 className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
               >
-                <span>📸 Vendor</span>
+                <span>🏢 Vendor</span>
               </button>
             </div>
           </div>

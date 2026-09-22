@@ -21,6 +21,7 @@ export type AppRoute =
   | '/guests'
   | '/settings'
   | '/admin'
+  | '/admin/login'
   | '/admin/dashboard'
   | '/admin/payments'
   | '/admin/payment-verification'
@@ -111,6 +112,7 @@ function matchRoute(rawPath: string): RouteMatch {
     '/guests',
     '/settings',
     '/admin',
+    '/admin/login',
     '/admin/dashboard',
     '/admin/payments',
     '/admin/payment-verification',
