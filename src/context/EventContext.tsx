@@ -46,6 +46,7 @@ import {
 import { INITIAL_EVENT_CATEGORIES } from '../data/eventCatalog';
 import { filterGuestsByTarget } from '../utils/templateEngine';
 import { formatCurrency, formatCurrencyShort, getCurrencyConfig } from '../utils/currency';
+import { NotificationService } from '../services/notificationService';
 
 interface EventContextType {
   // Navigation & View Modals
@@ -1240,6 +1241,20 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const updated: Guest = { ...guest, isCheckedIn: true, checkInTime: timeNow };
     setGuests((prev) => prev.map((g) => (g.id === guestId ? updated : g)));
     showToast(`Check-In Berhasil: ${updated.name} (${updated.pax} Pax) • Meja: ${updated.tableNumber}`);
+
+    // Trigger In-App Check-In notification
+    NotificationService.notifyUser({
+      userId: 'current',
+      type: 'GUEST_CHECKED_IN',
+      category: 'CHECK_IN',
+      title: `Tamu Check-In: ${updated.name}`,
+      message: `${updated.name} (${updated.pax} Pax) telah berhasil check-in di Meja ${updated.tableNumber || 'Resepsionis'} pada ${timeNow}.`,
+      actionUrl: '/dashboard',
+      actionLabel: 'Lihat Buku Tamu',
+      channels: ['IN_APP'],
+      idempotencyKey: `checkin-${updated.id}-${Date.now()}`,
+    }).catch(() => {});
+
     return updated;
   };
 
@@ -1322,6 +1337,26 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addMemory(guestName, notes);
     }
     showToast(`RSVP "${guestName}" status: ${status} berhasil dikonfirmasi!`);
+
+    // Dispatch RSVP confirmation notification
+    NotificationService.notifyUser({
+      userId: 'current',
+      type: 'RSVP_CONFIRMATION',
+      category: 'RSVP',
+      title: `Konfirmasi RSVP Baru: ${guestName} (${status})`,
+      message: `${guestName} telah mengonfirmasi kehadiran dengan status "${status}" (${pax} Pax) untuk acara "${currentProject.name}".${notes ? ` Catatan: "${notes}"` : ''}`,
+      actionUrl: '/dashboard',
+      actionLabel: 'Buka Daftar Tamu',
+      channels: ['IN_APP', 'EMAIL'],
+      idempotencyKey: `rsvp-${Date.now()}-${guestName.replace(/\s+/g, '')}`,
+      metadata: {
+        guestName,
+        rsvpStatus: status,
+        pax,
+        notes,
+        projectName: currentProject.name,
+      },
+    }).catch(() => {});
   };
 
   // Planner functions

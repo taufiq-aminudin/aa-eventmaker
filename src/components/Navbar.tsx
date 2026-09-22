@@ -20,11 +20,13 @@ import {
   Ticket,
   CreditCard,
   Shield,
+  Bell,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { EventType, UserRole } from '../types';
 import { AALogo } from './AALogo';
 import { PWAInstallButton } from './PWAInstallButton';
+import { NotificationCenterModal } from './NotificationCenterModal';
 import { useRouter } from '../context/RouterContext';
 
 export const Navbar: React.FC = () => {
@@ -51,11 +53,29 @@ export const Navbar: React.FC = () => {
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState<EventType>('Wedding');
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [newLocation, setNewLocation] = useState('');
+
+  // Fetch live unread notifications count
+  React.useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/notifications?unreadOnly=true');
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   const navItems = [
     { id: 0, label: 'Home', icon: Home },
@@ -241,6 +261,21 @@ export const Navbar: React.FC = () => {
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Preview</span>
+              </button>
+
+              {/* Notification Center Bell */}
+              <button
+                id="btn-navbar-notifications"
+                onClick={() => setShowNotificationCenter(true)}
+                title="Pusat Notifikasi"
+                className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                <Bell className="w-4 h-4 text-slate-700" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-extrabold bg-blue-600 text-white shadow-xs animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Role Switcher & User Profile Dropdown */}
@@ -522,6 +557,15 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Notification Center Modal */}
+      <NotificationCenterModal
+        isOpen={showNotificationCenter}
+        onClose={() => setShowNotificationCenter(false)}
+        onOpenSettings={() => {
+          setShowNotificationCenter(false);
+          navigate('/settings');
+        }}
+      />
     </>
   );
 };

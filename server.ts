@@ -29,6 +29,35 @@ import {
   UserRole,
 } from './server/security';
 import { serverStore, SERVER_PACKAGES, ServerPayment, ServerProject } from './server/store';
+import {
+  notificationStore,
+  dispatchNotification,
+  resendEmailLog,
+  getAdminEmailConfig,
+  updateAdminEmailConfig,
+  broadcastAnnouncement,
+} from './server/notificationEngine';
+import {
+  sendUserRegistrationNotifications,
+  sendEmailVerification,
+  sendEmailVerifiedSuccess,
+  sendLoginSecurityAlert,
+  sendPasswordResetRequest,
+  sendPasswordChangedSuccess,
+  sendProfileUpdatedNotification,
+  sendEventCreatedNotification,
+  sendInvitationCreatedNotification,
+  sendInvitationPublishedNotification,
+  sendInvitationUpdatedNotification,
+  sendGuestListUpdatedNotification,
+  sendRsvpReceivedNotification,
+  sendQrCheckInNotification,
+  sendPaymentSubmittedNotification,
+  sendPaymentApprovedNotification,
+  sendPaymentRejectedNotification,
+  sendPackageUpgradedNotification,
+  sendSupportRequestNotifications,
+} from './server/notificationHelpers';
 
 // Extend Express Request to hold authenticated user
 declare global {
@@ -312,6 +341,11 @@ async function startServer() {
       ip: req.ip || 'unknown',
       status: 'SUCCESS',
       details: `New user registered as ${role} (tier: ${subscriptionTier})`,
+    });
+
+    // Trigger complete welcome & admin registration notifications
+    sendUserRegistrationNotifications(newUser).catch((err) => {
+      console.warn('[NOTIF_REGISTER_ERROR]', err?.message || err);
     });
 
     res.status(201).json({
@@ -639,6 +673,14 @@ async function startServer() {
       details: 'Expiring reset token generated',
     });
 
+    // Send Password Reset Request Email
+    const targetUser = serverStore.findUserByEmail(email);
+    if (targetUser) {
+      sendPasswordResetRequest(targetUser, token).catch((err) => {
+        console.warn('[NOTIF_PWD_RESET_REQ_ERROR]', err?.message || err);
+      });
+    }
+
     res.json({
       success: true,
       message: 'Petunjuk reset kata sandi telah dikirimkan ke email Anda jika akun terdaftar.',
@@ -670,6 +712,14 @@ async function startServer() {
       ip: req.ip || 'unknown',
       status: 'SUCCESS',
     });
+
+    // Send Password Changed Success Notification
+    const changedUser = serverStore.findUserByEmail(verifiedEmail);
+    if (changedUser) {
+      sendPasswordChangedSuccess(changedUser).catch((err) => {
+        console.warn('[NOTIF_PWD_CHG_ERROR]', err?.message || err);
+      });
+    }
 
     res.json({ success: true, message: 'Kata sandi berhasil diperbarui. Silakan masuk kembali.' });
   });
@@ -781,6 +831,16 @@ async function startServer() {
       details: `Submitted payment ${refNum} for Rp ${exactPrice.toLocaleString('id-ID')}`,
     });
 
+    // Send Payment Submitted Notifications (User receipt + Admin alert)
+    const payerUser = serverStore.findUserById(req.user!.userId) || {
+      id: req.user!.userId,
+      name: sanitizeInputString(senderName, 60) || req.user!.email.split('@')[0],
+      email: req.user!.email,
+    };
+    sendPaymentSubmittedNotification(payerUser, newPayment).catch((err) => {
+      console.warn('[NOTIF_PAY_SUBMIT_ERROR]', err?.message || err);
+    });
+
     res.status(201).json({
       success: true,
       referenceNumber: refNum,
@@ -825,6 +885,23 @@ async function startServer() {
       status: 'SUCCESS',
       details: `Payment ${id} marked as ${status} by admin. Note: ${adminNote}`,
     });
+
+    // Send Payment Status Notifications to User
+    const targetUser = serverStore.findUserById(updated.userId) || {
+      id: updated.userId,
+      name: updated.userEmail.split('@')[0],
+      email: updated.userEmail,
+    };
+
+    if (status === 'Approved' || status === 'Paid') {
+      sendPaymentApprovedNotification(targetUser, updated).catch((err) => {
+        console.warn('[NOTIF_PAY_APPROVED_ERROR]', err?.message || err);
+      });
+    } else if (status === 'Rejected') {
+      sendPaymentRejectedNotification(targetUser, updated, adminNote).catch((err) => {
+        console.warn('[NOTIF_PAY_REJECTED_ERROR]', err?.message || err);
+      });
+    }
 
     res.json({
       success: true,
@@ -871,6 +948,27 @@ async function startServer() {
     };
 
     serverStore.createProject(newProject);
+
+    // Send Event Created Notification
+    sendEventCreatedNotification(
+      {
+        id: req.user!.userId,
+        name: req.user!.email.split('@')[0],
+        email: req.user!.email,
+      },
+      {
+        id: newProject.id,
+        name: newProject.name,
+        type: 'Wedding',
+        date: newProject.date,
+        time: '10:00 WIB',
+        location: newProject.location,
+        hosts: 'Keluarga Mempelai',
+      }
+    ).catch((err) => {
+      console.warn('[NOTIF_EVENT_CREATED_ERROR]', err?.message || err);
+    });
+
     res.status(201).json({ success: true, project: newProject });
   });
 
@@ -1044,6 +1142,21 @@ async function startServer() {
       details: checkInResult.message,
     });
 
+    if (checkInResult.success) {
+      sendQrCheckInNotification(
+        {
+          id: req.user?.userId || 'organizer_host',
+          name: 'Penyelenggara Acara',
+          email: req.user?.email || 'organizer@aa-eventmaker.my.id',
+        },
+        targetGuestId || 'Tamu Undangan',
+        targetEventId || 'Acara Pernikahan',
+        new Date().toLocaleTimeString('id-ID')
+      ).catch((err) => {
+        console.warn('[NOTIF_QR_CHECKIN_ERROR]', err?.message || err);
+      });
+    }
+
     res.json(checkInResult);
   });
 
@@ -1083,6 +1196,288 @@ async function startServer() {
       validCount: validRecipients.length,
       allowed: true,
     });
+  });
+
+  // -----------------------------------------------------------------
+  // 11B. AA Event Maker Notification & Email System Endpoints
+  // -----------------------------------------------------------------
+
+  // 1. Get In-App Notifications for Current User
+  app.get('/api/notifications', (req, res) => {
+    const userId = req.user?.userId || (typeof req.query.userId === 'string' ? req.query.userId : 'anonymous');
+    const role = req.user?.role;
+    const unreadOnly = req.query.unreadOnly === 'true';
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+
+    const notifications = notificationStore.getInAppNotificationsForUser(userId, role, {
+      unreadOnly,
+      category,
+    });
+
+    const unreadCount = notificationStore.getUnreadCountForUser(userId, role);
+
+    res.json({
+      success: true,
+      unreadCount,
+      notifications,
+    });
+  });
+
+  // 2. Mark Notification as Read
+  app.post('/api/notifications/:id/read', (req, res) => {
+    const success = notificationStore.markInAppAsRead(req.params.id);
+    res.json({ success });
+  });
+
+  // 3. Mark All Notifications as Read for User
+  app.post('/api/notifications/read-all', (req, res) => {
+    const userId = req.user?.userId || (typeof req.body?.userId === 'string' ? req.body.userId : 'anonymous');
+    notificationStore.markAllInAppAsRead(userId, req.user?.role);
+    res.json({ success: true });
+  });
+
+  // 4. Delete Notification
+  app.delete('/api/notifications/:id', (req, res) => {
+    const success = notificationStore.deleteInAppNotification(req.params.id);
+    res.json({ success });
+  });
+
+  // 5. Get User Notification Preferences
+  app.get('/api/notifications/preferences', (req, res) => {
+    const userId = req.user?.userId || (typeof req.query.userId === 'string' ? req.query.userId : 'default');
+    const preferences = notificationStore.getUserPreferences(userId);
+    res.json({ success: true, preferences });
+  });
+
+  // 6. Update User Notification Preferences
+  app.put('/api/notifications/preferences', (req, res) => {
+    const userId = req.user?.userId || (typeof req.body?.userId === 'string' ? req.body.userId : 'default');
+    const updated = notificationStore.setUserPreferences(userId, req.body || {});
+    res.json({ success: true, preferences: updated });
+  });
+
+  // 7. Unified Dispatcher Endpoint (In-App, Email, WhatsApp)
+  app.post('/api/notifications/dispatch', async (req, res) => {
+    try {
+      const {
+        userId,
+        targetRole,
+        recipientEmail,
+        recipientName,
+        recipientPhone,
+        type,
+        category,
+        title,
+        message,
+        bodyHtml,
+        actionUrl,
+        actionLabel,
+        secondaryNotice,
+        channels = ['IN_APP', 'EMAIL'],
+        idempotencyKey,
+        metadata,
+        skipPreferencesCheck,
+      } = req.body;
+
+      if (!title || !message) {
+        return res.status(400).json({ error: 'Title and message are required.' });
+      }
+
+      const effectiveUserId = userId === 'current' ? req.user?.userId : userId;
+      const effectiveRole = targetRole || req.user?.role;
+      const effectiveEmail = recipientEmail || req.user?.email;
+
+      const result = await dispatchNotification({
+        userId: effectiveUserId,
+        targetRole: effectiveRole,
+        recipientEmail: effectiveEmail,
+        recipientName: sanitizeInputString(recipientName, 80),
+        recipientPhone: sanitizeInputString(recipientPhone, 25),
+        type: type || 'SYSTEM_ANNOUNCEMENT',
+        category: category || 'SYSTEM',
+        title: sanitizeInputString(title, 150),
+        message: sanitizeInputString(message, 500),
+        bodyHtml,
+        actionUrl,
+        actionLabel,
+        secondaryNotice,
+        channels,
+        idempotencyKey,
+        metadata,
+        skipPreferencesCheck,
+      });
+
+      res.json({
+        success: true,
+        inAppNotification: result.inApp,
+        emailLog: result.emailLog,
+      });
+    } catch (err: any) {
+      console.warn('[NOTIF_DISPATCH_API_ERROR]', err?.message || err);
+      res.status(500).json({ error: err?.message || 'Gagal mengirimkan notifikasi.' });
+    }
+  });
+
+  // 8. Test Email Delivery (Diagnostic Tool)
+  app.post('/api/notifications/test-email', async (req, res) => {
+    const { email, name = 'Pengguna AA Event Maker' } = req.body;
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ error: 'Alamat email tujuan tidak valid.' });
+    }
+
+    try {
+      const result = await dispatchNotification({
+        userId: req.user?.userId,
+        recipientEmail: email,
+        recipientName: name,
+        type: 'SYSTEM_ANNOUNCEMENT',
+        category: 'SYSTEM',
+        title: 'Uji Coba Pengiriman Email AA Event Maker',
+        message: 'Ini adalah email uji coba untuk memverifikasi fungsionalitas pengiriman email dan template notifikasi.',
+        bodyHtml: `
+          <p>Halo <strong>${escapeHtml(name)}</strong>,</p>
+          <p>Ini adalah pesan konfirmasi diagnostik dari sistem perpesanan terpadu <strong>AA Event Maker</strong>.</p>
+          <div class="card-detail">
+            <p style="margin: 0; font-size: 13px; color: #16a34a; font-weight: 700;">✓ Gateway Email Aktif & Beroperasi Normal</p>
+            <p style="margin: 6px 0 0 0; font-size: 12px; color: #64748b;">Waktu pengujian: ${new Date().toLocaleString('id-ID')}</p>
+          </div>
+        `,
+        actionUrl: '/dashboard',
+        actionLabel: 'Masuk ke Dasbor',
+        channels: ['EMAIL'],
+        skipPreferencesCheck: true,
+      });
+
+      res.json({
+        success: true,
+        message: `Email uji coba berhasil dikirim ke ${email}.`,
+        emailLog: result.emailLog,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Gagal mengirim email uji coba.' });
+    }
+  });
+
+  // 9. Email Verification Request & Confirm
+  app.post('/api/notifications/verify-email/request', async (req, res) => {
+    const email = req.body?.email || req.user?.email;
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ error: 'Email wajib diisi dengan benar.' });
+    }
+
+    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const user = serverStore.findUserByEmail(email) || {
+      id: req.user?.userId || 'usr_guest',
+      name: email.split('@')[0],
+      email,
+    };
+
+    await sendEmailVerification(user, token);
+    res.json({
+      success: true,
+      message: 'Tautan verifikasi telah dikirim ke alamat email Anda.',
+      verificationToken: process.env.NODE_ENV !== 'production' ? token : undefined,
+    });
+  });
+
+  app.post('/api/notifications/verify-email/confirm', async (req, res) => {
+    const { token, email } = req.body;
+    if (!token || !email) {
+      return res.status(400).json({ error: 'Token dan email diperlukan.' });
+    }
+
+    const user = serverStore.findUserByEmail(email) || {
+      id: req.user?.userId || 'usr_guest',
+      name: email.split('@')[0],
+      email,
+    };
+
+    await sendEmailVerifiedSuccess(user);
+    res.json({ success: true, message: 'Alamat email Anda telah berhasil diverifikasi.' });
+  });
+
+  // 10. User Support Ticket
+  app.post('/api/support/tickets', async (req, res) => {
+    const { subject, message, userEmail, userName } = req.body;
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Subjek dan isi pesan wajib diisi.' });
+    }
+
+    const email = userEmail || req.user?.email || 'user@aa-eventmaker.my.id';
+    const name = userName || email.split('@')[0];
+    const ticketId = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    await sendSupportRequestNotifications(
+      { id: req.user?.userId || 'usr_guest', name, email },
+      { id: ticketId, subject: sanitizeInputString(subject, 120), message: sanitizeInputString(message, 1000), timestamp: Date.now() }
+    );
+
+    res.json({
+      success: true,
+      ticketId,
+      message: 'Permintaan bantuan Anda berhasil dikirim. Kami akan membalas via email secepatnya.',
+    });
+  });
+
+  // 11. Admin: View Email Delivery Logs with Filters
+  app.get('/api/admin/notifications/logs', requireRole(['ADMIN']), (req, res) => {
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+
+    const logs = notificationStore.getEmailLogs({ status, category, search });
+    res.json({ success: true, count: logs.length, logs });
+  });
+
+  // 12. Admin: Notification & Delivery Statistics
+  app.get('/api/admin/notifications/stats', requireRole(['ADMIN']), (_req, res) => {
+    const stats = notificationStore.getEmailStats();
+    res.json({ success: true, stats });
+  });
+
+  // 13. Admin: Resend Failed Email
+  app.post('/api/admin/notifications/resend/:id', requireRole(['ADMIN']), async (req, res) => {
+    const success = await resendEmailLog(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: 'Log email tidak ditemukan atau gagal dikirim ulang.' });
+    }
+    res.json({ success: true, message: 'Email berhasil dijadwalkan ulang untuk pengiriman.' });
+  });
+
+  // 14. Admin: Get Email Gateway Config (Safe - No passwords)
+  app.get('/api/admin/email-config', requireRole(['ADMIN']), (_req, res) => {
+    const config = getAdminEmailConfig();
+    res.json({ success: true, config });
+  });
+
+  // 15. Admin: Update Email Gateway Config
+  app.put('/api/admin/email-config', requireRole(['ADMIN']), (req, res) => {
+    const updated = updateAdminEmailConfig(req.body);
+    res.json({ success: true, config: updated });
+  });
+
+  // 16. Admin: Broadcast System Announcement
+  app.post('/api/admin/announcements/broadcast', requireRole(['ADMIN']), async (req, res) => {
+    const { title, message, channels = ['IN_APP', 'EMAIL'], targetAudience = 'ALL', targetTier, actionUrl } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ error: 'Judul dan pesan pengumuman wajib diisi.' });
+    }
+
+    try {
+      const announcement = await broadcastAnnouncement({
+        title: sanitizeInputString(title, 150),
+        message: sanitizeInputString(message, 1000),
+        channels,
+        targetAudience,
+        targetTier,
+        actionUrl,
+        sentBy: req.user?.email || 'admin@aa-eventmaker.my.id',
+      });
+
+      res.json({ success: true, announcement, message: 'Pengumuman berhasil disiarkan.' });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Gagal menyiarkan pengumuman.' });
+    }
   });
 
   // -----------------------------------------------------------------
@@ -1459,7 +1854,7 @@ async function startServer() {
     const reqPath = req.path;
     const isHtmlRequest = req.headers.accept?.includes('text/html');
 
-    if ((reqPath === '/admin' || reqPath.startsWith('/admin/')) && isHtmlRequest) {
+    if (reqPath !== '/admin/login' && (reqPath === '/admin' || reqPath.startsWith('/admin/')) && isHtmlRequest) {
       // Check verified token
       let isAdmin = false;
 

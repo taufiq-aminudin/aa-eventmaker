@@ -432,3 +432,185 @@ export interface AiConceptResult {
   copywriting: string;
   photoDirection: string;
 }
+
+// ==========================================
+// NOTIFICATION & EMAIL SYSTEM ARCHITECTURE
+// ==========================================
+
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'WHATSAPP';
+
+export type NotificationCategory =
+  | 'ACCOUNT'
+  | 'EVENT'
+  | 'INVITATION'
+  | 'GUEST'
+  | 'RSVP'
+  | 'CHECK_IN'
+  | 'PAYMENT'
+  | 'SUBSCRIPTION'
+  | 'SECURITY'
+  | 'SYSTEM';
+
+export type NotificationType =
+  | 'REGISTRATION_SUCCESS'
+  | 'EMAIL_VERIFICATION_REQUEST'
+  | 'EMAIL_VERIFIED'
+  | 'LOGIN_ALERT'
+  | 'PASSWORD_RESET_REQUEST'
+  | 'PASSWORD_CHANGED'
+  | 'PROFILE_UPDATED'
+  | 'EVENT_CREATED'
+  | 'INVITATION_CREATED'
+  | 'INVITATION_PUBLISHED'
+  | 'INVITATION_UPDATED'
+  | 'GUEST_LIST_UPDATED'
+  | 'RSVP_RECEIVED'
+  | 'RSVP_CONFIRMATION'
+  | 'QR_CHECKIN_SUCCESS'
+  | 'GUEST_CHECKED_IN'
+  | 'PAYMENT_SUBMITTED'
+  | 'PAYMENT_APPROVED'
+  | 'PAYMENT_REJECTED'
+  | 'PACKAGE_UPGRADED'
+  | 'SUBSCRIPTION_EXPIRING'
+  | 'SUBSCRIPTION_EXPIRED'
+  | 'SUPPORT_REQUEST_RECEIVED'
+  | 'ADMIN_SUPPORT_REQUEST'
+  | 'ADMIN_NEW_USER'
+  | 'ADMIN_PAYMENT_ALERT'
+  | 'ADMIN_SECURITY_ALERT'
+  | 'SYSTEM_ANNOUNCEMENT';
+
+export interface InAppNotification {
+  id: string;
+  userId: string;
+  targetRole?: UserRole | 'ALL';
+  type: NotificationType;
+  category: NotificationCategory;
+  title: string;
+  message: string;
+  channel: NotificationChannel;
+  isRead: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+  metadata?: Record<string, any>;
+  createdAt: number;
+  readAt?: number;
+}
+
+export type EmailDeliveryStatus =
+  | 'queued'
+  | 'processing'
+  | 'sent'
+  | 'delivered'
+  | 'failed'
+  | 'bounced';
+
+export interface EmailLogRecord {
+  id: string;
+  idempotencyKey?: string;
+  userId?: string;
+  recipient: string;
+  recipientName?: string;
+  subject: string;
+  template: string;
+  category: NotificationCategory;
+  status: EmailDeliveryStatus;
+  provider: string;
+  providerMessageId?: string;
+  attempts: number;
+  maxAttempts: number;
+  lastAttemptAt?: number;
+  errorMessage?: string;
+  metadata?: Record<string, any>;
+  htmlPreview?: string;
+  sentAt?: number;
+  createdAt: number;
+}
+
+export type EmailDeliveryLog = EmailLogRecord;
+
+export interface UserNotificationPreferences {
+  userId?: string;
+  channels: {
+    inApp: boolean;
+    email: boolean;
+    whatsapp: boolean;
+  };
+  categories: {
+    account: boolean;
+    event: boolean;
+    invitation: boolean;
+    guest: boolean;
+    rsvp: boolean;
+    payment: boolean;
+    subscription: boolean;
+    security: boolean;
+    system: boolean;
+  };
+  email?: {
+    account: boolean;
+    events: boolean;
+    invitations: boolean;
+    rsvp: boolean;
+    payments: boolean;
+    subscription: boolean;
+    security: boolean; // Security emails cannot be disabled
+  };
+  inApp?: {
+    account: boolean;
+    events: boolean;
+    invitations: boolean;
+    rsvp: boolean;
+    checkIn: boolean;
+    payments: boolean;
+    subscription: boolean;
+    security: boolean;
+    system: boolean;
+  };
+  whatsapp?: {
+    rsvp: boolean;
+    checkIn: boolean;
+    payments: boolean;
+  };
+  updatedAt?: number;
+}
+
+export interface AdminEmailConfig {
+  senderName: string;
+  senderEmail: string;
+  replyToEmail: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUsername: string;
+  smtpConfigured: boolean;
+  provider: 'BuiltInGateway' | 'SMTP' | 'Resend' | 'SendGrid';
+  dailyQuota: number;
+  usedQuotaToday: number;
+  enableEmailNotifications: boolean;
+  enableInAppNotifications: boolean;
+  enableWhatsAppNotifications: boolean;
+  updatedAt?: number;
+  updatedBy?: string;
+}
+
+export interface AnnouncementPayload {
+  id: string;
+  title: string;
+  message: string;
+  category: NotificationCategory;
+  target: 'ALL' | 'ROLE' | 'TIER' | 'EVENT_OWNERS';
+  targetRole?: UserRole;
+  targetTier?: SubscriptionTier;
+  channels: NotificationChannel[];
+  sendEmail: boolean;
+  sendInApp: boolean;
+  sendWhatsApp: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+  scheduledAt?: string | null;
+  createdAt: number;
+  sentCount: number;
+}
+

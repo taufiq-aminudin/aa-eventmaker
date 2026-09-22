@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Clock,
   UserCheck,
+  Bell,
 } from 'lucide-react';
 import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
@@ -35,6 +36,7 @@ export type AdminTab =
   | 'packages'
   | 'templates'
   | 'revenue'
+  | 'notifications'
   | 'settings';
 
 interface AdminLayoutProps {
@@ -165,6 +167,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       label: 'Omzet & Laporan',
       icon: BarChart3,
       badge: null,
+    },
+    {
+      id: 'notifications' as AdminTab,
+      label: 'Email & Notifikasi',
+      icon: Bell,
+      badge: 'Gateway',
+      badgeColor: 'bg-emerald-900/60 text-emerald-300',
     },
     {
       id: 'settings' as AdminTab,

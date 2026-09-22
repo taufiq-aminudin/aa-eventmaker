@@ -282,6 +282,144 @@ class DataStore {
       record,
     };
   }
+
+  // --- Notifications Storage ---
+  private notifications: Map<string, any> = new Map();
+  private emailLogs: Map<string, any> = new Map();
+  private userPreferences: Map<string, any> = new Map();
+  private processedEventIds: Set<string> = new Set(); // Idempotency check
+
+  public isEventProcessed(eventId: string): boolean {
+    return this.processedEventIds.has(eventId);
+  }
+
+  public markEventProcessed(eventId: string): void {
+    this.processedEventIds.add(eventId);
+    // Keep size bounded to prevent memory growth
+    if (this.processedEventIds.size > 10000) {
+      const iter = this.processedEventIds.values();
+      for (let i = 0; i < 2000; i++) {
+        const val = iter.next().value;
+        if (val) this.processedEventIds.delete(val);
+      }
+    }
+  }
+
+  public createNotification(n: any): any {
+    this.notifications.set(n.id, n);
+    return n;
+  }
+
+  public getNotificationsForUser(userId: string): any[] {
+    const list: any[] = [];
+    for (const item of this.notifications.values()) {
+      if (item.userId === userId || item.userId === 'ALL') {
+        list.push(item);
+      }
+    }
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  public getAdminNotifications(): any[] {
+    const list: any[] = [];
+    for (const item of this.notifications.values()) {
+      if (item.userId === 'ADMIN' || item.channel === 'ADMIN') {
+        list.push(item);
+      }
+    }
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  public markNotificationAsRead(id: string, userId: string): boolean {
+    const item = this.notifications.get(id);
+    if (!item) return false;
+    if (item.userId !== userId && item.userId !== 'ALL' && userId !== 'usr_admin_001') {
+      return false; // IDOR check
+    }
+    item.isRead = true;
+    item.readAt = Date.now();
+    return true;
+  }
+
+  public markAllNotificationsAsRead(userId: string): number {
+    let count = 0;
+    const now = Date.now();
+    for (const item of this.notifications.values()) {
+      if ((item.userId === userId || (userId === 'usr_admin_001' && item.channel === 'ADMIN')) && !item.isRead) {
+        item.isRead = true;
+        item.readAt = now;
+        count++;
+      }
+    }
+    return count;
+  }
+
+  // --- Email Logs ---
+  public createEmailLog(log: any): any {
+    this.emailLogs.set(log.id, log);
+    return log;
+  }
+
+  public updateEmailLog(id: string, updates: any): any {
+    const item = this.emailLogs.get(id);
+    if (!item) return null;
+    Object.assign(item, updates);
+    return item;
+  }
+
+  public getEmailLogs(): any[] {
+    return Array.from(this.emailLogs.values()).sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  public getEmailLogById(id: string): any | undefined {
+    return this.emailLogs.get(id);
+  }
+
+  // --- Preferences ---
+  public getUserPreferences(userId: string): any {
+    const existing = this.userPreferences.get(userId);
+    if (existing) return existing;
+    const defaultPrefs = {
+      userId,
+      email: {
+        account: true,
+        events: true,
+        invitations: true,
+        rsvp: true,
+        payments: true,
+        subscription: true,
+        security: true, // Always locked true for security
+      },
+      inApp: {
+        all: true,
+      },
+      whatsapp: {
+        rsvp: true,
+        checkIn: true,
+        payment: true,
+      },
+    };
+    this.userPreferences.set(userId, defaultPrefs);
+    return defaultPrefs;
+  }
+
+  public updateUserPreferences(userId: string, updates: any): any {
+    const current = this.getUserPreferences(userId);
+    // Security notification cannot be disabled
+    if (updates.email) {
+      updates.email.security = true;
+    }
+    const updated = {
+      ...current,
+      ...updates,
+      email: { ...current.email, ...(updates.email || {}), security: true },
+      inApp: { ...current.inApp, ...(updates.inApp || {}) },
+      whatsapp: { ...current.whatsapp, ...(updates.whatsapp || {}) },
+    };
+    this.userPreferences.set(userId, updated);
+    return updated;
+  }
 }
 
 export const serverStore = new DataStore();
+

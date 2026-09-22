@@ -10,11 +10,13 @@ import {
   CheckCircle2,
   FolderKanban,
   SlidersHorizontal,
+  Bell,
 } from 'lucide-react';
 import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
 import { CurrencyCode, UserRole } from '../../types';
 import { EventCategoryAdmin } from '../../components/admin/EventCategoryAdmin';
+import { NotificationSettingsTab } from '../../components/NotificationSettingsTab';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -28,7 +30,7 @@ export const SettingsPage: React.FC = () => {
   } = useEvent();
   const { navigate } = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'general' | 'catalog'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'catalog'>('general');
 
   const currencies: { code: CurrencyCode; label: string; symbol: string }[] = [
     { code: 'IDR', label: 'Rupiah Indonesia', symbol: 'Rp' },
@@ -82,6 +84,17 @@ export const SettingsPage: React.FC = () => {
               <span>Umum & Profil</span>
             </button>
             <button
+              onClick={() => setActiveTab('notifications')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                activeTab === 'notifications'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Notifikasi & Email</span>
+            </button>
+            <button
               onClick={() => setActiveTab('catalog')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
                 activeTab === 'catalog'
@@ -98,6 +111,8 @@ export const SettingsPage: React.FC = () => {
 
       {activeTab === 'catalog' ? (
         <EventCategoryAdmin />
+      ) : activeTab === 'notifications' ? (
+        <NotificationSettingsTab />
       ) : (
         <div className="space-y-6">
           {/* Profile Section */}

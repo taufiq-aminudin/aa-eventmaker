@@ -44,6 +44,7 @@ import { SeoMetadata } from '../../components/SeoMetadata';
 import { PaymentMethodType, PaymentStatus, PaymentSubmission } from '../../types';
 import { PAYMENT_CONFIG, PRICING_PACKAGES } from '../../data/paymentConfig';
 import { EventCategoryAdmin } from '../../components/admin/EventCategoryAdmin';
+import { AdminNotificationSuite } from '../../components/admin/AdminNotificationSuite';
 
 interface AdminSuiteScreenProps {
   initialTab?: AdminTab;
@@ -1044,6 +1045,9 @@ export const AdminSuiteScreen: React.FC<AdminSuiteScreenProps> = ({ initialTab =
           </div>
         </div>
       )}
+
+      {/* NOTIFICATIONS & EMAIL SYSTEM TAB */}
+      {activeTab === 'notifications' && <AdminNotificationSuite />}
 
       {/* PROOF INSPECTION MODAL */}
       {inspectProofSubmission && (
