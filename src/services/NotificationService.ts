@@ -72,9 +72,27 @@ export interface NotifyAdminOptions {
   details?: Record<string, any>;
 }
 
-class NotificationServiceImpl {
+/**
+ * Centralized NotificationService
+ * Decouples cross-channel messaging (In-App, Email, WhatsApp, and Admin alerts)
+ * from UI components.
+ */
+export class NotificationService {
+  private static _instance: NotificationService;
+
+  public static getInstance(): NotificationService {
+    if (!NotificationService._instance) {
+      NotificationService._instance = new NotificationService();
+    }
+    return NotificationService._instance;
+  }
+
+  // ==========================================
+  // CORE METHODS
+  // ==========================================
+
   /**
-   * Send an Email notification through server-side gateway
+   * Dispatch an Email notification through server-side gateway
    */
   public async sendEmail(options: SendEmailOptions): Promise<{ success: boolean; log?: EmailLogRecord; error?: string }> {
     try {
@@ -102,7 +120,7 @@ class NotificationServiceImpl {
       if (!res.ok) throw new Error(data.error || 'Failed to dispatch email');
       return { success: true, log: data.emailLog };
     } catch (err: any) {
-      console.warn('[NotificationService.sendEmail] Fallback or error:', err.message);
+      console.warn('[NotificationService.sendEmail] Error:', err.message);
       return { success: false, error: err.message };
     }
   }
@@ -140,7 +158,7 @@ class NotificationServiceImpl {
   }
 
   /**
-   * Generate official WhatsApp notification URL & preview
+   * Generate official WhatsApp notification URL & clean phone format
    */
   public sendWhatsAppNotification(options: SendWhatsAppOptions): { url: string; cleanPhone: string } {
     const cleanPhone = options.phone.replace(/\D/g, '').replace(/^0/, '62');
@@ -149,6 +167,37 @@ class NotificationServiceImpl {
     );
     const url = `https://wa.me/${cleanPhone}?text=${waText}`;
     return { url, cleanPhone };
+  }
+
+  /**
+   * Centralized helper to alert Administrator
+   */
+  public async notifyAdmin(options: NotifyAdminOptions): Promise<{ success: boolean }> {
+    try {
+      await fetch('/api/notifications/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'usr_admin_001',
+          targetRole: 'ADMIN',
+          recipientEmail: 'admin@aa-eventmaker.my.id',
+          recipientName: 'Administrator Platform',
+          title: options.title,
+          message: options.message,
+          type: options.type || 'ADMIN_SECURITY_ALERT',
+          category: options.category || 'SYSTEM',
+          actionUrl: options.actionUrl || '/admin/dashboard',
+          actionLabel: options.actionLabel || 'Buka Dasbor Admin',
+          channels: ['IN_APP', 'EMAIL'],
+          metadata: options.details,
+          skipPreferencesCheck: true,
+        }),
+      });
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[NotificationService.notifyAdmin] Error:', err.message);
+      return { success: false };
+    }
   }
 
   /**
@@ -180,37 +229,6 @@ class NotificationServiceImpl {
       return { success: true };
     } catch (err: any) {
       console.warn('[NotificationService.notifyUser] Error:', err.message);
-      return { success: false };
-    }
-  }
-
-  /**
-   * Centralized helper to alert Administrator
-   */
-  public async notifyAdmin(options: NotifyAdminOptions): Promise<{ success: boolean }> {
-    try {
-      await fetch('/api/notifications/dispatch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 'usr_admin_001',
-          targetRole: 'ADMIN',
-          recipientEmail: 'admin@aa-eventmaker.my.id',
-          recipientName: 'Administrator Platform',
-          title: options.title,
-          message: options.message,
-          type: options.type || 'ADMIN_SECURITY_ALERT',
-          category: options.category || 'SYSTEM',
-          actionUrl: options.actionUrl || '/admin/dashboard',
-          actionLabel: options.actionLabel || 'Buka Dasbor Admin',
-          channels: ['IN_APP', 'EMAIL'],
-          metadata: options.details,
-          skipPreferencesCheck: true,
-        }),
-      });
-      return { success: true };
-    } catch (err: any) {
-      console.warn('[NotificationService.notifyAdmin] Error:', err.message);
       return { success: false };
     }
   }
@@ -280,7 +298,8 @@ class NotificationServiceImpl {
     return res.json();
   }
 
-  // --- Fetch In-App Notifications for Current User ---
+  // --- In-App Notifications Management ---
+
   public async fetchNotifications(params?: { unreadOnly?: boolean; category?: string }): Promise<InAppNotification[]> {
     try {
       const q = new URLSearchParams();
@@ -324,6 +343,7 @@ class NotificationServiceImpl {
   }
 
   // --- Preferences ---
+
   public async fetchPreferences(): Promise<UserNotificationPreferences | null> {
     try {
       const res = await fetch('/api/notifications/preferences');
@@ -348,7 +368,8 @@ class NotificationServiceImpl {
     }
   }
 
-  // --- Admin Methods ---
+  // --- Admin Console Operations ---
+
   public async fetchAdminEmailLogs(filters?: { status?: string; category?: string; search?: string }): Promise<EmailLogRecord[]> {
     try {
       const q = new URLSearchParams();
@@ -420,6 +441,104 @@ class NotificationServiceImpl {
       return false;
     }
   }
+
+  // ==========================================
+  // STATIC DELEGATES FOR CLASS-LEVEL ACCESS
+  // ==========================================
+
+  public static sendEmail(options: SendEmailOptions) {
+    return NotificationService.getInstance().sendEmail(options);
+  }
+
+  public static createInAppNotification(options: CreateInAppNotificationOptions) {
+    return NotificationService.getInstance().createInAppNotification(options);
+  }
+
+  public static sendWhatsAppNotification(options: SendWhatsAppOptions) {
+    return NotificationService.getInstance().sendWhatsAppNotification(options);
+  }
+
+  public static notifyAdmin(options: NotifyAdminOptions) {
+    return NotificationService.getInstance().notifyAdmin(options);
+  }
+
+  public static notifyUser(options: NotifyUserOptions) {
+    return NotificationService.getInstance().notifyUser(options);
+  }
+
+  public static notifyUserRegistered(user: { id: string; name: string; email: string; phone?: string; role: UserRole }) {
+    return NotificationService.getInstance().notifyUserRegistered(user);
+  }
+
+  public static requestEmailVerification(email: string) {
+    return NotificationService.getInstance().requestEmailVerification(email);
+  }
+
+  public static confirmEmailVerification(token: string, email: string) {
+    return NotificationService.getInstance().confirmEmailVerification(token, email);
+  }
+
+  public static requestPasswordReset(email: string) {
+    return NotificationService.getInstance().requestPasswordReset(email);
+  }
+
+  public static confirmPasswordReset(token: string, email: string, newPassword: string) {
+    return NotificationService.getInstance().confirmPasswordReset(token, email, newPassword);
+  }
+
+  public static submitSupportRequest(ticket: { subject: string; message: string; userEmail: string; userName: string }) {
+    return NotificationService.getInstance().submitSupportRequest(ticket);
+  }
+
+  public static fetchNotifications(params?: { unreadOnly?: boolean; category?: string }) {
+    return NotificationService.getInstance().fetchNotifications(params);
+  }
+
+  public static markAsRead(notificationId: string) {
+    return NotificationService.getInstance().markAsRead(notificationId);
+  }
+
+  public static markAllAsRead() {
+    return NotificationService.getInstance().markAllAsRead();
+  }
+
+  public static deleteNotification(notificationId: string) {
+    return NotificationService.getInstance().deleteNotification(notificationId);
+  }
+
+  public static fetchPreferences() {
+    return NotificationService.getInstance().fetchPreferences();
+  }
+
+  public static updatePreferences(prefs: Partial<UserNotificationPreferences>) {
+    return NotificationService.getInstance().updatePreferences(prefs);
+  }
+
+  public static fetchAdminEmailLogs(filters?: { status?: string; category?: string; search?: string }) {
+    return NotificationService.getInstance().fetchAdminEmailLogs(filters);
+  }
+
+  public static fetchAdminStats() {
+    return NotificationService.getInstance().fetchAdminStats();
+  }
+
+  public static resendEmailLog(logId: string) {
+    return NotificationService.getInstance().resendEmailLog(logId);
+  }
+
+  public static fetchAdminEmailConfig() {
+    return NotificationService.getInstance().fetchAdminEmailConfig();
+  }
+
+  public static updateAdminEmailConfig(updates: Partial<AdminEmailConfig> & { smtpPassword?: string }) {
+    return NotificationService.getInstance().updateAdminEmailConfig(updates);
+  }
+
+  public static broadcastAnnouncement(announcement: Partial<AnnouncementPayload>) {
+    return NotificationService.getInstance().broadcastAnnouncement(announcement);
+  }
 }
 
-export const NotificationService = new NotificationServiceImpl();
+// Export singleton instance as well as class
+export const notificationService = NotificationService.getInstance();
+export default NotificationService;

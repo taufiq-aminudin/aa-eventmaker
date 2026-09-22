@@ -26,7 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { EmailDeliveryLog, NotificationCategory } from '../../types';
-import { NotificationService } from '../../services/notificationService';
+import { NotificationService } from '../../services/NotificationService';
 import { useEvent } from '../../context/EventContext';
 
 export const AdminNotificationSuite: React.FC = () => {

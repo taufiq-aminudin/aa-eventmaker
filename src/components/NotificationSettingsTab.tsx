@@ -13,7 +13,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { UserNotificationPreferences } from '../types';
-import { NotificationService } from '../services/notificationService';
+import { NotificationService } from '../services/NotificationService';
 import { useEvent } from '../context/EventContext';
 
 export const NotificationSettingsTab: React.FC = () => {

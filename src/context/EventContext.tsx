@@ -46,7 +46,7 @@ import {
 import { INITIAL_EVENT_CATEGORIES } from '../data/eventCatalog';
 import { filterGuestsByTarget } from '../utils/templateEngine';
 import { formatCurrency, formatCurrencyShort, getCurrencyConfig } from '../utils/currency';
-import { NotificationService } from '../services/notificationService';
+import { NotificationService } from '../services/NotificationService';
 
 interface EventContextType {
   // Navigation & View Modals

@@ -17,7 +17,7 @@ import {
   Info,
 } from 'lucide-react';
 import { InAppNotification, NotificationCategory } from '../types';
-import { NotificationService } from '../services/notificationService';
+import { NotificationService } from '../services/NotificationService';
 import { useEvent } from '../context/EventContext';
 import { useRouter } from '../context/RouterContext';
 
