@@ -56,11 +56,11 @@ export const AuthModal: React.FC = () => {
     },
   ];
 
-  const handleGoogleSignIn = (account?: (typeof quickGoogleAccounts)[0]) => {
+  const handleGoogleSignIn = async (account?: (typeof quickGoogleAccounts)[0]) => {
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
       if (account) {
-        loginWithGoogle({
+        await loginWithGoogle({
           name: account.name,
           email: account.email,
           avatar: account.avatar,
@@ -69,19 +69,22 @@ export const AuthModal: React.FC = () => {
       } else if (customEmail.trim()) {
         const email = customEmail.trim();
         const derivedName = customName.trim() || email.split('@')[0].replace(/[._-]/g, ' ');
-        loginWithGoogle({
+        await loginWithGoogle({
           name: derivedName.charAt(0).toUpperCase() + derivedName.slice(1),
           email: email.includes('@') ? email : `${email}@gmail.com`,
           role: selectedRole,
         });
       } else {
         // Default Google Login
-        loginWithGoogle();
+        await loginWithGoogle();
       }
-      setIsProcessing(false);
       setShowAuthModal(false);
       setShowPublicLanding(false);
-    }, 450);
+    } catch (err) {
+      console.error('Google sign in error:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

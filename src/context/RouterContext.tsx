@@ -14,12 +14,15 @@ export type AppRoute =
   | '/terms'
   | '/login'
   | '/signup'
+  | '/forgot-password'
+  | '/reset-password'
   | '/dashboard'
   | '/projects'
   | '/create'
   | '/editor'
   | '/guests'
   | '/settings'
+  | '/superadmin'
   | '/admin'
   | '/admin/login'
   | '/admin/dashboard'
@@ -105,12 +108,15 @@ function matchRoute(rawPath: string): RouteMatch {
     '/terms',
     '/login',
     '/signup',
+    '/forgot-password',
+    '/reset-password',
     '/dashboard',
     '/projects',
     '/create',
     '/editor',
     '/guests',
     '/settings',
+    '/superadmin',
     '/admin',
     '/admin/login',
     '/admin/dashboard',
@@ -207,11 +213,17 @@ export const RouterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     '/terms',
     '/login',
     '/signup',
+    '/forgot-password',
+    '/reset-password',
     '/invitation/:slug',
   ];
 
   const isPublicRoute = publicRoutes.includes(match.route);
-  const isAdminRoute = match.path === '/admin' || match.path.startsWith('/admin/');
+  const isAdminRoute =
+    match.path === '/admin' ||
+    match.path.startsWith('/admin/') ||
+    match.path === '/superadmin' ||
+    match.path.startsWith('/superadmin/');
 
   return (
     <RouterContext.Provider

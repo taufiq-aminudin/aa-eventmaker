@@ -22,7 +22,7 @@ interface AuthPageProps {
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
-  const { login, register, showToast } = useEvent();
+  const { login, register, loginWithGoogle, showToast } = useEvent();
   const { navigate, queryParams } = useRouter();
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
@@ -31,52 +31,79 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('ORGANIZER');
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const selectedPackageId = queryParams.package as string | undefined;
   const redirectTarget = queryParams.redirect as string | undefined;
   const authRequiredNotice = queryParams.auth === 'required' || queryParams.error === 'auth_required';
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     if (!email) {
       showToast('Mohon masukkan alamat email Anda.');
       return;
     }
 
-    // Public login and registration must only assign normal user roles
     const safeRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : role;
+    setLoading(true);
 
     if (mode === 'signup') {
-      register({
+      const res = await register({
         name: name || email.split('@')[0],
         email,
         phone: phone.trim() || '081382000412',
+        password: password || 'User@Default2026!',
         role: safeRole,
         packageId: selectedPackageId,
       });
-      showToast('Pendaftaran berhasil! Selamat datang di AA Event Maker.');
+      setLoading(false);
+      if (!res.success) {
+        setAuthError(res.error || 'Pendaftaran gagal.');
+        return;
+      }
     } else {
-      login(email, safeRole);
-      showToast('Berhasil masuk ke akun Anda.');
+      const res = await login(email, password, safeRole);
+      setLoading(false);
+      if (!res.success) {
+        setAuthError(res.error || 'Email atau kata sandi tidak valid.');
+        return;
+      }
     }
 
     const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    setAuthError(null);
+    setLoading(true);
     const safeRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : role;
-    login('google-user@gmail.com', safeRole);
-    showToast('Masuk instan via Google berhasil!');
+    const res = await loginWithGoogle({
+      name: 'Pengguna Google',
+      email: 'user.google@gmail.com',
+      role: safeRole,
+    });
+    setLoading(false);
+    if (!res.success) {
+      setAuthError(res.error || 'Autentikasi Google gagal.');
+      return;
+    }
     const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
 
-  const handleQuickLogin = (demoRole: UserRole, demoEmail: string) => {
-    // Normal roles only for public login
+  const handleQuickLogin = async (demoRole: UserRole, demoEmail: string, demoPass: string) => {
+    setAuthError(null);
+    setLoading(true);
     const safeRole: UserRole = demoRole === 'ADMIN' ? 'ORGANIZER' : demoRole;
-    login(demoEmail, safeRole);
-    showToast(`Masuk sebagai ${safeRole} (${demoEmail})`);
+    const res = await login(demoEmail, demoPass, safeRole);
+    setLoading(false);
+    if (!res.success) {
+      setAuthError(res.error || 'Akses demo gagal.');
+      return;
+    }
     const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
     navigate(dest);
   };
@@ -238,8 +265,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
               </div>
             </div>
 
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                {authError}
+              </div>
+            )}
+
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Kata Sandi</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-slate-700">Kata Sandi</label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold hover:underline cursor-pointer"
+                  >
+                    Lupa Kata Sandi?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -270,10 +314,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors flex items-center justify-center space-x-2 cursor-pointer mt-2"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-xs shadow-md transition-colors flex items-center justify-center space-x-2 cursor-pointer mt-2"
             >
               {mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-              <span>{mode === 'login' ? 'Masuk ke Dasbor' : 'Daftar Sekarang'}</span>
+              <span>{loading ? 'Memproses...' : mode === 'login' ? 'Masuk ke Dasbor' : 'Daftar Sekarang'}</span>
             </button>
           </form>
 
@@ -285,21 +330,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             <div className="grid grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('ORGANIZER', 'organizer@aa-eventmaker.my.id')}
+                disabled={loading}
+                onClick={() => handleQuickLogin('ORGANIZER', 'organizer@aa-eventmaker.my.id', 'Organizer@2026!')}
                 className="py-2 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold border border-blue-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
               >
                 <span>📋 Organizer</span>
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin('CLIENT', 'klien@aa-eventmaker.my.id')}
+                disabled={loading}
+                onClick={() => handleQuickLogin('CLIENT', 'klien@aa-eventmaker.my.id', 'Client@2026!')}
                 className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold border border-rose-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
               >
                 <span>💍 Pengantin</span>
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin('VENDOR', 'vendor@aa-eventmaker.my.id')}
+                disabled={loading}
+                onClick={() => handleQuickLogin('VENDOR', 'vendor@aa-eventmaker.my.id', 'Vendor@2026!')}
                 className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
               >
                 <span>🏢 Vendor</span>

@@ -78,85 +78,104 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((proj) => {
-          const isActive = currentProject.id === proj.id;
-          return (
-            <div
-              key={proj.id}
-              className={`rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between ${
-                isActive
-                  ? 'bg-white border-2 border-blue-600 shadow-lg ring-4 ring-blue-50'
-                  : 'bg-white border border-slate-200 shadow-xs hover:shadow-md'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span
-                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${
-                      isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {isActive ? '✓ Acara Aktif' : proj.type}
-                  </span>
+      {projects.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 border border-slate-200 text-center space-y-4 max-w-xl mx-auto shadow-xs">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+            <FolderPlus className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">Belum Ada Proyek Acara</h2>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Akun Anda belum memiliki proyek acara aktif. Klik tombol di bawah untuk membuat undangan pernikahan atau acara pertama Anda.
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors inline-flex items-center space-x-2 cursor-pointer"
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span>Buat Proyek Pertama</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((proj) => {
+            const isActive = currentProject.id === proj.id;
+            return (
+              <div
+                key={proj.id}
+                className={`rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between ${
+                  isActive
+                    ? 'bg-white border-2 border-blue-600 shadow-lg ring-4 ring-blue-50'
+                    : 'bg-white border border-slate-200 shadow-xs hover:shadow-md'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${
+                        isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {isActive ? '✓ Acara Aktif' : proj.type}
+                    </span>
 
-                  <span className="text-xs text-slate-400 font-mono">
-                    ID: {proj.id.slice(0, 8)}
-                  </span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      ID: {proj.id.slice(0, 8)}
+                    </span>
+                  </div>
+
+                  <h2 className="text-lg font-black text-slate-900 leading-snug">{proj.name}</h2>
+
+                  <div className="mt-4 space-y-2 text-xs text-slate-600">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>{proj.date || 'Belum diatur'}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span className="truncate">{proj.location || 'Lokasi Venue'}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                      <span>{guests.filter((g) => g.projectId === proj.id).length} Tamu Terdaftar</span>
+                    </div>
+                  </div>
                 </div>
 
-                <h2 className="text-lg font-black text-slate-900 leading-snug">{proj.name}</h2>
-
-                <div className="mt-4 space-y-2 text-xs text-slate-600">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                    <span>{proj.date || 'Belum diatur'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                    <span className="truncate">{proj.location || 'Lokasi Venue'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                    <span>{guests.filter((g) => g.projectId === proj.id).length} Tamu Terdaftar</span>
-                  </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-2">
+                  {!isActive ? (
+                    <button
+                      onClick={() => {
+                        selectProject(proj);
+                        showToast(`Beralih ke proyek: ${proj.name}`);
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Pilih & Jadikan Aktif
+                    </button>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => navigate('/editor')}
+                        className="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit Undangan</span>
+                      </button>
+                      <button
+                        onClick={() => navigate('/guests')}
+                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Data Tamu</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-2">
-                {!isActive ? (
-                  <button
-                    onClick={() => {
-                      selectProject(proj);
-                      showToast(`Beralih ke proyek: ${proj.name}`);
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Pilih & Jadikan Aktif
-                  </button>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => navigate('/editor')}
-                      className="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Edit Undangan</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/guests')}
-                      className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
-                    >
-                      <Users className="w-3.5 h-3.5" />
-                      <span>Data Tamu</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Buat Proyek */}
       {showCreateModal && (

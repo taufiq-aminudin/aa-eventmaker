@@ -147,6 +147,7 @@ export interface EventCategoryDefinition {
 
 export interface EventProject {
   id: string;
+  ownerId?: string;
   name: string;
   type: EventType;
   category?: string;

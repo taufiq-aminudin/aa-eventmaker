@@ -141,6 +141,36 @@ class DataStore {
     };
     this.users.set(clientUser.email.toLowerCase(), clientUser);
 
+    // 4. Vendor account
+    const vendorPass = hashPassword('Vendor@2026!');
+    const vendorUser: ServerUser = {
+      id: 'usr_vendor_001',
+      name: 'Mahkota Fotografi & Catering',
+      email: 'vendor@aa-eventmaker.my.id',
+      phone: '085712345678',
+      role: 'VENDOR',
+      subscriptionTier: 'starter',
+      passwordSalt: vendorPass.salt,
+      passwordHash: vendorPass.hash,
+      createdAt: Date.now() - 4 * 24 * 3600 * 1000,
+    };
+    this.users.set(vendorUser.email.toLowerCase(), vendorUser);
+
+    // 5. Guest account
+    const guestPass = hashPassword('Tamu@2026!');
+    const guestUser: ServerUser = {
+      id: 'usr_guest_001',
+      name: 'Bpk. Hendra Gunawan',
+      email: 'tamu@aa-eventmaker.my.id',
+      phone: '081398765432',
+      role: 'GUEST',
+      subscriptionTier: 'starter',
+      passwordSalt: guestPass.salt,
+      passwordHash: guestPass.hash,
+      createdAt: Date.now() - 3 * 24 * 3600 * 1000,
+    };
+    this.users.set(guestUser.email.toLowerCase(), guestUser);
+
     // Seed initial project for orgUser
     const initialProject: ServerProject = {
       id: 'evt_andi_ayu_wedding',

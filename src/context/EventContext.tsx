@@ -65,6 +65,7 @@ interface EventContextType {
   currentUser: AppUser | null;
   activeRole: UserRole;
   isAuthenticated: boolean;
+  clearAuthenticationState: () => void;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
   authModalMode: 'login' | 'register' | 'registered_success';
@@ -72,18 +73,20 @@ interface EventContextType {
   showPublicLanding: boolean;
   setShowPublicLanding: (show: boolean) => void;
   lastRegisteredUser: AppUser | null;
-  login: (email: string, role?: UserRole) => boolean;
-  loginWithGoogle: (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }) => boolean;
+  login: (email: string, passwordOrRole?: string | UserRole, fallbackRole?: UserRole) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
+  loginWithGoogle: (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
   loginAdmin: (password: string, email?: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     name: string;
     email: string;
     phone: string;
-    role: UserRole;
+    password?: string;
+    role?: UserRole;
     organizationName?: string;
     packageId?: string;
-  }) => AppUser;
+  }) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
   logout: () => void;
+  switchAccount: () => void;
   switchRole: (role: UserRole) => void;
 
   // Project
@@ -378,23 +381,36 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setShowUpgradeModal(true);
   };
 
-  // Auth & Roles State: Default to null for public visitor experience
+  // Auth & Roles State: Clean unauthenticated state by default
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem('aa_session_token');
     const saved = localStorage.getItem('aa_current_user');
-    return saved ? JSON.parse(saved) : null;
+    if (token && saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   });
 
   const [activeRole, setActiveRole] = useState<UserRole>(() => {
-    const saved = localStorage.getItem('aa_active_role') as UserRole | null;
-    return saved || 'ORGANIZER';
+    if (typeof window === 'undefined') return 'ORGANIZER';
+    const savedRole = localStorage.getItem('aa_active_role') as UserRole | null;
+    return savedRole || 'ORGANIZER';
   });
+
+  const isAuthenticated = !!currentUser;
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'registered_success'>('login');
   const [showPublicLanding, setShowPublicLanding] = useState<boolean>(() => {
-    // If no logged in user, show public landing page by default
+    if (typeof window === 'undefined') return true;
+    const token = localStorage.getItem('aa_session_token');
     const saved = localStorage.getItem('aa_current_user');
-    return !saved;
+    return !token || !saved;
   });
   const [lastRegisteredUser, setLastRegisteredUser] = useState<AppUser | null>(null);
 
@@ -405,14 +421,267 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 4000);
   };
 
-  // Helper to get or set auth token
-  const getAuthToken = (): string | null => {
-    return localStorage.getItem('aa_session_token');
+  // State with LocalStorage fallback (User Scoped)
+  const [projects, setProjects] = useState<EventProject[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return [];
+
+    try {
+      const u = JSON.parse(savedUser);
+      const userProjectsKey = `aa_projects_user_${u.id}`;
+      const saved = localStorage.getItem(userProjectsKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return [{ ...INITIAL_PROJECT, ownerId: u.id }];
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const [currentProject, setCurrentProject] = useState<EventProject>(() => {
+    if (typeof window === 'undefined') return INITIAL_PROJECT;
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return INITIAL_PROJECT;
+
+    try {
+      const u = JSON.parse(savedUser);
+      const userProjectsKey = `aa_projects_user_${u.id}`;
+      const saved = localStorage.getItem(userProjectsKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+      }
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return { ...INITIAL_PROJECT, ownerId: u.id };
+      }
+    } catch (e) {}
+    return INITIAL_PROJECT;
+  });
+
+  const [invitation, setInvitation] = useState<InvitationData>(() => {
+    if (typeof window === 'undefined') return INITIAL_INVITATION;
+    const saved = localStorage.getItem('aa_invitation');
+    return saved ? JSON.parse(saved) : INITIAL_INVITATION;
+  });
+
+  const [guests, setGuests] = useState<Guest[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return [];
+    try {
+      const u = JSON.parse(savedUser);
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return INITIAL_GUESTS;
+      }
+      const saved = localStorage.getItem(`aa_guests_user_${u.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [tasks, setTasks] = useState<TaskItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return [];
+    try {
+      const u = JSON.parse(savedUser);
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return INITIAL_TASKS;
+      }
+      const saved = localStorage.getItem(`aa_tasks_user_${u.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [budgets, setBudgets] = useState<BudgetItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return [];
+    try {
+      const u = JSON.parse(savedUser);
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return INITIAL_BUDGETS;
+      }
+      const saved = localStorage.getItem(`aa_budgets_user_${u.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [weeklyExpenses, setWeeklyExpenses] = useState<WeeklyExpenseRecord[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const token = localStorage.getItem('aa_session_token');
+    const savedUser = localStorage.getItem('aa_current_user');
+    if (!token || !savedUser) return [];
+    try {
+      const u = JSON.parse(savedUser);
+      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+        return INITIAL_WEEKLY_EXPENSES;
+      }
+      const saved = localStorage.getItem(`aa_weekly_expenses_user_${u.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [locations, setLocations] = useState<VenueLocation[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_LOCATIONS;
+    const saved = localStorage.getItem('aa_locations');
+    return saved ? JSON.parse(saved) : INITIAL_LOCATIONS;
+  });
+
+  const [memories, setMemories] = useState<MemoryItem[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_MEMORIES;
+    const saved = localStorage.getItem('aa_memories');
+    return saved ? JSON.parse(saved) : INITIAL_MEMORIES;
+  });
+
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_EMAIL_TEMPLATES;
+    const saved = localStorage.getItem('aa_email_templates');
+    return saved ? JSON.parse(saved) : DEFAULT_EMAIL_TEMPLATES;
+  });
+
+  const [campaigns, setCampaigns] = useState<EmailScheduleCampaign[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_CAMPAIGNS;
+    const saved = localStorage.getItem('aa_campaigns');
+    return saved ? JSON.parse(saved) : INITIAL_CAMPAIGNS;
+  });
+
+  const [autoRsvpConfig, setAutoRsvpConfig] = useState<AutoRsvpSchedulerConfig>(() => {
+    if (typeof window === 'undefined') return INITIAL_AUTO_RSVP_CONFIG;
+    const saved = localStorage.getItem('aa_auto_rsvp_config');
+    return saved ? JSON.parse(saved) : INITIAL_AUTO_RSVP_CONFIG;
+  });
+
+  const [aiConcept, setAiConcept] = useState<AiConceptResult>(() => {
+    if (typeof window === 'undefined') return INITIAL_AI_CONCEPT;
+    const saved = localStorage.getItem('aa_ai_concept');
+    return saved ? JSON.parse(saved) : INITIAL_AI_CONCEPT;
+  });
+
+  const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
+    if (typeof window === 'undefined') return 'IDR';
+    const saved = localStorage.getItem('aa_selected_currency');
+    return (saved as CurrencyCode) || 'IDR';
+  });
+
+  // Centralized Authentication State Cleanup Function
+  const clearAuthenticationState = () => {
+    localStorage.removeItem('aa_session_token');
+    localStorage.removeItem('aa_current_user');
+    localStorage.removeItem('aa_active_role');
+    localStorage.removeItem('aa_user_role');
+    localStorage.removeItem('aa_active_subscription_tier');
+
+    if (typeof document !== 'undefined') {
+      document.cookie = 'aa_user_role=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'aa_current_user=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'aa_session_token=; path=/; max-age=0; SameSite=Lax';
+    }
+
+    setCurrentUser(null);
+    setActiveRole('ORGANIZER');
+    setActiveSubscriptionTier('starter');
+
+    setProjects([]);
+    setCurrentProject(INITIAL_PROJECT);
+    setGuests([]);
+    setTasks([]);
+    setBudgets([]);
+    setWeeklyExpenses([]);
+    setMemories([]);
+  };
+
+  // Scoped Data Loader for Authenticated User
+  const loadUserSpecificData = async (user: AppUser) => {
+    const token = localStorage.getItem('aa_session_token');
+    try {
+      if (token) {
+        const res = await fetch('/api/projects', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.projects && Array.isArray(data.projects) && data.projects.length > 0) {
+            const mapped: EventProject[] = data.projects.map((p: any) => ({
+              id: p.id,
+              ownerId: p.ownerId || user.id,
+              name: p.name,
+              type: (p.type || 'Wedding') as EventType,
+              date: p.date || new Date().toISOString().split('T')[0],
+              time: p.time || '10:00 WIB',
+              location: p.location || 'Lokasi Acara',
+              status: p.status || 'Perencanaan',
+              notes: p.notes || '',
+              createdAt: p.createdAt || Date.now(),
+            }));
+            setProjects(mapped);
+            setCurrentProject(mapped[0]);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Sync server projects error:', err);
+    }
+
+    // Check localStorage user scope
+    const userProjectsKey = `aa_projects_user_${user.id}`;
+    const saved = localStorage.getItem(userProjectsKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProjects(parsed);
+          setCurrentProject(parsed[0]);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // Default seed project for organizer demo account
+    if (user.email.toLowerCase() === 'taufiq.aminudin@gmail.com') {
+      const initialWithUser: EventProject = {
+        ...INITIAL_PROJECT,
+        ownerId: user.id,
+      };
+      setProjects([initialWithUser]);
+      setCurrentProject(initialWithUser);
+      setGuests(INITIAL_GUESTS);
+      setTasks(INITIAL_TASKS);
+      setBudgets(INITIAL_BUDGETS);
+      setWeeklyExpenses(INITIAL_WEEKLY_EXPENSES);
+      localStorage.setItem(userProjectsKey, JSON.stringify([initialWithUser]));
+      return;
+    }
+
+    // Clean initial state for new user
+    setProjects([]);
+    setCurrentProject(INITIAL_PROJECT);
+    setGuests([]);
+    setTasks([]);
+    setBudgets([]);
+    setWeeklyExpenses([]);
   };
 
   // Sync session on mount with server /api/auth/me
   useEffect(() => {
-    const token = getAuthToken();
+    const token = localStorage.getItem('aa_session_token');
     if (token) {
       fetch('/api/auth/me', {
         headers: {
@@ -425,140 +694,170 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         })
         .then((data) => {
           if (data && data.authenticated && data.user) {
-            setCurrentUser((prev) => {
-              if (!prev) return data.user;
-              return {
-                ...prev,
-                id: data.user.id,
-                email: data.user.email,
-                role: data.user.role,
-                subscriptionTier: data.user.subscriptionTier || prev.subscriptionTier,
-              };
-            });
-            if (data.user.role) {
-              setActiveRole(data.user.role);
+            const verifiedUser: AppUser = {
+              id: data.user.id,
+              name: data.user.name,
+              email: data.user.email,
+              phone: data.user.phone || '',
+              role: data.user.role,
+              subscriptionTier: data.user.subscriptionTier || 'starter',
+              createdAt: Date.now(),
+            };
+            setCurrentUser(verifiedUser);
+            setActiveRole(verifiedUser.role);
+            if (verifiedUser.subscriptionTier) {
+              setActiveSubscriptionTier(verifiedUser.subscriptionTier);
             }
-            if (data.user.subscriptionTier) {
-              setActiveSubscriptionTier(data.user.subscriptionTier);
-            }
+            loadUserSpecificData(verifiedUser);
+          } else {
+            clearAuthenticationState();
           }
         })
         .catch(() => {
-          // Token expired or invalid
-          console.warn('[AA Event Maker] Session expired or invalid on server.');
+          clearAuthenticationState();
         });
+    } else {
+      // Clean unauthenticated state
+      clearAuthenticationState();
     }
   }, []);
 
-  const loginWithGoogle = (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }): boolean => {
+  const loginWithGoogle = async (googleProfile?: {
+    name: string;
+    email: string;
+    avatar?: string;
+    role?: UserRole;
+  }): Promise<{ success: boolean; error?: string; user?: AppUser }> => {
     const profile = googleProfile || {
-      name: 'Taufiq Aminudin',
-      email: 'taufiq.aminudin@gmail.com',
+      name: 'Pengguna Google',
+      email: 'user.google@gmail.com',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
       role: 'ORGANIZER' as UserRole,
     };
 
-    const targetRole = profile.role || 'ORGANIZER';
-    const googleUser: AppUser = {
-      id: `usr_google_${Date.now()}`,
-      name: profile.name,
-      email: profile.email,
-      phone: '+6281234567890',
-      role: targetRole,
-      organizationName: 'Event Planner & Organizer',
-      associatedEventId: currentProject.id,
-      createdAt: Date.now(),
-    };
+    const targetRole: UserRole = profile.role === 'ADMIN' ? 'ORGANIZER' : profile.role || 'ORGANIZER';
 
-    // Authenticate with server API to obtain cryptographically signed session token
-    fetch('/api/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: profile.email,
-        name: profile.name,
-        role: targetRole,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.token) {
-          localStorage.setItem('aa_session_token', data.token);
-        }
-      })
-      .catch((err) => {
-        console.warn('Google login server sync:', err);
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profile.email,
+          name: profile.name,
+          avatar: profile.avatar,
+          role: targetRole,
+        }),
       });
 
-    setCurrentUser(googleUser);
-    setActiveRole(targetRole);
-    localStorage.setItem('aa_current_user', JSON.stringify(googleUser));
-    localStorage.setItem('aa_active_role', targetRole);
-    if (typeof document !== 'undefined') {
-      document.cookie = `aa_user_role=${targetRole}; path=/; max-age=604800; SameSite=Lax`;
-      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(googleUser))}; path=/; max-age=604800; SameSite=Lax`;
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Autentikasi Google gagal.' };
+      }
+
+      if (data.token) {
+        localStorage.setItem('aa_session_token', data.token);
+      }
+
+      const googleUser: AppUser = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone || '+6281234567890',
+        role: data.user.role,
+        avatar: profile.avatar,
+        subscriptionTier: data.user.subscriptionTier || 'starter',
+        createdAt: Date.now(),
+      };
+
+      setCurrentUser(googleUser);
+      setActiveRole(googleUser.role);
+      setActiveSubscriptionTier(googleUser.subscriptionTier || 'starter');
+      localStorage.setItem('aa_current_user', JSON.stringify(googleUser));
+      localStorage.setItem('aa_active_role', googleUser.role);
+      localStorage.setItem('aa_active_subscription_tier', googleUser.subscriptionTier || 'starter');
+
+      if (typeof document !== 'undefined') {
+        document.cookie = `aa_user_role=${googleUser.role}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(googleUser))}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
+      await loadUserSpecificData(googleUser);
+      setShowAuthModal(false);
+      setShowPublicLanding(false);
+      showToast(`Berhasil masuk dengan Google sebagai ${googleUser.name}!`);
+      return { success: true, user: googleUser };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Gagal menghubungi server autentikasi.' };
     }
-    setShowAuthModal(false);
-    setShowPublicLanding(false);
-    showToast(`Berhasil masuk dengan Google sebagai ${googleUser.name}!`);
-    return true;
   };
 
-  const login = (email: string, role?: UserRole): boolean => {
+  const login = async (
+    email: string,
+    passwordOrRole?: string | UserRole,
+    fallbackRole?: UserRole
+  ): Promise<{ success: boolean; error?: string; user?: AppUser }> => {
     const cleanEmail = email.toLowerCase().trim();
+
     // Security restriction: Public login rejects admin role or admin email
-    if (cleanEmail === 'admin@aa-eventmaker.my.id' || (role as string) === 'ADMIN') {
+    if (cleanEmail === 'admin@aa-eventmaker.my.id') {
       showToast('Akses ditolak: Pintu masuk Administrator terpisah secara privat di /admin/login.');
-      return false;
+      return { success: false, error: 'Akses ditolak: Pintu masuk Administrator terpisah secara privat di /admin/login.' };
     }
 
-    const targetRole: UserRole = role && (role as string) !== 'ADMIN' ? role : 'ORGANIZER';
-    const matchedUser: AppUser = DEFAULT_USERS[targetRole] || {
-      id: `usr_${Date.now()}`,
-      name: email.split('@')[0],
-      email,
-      phone: '+6281234567890',
-      role: targetRole,
-      createdAt: Date.now(),
-    };
+    let password = '';
+    if (typeof passwordOrRole === 'string' && passwordOrRole.length > 0) {
+      password = passwordOrRole;
+    }
 
-    // Authenticate with server API to obtain cryptographically signed session token
-    fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        password: 'Organizer@2026!',
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Login failed');
-        return res.json();
-      })
-      .then((data) => {
-        if (data.token) {
-          localStorage.setItem('aa_session_token', data.token);
-          if (data.user?.subscriptionTier) {
-            setActiveSubscriptionTier(data.user.subscriptionTier);
-          }
-        }
-      })
-      .catch((err) => {
-        console.warn('Login server sync:', err);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+        }),
       });
 
-    setCurrentUser(matchedUser);
-    setActiveRole(targetRole);
-    localStorage.setItem('aa_current_user', JSON.stringify(matchedUser));
-    localStorage.setItem('aa_active_role', targetRole);
-    if (typeof document !== 'undefined') {
-      document.cookie = `aa_user_role=${targetRole}; path=/; max-age=604800; SameSite=Lax`;
-      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(matchedUser))}; path=/; max-age=604800; SameSite=Lax`;
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Email atau kata sandi tidak cocok.' };
+      }
+
+      if (data.token) {
+        localStorage.setItem('aa_session_token', data.token);
+      }
+
+      const loggedUser: AppUser = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone || '',
+        role: data.user.role,
+        subscriptionTier: data.user.subscriptionTier || 'starter',
+        createdAt: Date.now(),
+      };
+
+      setCurrentUser(loggedUser);
+      setActiveRole(loggedUser.role);
+      setActiveSubscriptionTier(loggedUser.subscriptionTier || 'starter');
+      localStorage.setItem('aa_current_user', JSON.stringify(loggedUser));
+      localStorage.setItem('aa_active_role', loggedUser.role);
+      localStorage.setItem('aa_active_subscription_tier', loggedUser.subscriptionTier || 'starter');
+
+      if (typeof document !== 'undefined') {
+        document.cookie = `aa_user_role=${loggedUser.role}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(loggedUser))}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
+      await loadUserSpecificData(loggedUser);
+      setShowAuthModal(false);
+      setShowPublicLanding(false);
+      showToast(`Selamat datang kembali, ${loggedUser.name}!`);
+      return { success: true, user: loggedUser };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Gagal menghubungi server autentikasi.' };
     }
-    setShowAuthModal(false);
-    setShowPublicLanding(false);
-    showToast(`Selamat datang kembali, ${matchedUser.name}!`);
-    return true;
   };
 
   // Dedicated Private Super Admin Login
@@ -609,92 +908,97 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const register = (data: {
+  const register = async (data: {
     name: string;
     email: string;
     phone: string;
-    role: UserRole;
+    password?: string;
+    role?: UserRole;
     organizationName?: string;
     packageId?: string;
-  }): AppUser => {
-    const isFree = !data.packageId || data.packageId === 'starter';
+  }): Promise<{ success: boolean; error?: string; user?: AppUser }> => {
+    const cleanEmail = data.email.toLowerCase().trim();
+    const cleanName = data.name.trim();
+    const cleanPhone = data.phone.trim();
+    const safeRole: UserRole = data.role === 'ADMIN' ? 'ORGANIZER' : data.role || 'ORGANIZER';
+    const password = data.password || 'User@Default2026!';
 
-    const newUser: AppUser = {
-      id: `usr_${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      role: data.role,
-      organizationName: data.organizationName,
-      associatedEventId: currentProject.id,
-      subscriptionTier: 'starter',
-      desiredPackageId: data.packageId,
-      createdAt: Date.now(),
-    };
-
-    // Register with server API
-    fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        packageId: data.packageId,
-      }),
-    })
-      .then((res) => res.json())
-      .then((resData) => {
-        if (resData.token) {
-          localStorage.setItem('aa_session_token', resData.token);
-        }
-      })
-      .catch((err) => {
-        console.warn('Registration server sync:', err);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          password,
+          role: safeRole,
+          packageId: data.packageId,
+        }),
       });
 
-    setCurrentUser(newUser);
-    setActiveRole(newUser.role);
-    setLastRegisteredUser(newUser);
-    localStorage.setItem('aa_current_user', JSON.stringify(newUser));
-    localStorage.setItem('aa_active_role', newUser.role);
-    if (typeof document !== 'undefined') {
-      document.cookie = `aa_user_role=${newUser.role}; path=/; max-age=604800; SameSite=Lax`;
-      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(newUser))}; path=/; max-age=604800; SameSite=Lax`;
-    }
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        return { success: false, error: resData.error || 'Pendaftaran gagal.' };
+      }
 
-    if (isFree) {
-      setActiveSubscriptionTier('starter');
-      localStorage.setItem('aa_active_subscription_tier', 'starter');
-      showToast(`Pendaftaran berhasil! Akun ${newUser.role} Anda aktif dengan paket Starter Free.`);
-    } else {
-      setActiveSubscriptionTier('starter');
-      localStorage.setItem('aa_active_subscription_tier', 'starter');
-      showToast(
-        `Pendaftaran berhasil! Akun Anda siap. Lakukan konfirmasi pembayaran untuk mengaktifkan paket ${
-          data.packageId === 'agency' ? 'EO & Agency' : 'Wedding Professional'
-        }.`
-      );
-    }
+      if (resData.token) {
+        localStorage.setItem('aa_session_token', resData.token);
+      }
 
-    setShowPublicLanding(false);
-    setShowAuthModal(false);
-    return newUser;
+      const newUser: AppUser = {
+        id: resData.user.id,
+        name: resData.user.name,
+        email: resData.user.email,
+        phone: resData.user.phone,
+        role: resData.user.role,
+        organizationName: data.organizationName,
+        subscriptionTier: resData.user.subscriptionTier || 'starter',
+        createdAt: Date.now(),
+      };
+
+      setCurrentUser(newUser);
+      setActiveRole(newUser.role);
+      setActiveSubscriptionTier(newUser.subscriptionTier || 'starter');
+      setLastRegisteredUser(newUser);
+
+      localStorage.setItem('aa_current_user', JSON.stringify(newUser));
+      localStorage.setItem('aa_active_role', newUser.role);
+      localStorage.setItem('aa_active_subscription_tier', newUser.subscriptionTier || 'starter');
+
+      if (typeof document !== 'undefined') {
+        document.cookie = `aa_user_role=${newUser.role}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(newUser))}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
+      // Initialize clean user-specific data for new registrant
+      setProjects([]);
+      setCurrentProject(INITIAL_PROJECT);
+      setGuests([]);
+      setTasks([]);
+      setBudgets([]);
+      setWeeklyExpenses([]);
+
+      setShowPublicLanding(false);
+      setShowAuthModal(false);
+      showToast(`Pendaftaran berhasil! Selamat datang di AA Event Maker, ${newUser.name}.`);
+      return { success: true, user: newUser };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Gagal menghubungi server pendaftaran.' };
+    }
   };
 
   const logout = () => {
-    // Notify server to clear cookie
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    localStorage.removeItem('aa_session_token');
-    setCurrentUser(null);
-    localStorage.removeItem('aa_current_user');
-    if (typeof document !== 'undefined') {
-      document.cookie = `aa_user_role=; path=/; max-age=0; SameSite=Lax`;
-      document.cookie = `aa_current_user=; path=/; max-age=0; SameSite=Lax`;
-      document.cookie = `aa_session_token=; path=/; max-age=0; SameSite=Lax`;
-    }
+    clearAuthenticationState();
     setShowPublicLanding(true);
     showToast('Anda telah keluar dari akun.');
+  };
+
+  const switchAccount = () => {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    clearAuthenticationState();
+    setShowPublicLanding(true);
   };
 
   const switchRole = (newRole: UserRole) => {
@@ -703,106 +1007,14 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Akses Administrator tidak dapat dialihkan dari pemilih peran biasa.');
       return;
     }
+    if (!currentUser) {
+      showToast('Silakan masuk terlebih dahulu untuk mengakses dasbor peran.');
+      return;
+    }
     setActiveRole(newRole);
     localStorage.setItem('aa_active_role', newRole);
-    const u = DEFAULT_USERS[newRole];
-    if (u) {
-      setCurrentUser(u);
-      localStorage.setItem('aa_current_user', JSON.stringify(u));
-      if (typeof document !== 'undefined') {
-        document.cookie = `aa_user_role=${newRole}; path=/; max-age=604800; SameSite=Lax`;
-        document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(u))}; path=/; max-age=604800; SameSite=Lax`;
-      }
-      // Sync login token for switched role
-      fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: u.email,
-          password: 'Organizer@2026!',
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.token) {
-            localStorage.setItem('aa_session_token', data.token);
-          }
-        })
-        .catch(() => {});
-    }
-    showToast(`Beralih ke Dashboard ${newRole}`);
+    showToast(`Beralih ke tampilan Dasbor ${newRole}`);
   };
-
-  // State with LocalStorage fallback
-  const [projects, setProjects] = useState<EventProject[]>(() => {
-    const saved = localStorage.getItem('aa_event_projects');
-    return saved ? JSON.parse(saved) : [INITIAL_PROJECT];
-  });
-
-  const [currentProject, setCurrentProject] = useState<EventProject>(() => {
-    const saved = localStorage.getItem('aa_current_project');
-    return saved ? JSON.parse(saved) : INITIAL_PROJECT;
-  });
-
-  const [invitation, setInvitation] = useState<InvitationData>(() => {
-    const saved = localStorage.getItem('aa_invitation');
-    return saved ? JSON.parse(saved) : INITIAL_INVITATION;
-  });
-
-  const [guests, setGuests] = useState<Guest[]>(() => {
-    const saved = localStorage.getItem('aa_guests');
-    return saved ? JSON.parse(saved) : INITIAL_GUESTS;
-  });
-
-  const [tasks, setTasks] = useState<TaskItem[]>(() => {
-    const saved = localStorage.getItem('aa_tasks');
-    return saved ? JSON.parse(saved) : INITIAL_TASKS;
-  });
-
-  const [budgets, setBudgets] = useState<BudgetItem[]>(() => {
-    const saved = localStorage.getItem('aa_budgets');
-    return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
-  });
-
-  const [weeklyExpenses, setWeeklyExpenses] = useState<WeeklyExpenseRecord[]>(() => {
-    const saved = localStorage.getItem('aa_weekly_expenses');
-    return saved ? JSON.parse(saved) : INITIAL_WEEKLY_EXPENSES;
-  });
-
-  const [locations, setLocations] = useState<VenueLocation[]>(() => {
-    const saved = localStorage.getItem('aa_locations');
-    return saved ? JSON.parse(saved) : INITIAL_LOCATIONS;
-  });
-
-  const [memories, setMemories] = useState<MemoryItem[]>(() => {
-    const saved = localStorage.getItem('aa_memories');
-    return saved ? JSON.parse(saved) : INITIAL_MEMORIES;
-  });
-
-  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(() => {
-    const saved = localStorage.getItem('aa_email_templates');
-    return saved ? JSON.parse(saved) : DEFAULT_EMAIL_TEMPLATES;
-  });
-
-  const [campaigns, setCampaigns] = useState<EmailScheduleCampaign[]>(() => {
-    const saved = localStorage.getItem('aa_campaigns');
-    return saved ? JSON.parse(saved) : INITIAL_CAMPAIGNS;
-  });
-
-  const [autoRsvpConfig, setAutoRsvpConfig] = useState<AutoRsvpSchedulerConfig>(() => {
-    const saved = localStorage.getItem('aa_auto_rsvp_config');
-    return saved ? JSON.parse(saved) : INITIAL_AUTO_RSVP_CONFIG;
-  });
-
-  const [aiConcept, setAiConcept] = useState<AiConceptResult>(() => {
-    const saved = localStorage.getItem('aa_ai_concept');
-    return saved ? JSON.parse(saved) : INITIAL_AI_CONCEPT;
-  });
-
-  const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
-    const saved = localStorage.getItem('aa_selected_currency');
-    return (saved as CurrencyCode) || 'IDR';
-  });
 
   const [eventCategories, setEventCategories] = useState<EventCategoryDefinition[]>(() => {
     const saved = localStorage.getItem('aa_event_categories');
@@ -905,28 +1117,46 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('aa_active_subscription_tier', activeSubscriptionTier);
   }, [activeSubscriptionTier]);
 
-  // Sync to localStorage
+  // Sync to user-scoped localStorage
   useEffect(() => {
-    localStorage.setItem('aa_event_projects', JSON.stringify(projects));
-  }, [projects]);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_projects_user_${currentUser.id}`, JSON.stringify(projects));
+    }
+  }, [projects, currentUser]);
+
   useEffect(() => {
-    localStorage.setItem('aa_current_project', JSON.stringify(currentProject));
-  }, [currentProject]);
+    if (currentUser?.id && currentProject?.id) {
+      localStorage.setItem(`aa_current_project_user_${currentUser.id}`, JSON.stringify(currentProject));
+    }
+  }, [currentProject, currentUser]);
+
   useEffect(() => {
     localStorage.setItem('aa_invitation', JSON.stringify(invitation));
   }, [invitation]);
+
   useEffect(() => {
-    localStorage.setItem('aa_guests', JSON.stringify(guests));
-  }, [guests]);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_guests_user_${currentUser.id}`, JSON.stringify(guests));
+    }
+  }, [guests, currentUser]);
+
   useEffect(() => {
-    localStorage.setItem('aa_tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(tasks));
+    }
+  }, [tasks, currentUser]);
+
   useEffect(() => {
-    localStorage.setItem('aa_budgets', JSON.stringify(budgets));
-  }, [budgets]);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_budgets_user_${currentUser.id}`, JSON.stringify(budgets));
+    }
+  }, [budgets, currentUser]);
+
   useEffect(() => {
-    localStorage.setItem('aa_weekly_expenses', JSON.stringify(weeklyExpenses));
-  }, [weeklyExpenses]);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_weekly_expenses_user_${currentUser.id}`, JSON.stringify(weeklyExpenses));
+    }
+  }, [weeklyExpenses, currentUser]);
   useEffect(() => {
     localStorage.setItem('aa_locations', JSON.stringify(locations));
   }, [locations]);
@@ -975,6 +1205,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const newProj: EventProject = {
       id: `proj-${Date.now()}`,
+      ownerId: currentUser?.id,
       name,
       type,
       category: extraOptions?.category,
@@ -990,6 +1221,23 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setProjects((prev) => [newProj, ...prev]);
     setCurrentProject(newProj);
+
+    // Sync to backend if token available
+    const token = localStorage.getItem('aa_session_token');
+    if (token) {
+      fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          date,
+          location,
+        }),
+      }).catch(() => {});
+    }
     setInvitation((prev) => ({
       ...prev,
       projectId: newProj.id,
@@ -1934,11 +2182,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         showPublicLanding,
         setShowPublicLanding,
         lastRegisteredUser,
+        clearAuthenticationState,
         login,
         loginWithGoogle,
         loginAdmin,
         register,
         logout,
+        switchAccount,
         switchRole,
 
         currentProject,

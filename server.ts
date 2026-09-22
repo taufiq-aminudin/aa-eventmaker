@@ -283,7 +283,7 @@ async function startServer() {
       return res.status(429).json({ error: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.' });
     }
 
-    const { name, email, phone, password, packageId } = req.body;
+    const { name, email, phone, password, role: requestedRole, packageId } = req.body;
 
     if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'Format email tidak valid.' });
@@ -298,11 +298,14 @@ async function startServer() {
     const cleanPhone = sanitizeInputString(phone, 20);
 
     // Passwords must be at least 6 characters
-    const pass = typeof password === 'string' && password.length >= 6 ? password : 'User@Default2026!';
-    const { salt, hash } = hashPassword(pass);
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: 'Kata sandi minimal 6 karakter.' });
+    }
+    const { salt, hash } = hashPassword(password);
 
     // Critical security: normal registration CANNOT assign ADMIN role!
-    const role: UserRole = 'ORGANIZER';
+    const validRoles: UserRole[] = ['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST'];
+    const role: UserRole = requestedRole && validRoles.includes(requestedRole) ? requestedRole : 'ORGANIZER';
     const subscriptionTier = 'starter';
 
     const newUser = serverStore.createUser({
@@ -407,8 +410,13 @@ async function startServer() {
       });
     }
 
+    // Password is required
+    if (!password) {
+      return res.status(400).json({ error: 'Kata sandi wajib diisi.' });
+    }
+
     // Verify password if user has password credentials set
-    if (user.passwordSalt && user.passwordHash && password) {
+    if (user.passwordSalt && user.passwordHash) {
       const isValid = verifyPassword(password, user.passwordSalt, user.passwordHash);
       if (!isValid) {
         auditLogger.log({
