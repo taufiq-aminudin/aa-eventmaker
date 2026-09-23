@@ -20,6 +20,8 @@ import { PaymentPage } from './screens/public/PaymentPage';
 import { PrivacyPolicyPage } from './screens/public/PrivacyPolicyPage';
 import { TermsOfServicePage } from './screens/public/TermsOfServicePage';
 import { AuthPage } from './screens/auth/AuthPage';
+import { ForgotPasswordPage } from './screens/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './screens/auth/ResetPasswordPage';
 
 // App Pages
 import { ProjectsPage } from './screens/app/ProjectsPage';
@@ -194,6 +196,10 @@ const MainRouter: React.FC = () => {
       return <AuthPage initialMode="login" />;
     case '/signup':
       return <AuthPage initialMode="signup" />;
+    case '/forgot-password':
+      return <ForgotPasswordPage />;
+    case '/reset-password':
+      return <ResetPasswordPage />;
 
     // Dedicated Isolated Admin Authentication Route
     case '/admin/login':

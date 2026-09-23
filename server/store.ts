@@ -191,6 +191,21 @@ class DataStore {
     };
     this.users.set(guestUser.email.toLowerCase(), guestUser);
 
+    // 6. Active Session Account (internationalsuryautama@gmail.com)
+    const suryaPass = hashPassword('Surya@2026!');
+    const suryaUser: ServerUser = {
+      id: 'usr_org_surya_001',
+      name: 'International Surya Utama',
+      email: 'internationalsuryautama@gmail.com',
+      phone: '081382000412',
+      role: 'ORGANIZER',
+      subscriptionTier: 'professional',
+      passwordSalt: suryaPass.salt,
+      passwordHash: suryaPass.hash,
+      createdAt: Date.now() - 1 * 24 * 3600 * 1000,
+    };
+    this.users.set(suryaUser.email.toLowerCase(), suryaUser);
+
     // Seed initial project for orgUser
     const initialProject: ServerProject = {
       id: 'evt_andi_ayu_wedding',

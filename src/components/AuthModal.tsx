@@ -34,16 +34,16 @@ export const AuthModal: React.FC = () => {
 
   const quickGoogleAccounts = [
     {
-      name: 'Taufiq Aminudin',
-      email: 'taufiq.aminudin@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      name: 'International Surya Utama',
+      email: 'internationalsuryautama@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
       role: 'ORGANIZER' as UserRole,
       badge: 'Admin EO',
     },
     {
-      name: 'Suryautama Event Planner',
-      email: 'suryautama0001@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+      name: 'Taufiq Aminudin',
+      email: 'taufiq.aminudin@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
       role: 'ORGANIZER' as UserRole,
       badge: 'Organizer',
     },
@@ -53,6 +53,13 @@ export const AuthModal: React.FC = () => {
       avatar: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=120&q=80',
       role: 'CLIENT' as UserRole,
       badge: 'Pengantin',
+    },
+    {
+      name: 'Mahkota Creative & Catering',
+      email: 'vendor@aa-eventmaker.my.id',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+      role: 'VENDOR' as UserRole,
+      badge: 'Vendor',
     },
   ];
 
