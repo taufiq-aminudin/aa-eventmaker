@@ -160,23 +160,26 @@ async function login() {
       })
     });
 
-    const raw = await response.text();
     let data = null;
-
-    if (raw.trim()) {
+    try {
+      const clone = response.clone();
       try {
-        data = JSON.parse(raw);
-      } catch (parseError) {
-        console.error('LOGIN JSON PARSE ERROR:', parseError);
-        throw new Error('Server mengirim response login yang tidak valid.');
+        data = await clone.json();
+      } catch {
+        const raw = await response.text();
+        if (raw && raw.trim()) {
+          data = JSON.parse(raw);
+        }
       }
+    } catch (parseError) {
+      console.warn('LOGIN JSON PARSE WARNING:', parseError);
     }
 
     if (!response.ok || !data?.success) {
       throw new Error(
         data?.message ||
         data?.error ||
-        `Login gagal (${response.status})`
+        (response.status === 401 ? 'Email atau kata sandi tidak cocok.' : `Login gagal (${response.status})`)
       );
     }
 
@@ -186,6 +189,8 @@ async function login() {
       localStorage.setItem('aa_current_user', JSON.stringify(data.user));
       localStorage.setItem('aa_active_role', data.user.role || 'ORGANIZER');
       localStorage.setItem('aa_active_subscription_tier', data.user.subscriptionTier || 'starter');
+      document.cookie = `aa_user_role=${data.user.role || 'ORGANIZER'}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=604800; SameSite=Lax`;
     }
 
     if (data.token) {
@@ -261,23 +266,26 @@ async function signup() {
       })
     });
 
-    const raw = await response.text();
     let data = null;
-
-    if (raw.trim()) {
+    try {
+      const clone = response.clone();
       try {
-        data = JSON.parse(raw);
-      } catch (parseError) {
-        console.error('SIGNUP JSON PARSE ERROR:', parseError);
-        throw new Error('Server mengirim response pendaftaran yang tidak valid.');
+        data = await clone.json();
+      } catch {
+        const raw = await response.text();
+        if (raw && raw.trim()) {
+          data = JSON.parse(raw);
+        }
       }
+    } catch (parseError) {
+      console.warn('SIGNUP JSON PARSE WARNING:', parseError);
     }
 
     if (!response.ok || !data?.success) {
       throw new Error(
         data?.message ||
         data?.error ||
-        `Pendaftaran gagal (${response.status})`
+        (response.status === 409 ? 'Email sudah terdaftar. Silakan login.' : `Pendaftaran gagal (${response.status})`)
       );
     }
 
@@ -287,6 +295,8 @@ async function signup() {
       localStorage.setItem('aa_current_user', JSON.stringify(data.user));
       localStorage.setItem('aa_active_role', data.user.role || 'ORGANIZER');
       localStorage.setItem('aa_active_subscription_tier', data.user.subscriptionTier || 'starter');
+      document.cookie = `aa_user_role=${data.user.role || 'ORGANIZER'}; path=/; max-age=604800; SameSite=Lax`;
+      document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=604800; SameSite=Lax`;
     }
 
     if (data.token) {
