@@ -109,7 +109,7 @@ function safeErrorResponse(res: Response, err: any, defaultMessage: string, stat
     console.error(`[DEV_ERROR] ${defaultMessage}:`, err?.message || err);
   }
   const message = isProd ? defaultMessage : (err?.message || defaultMessage);
-  return res.status(statusCode).json({ error: message });
+  return res.status(statusCode).json({ success: false, message, error: message });
 }
 
 // Authentication extraction middleware
@@ -137,7 +137,11 @@ function authMiddleware(req: Request, _res: Response, next: NextFunction) {
 // Guard: requires authenticated user
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
-    return res.status(401).json({ error: 'Autentikasi diperlukan untuk mengakses layanan ini.' });
+    return res.status(401).json({
+      success: false,
+      message: 'Autentikasi diperlukan untuk mengakses layanan ini.',
+      error: 'Autentikasi diperlukan untuk mengakses layanan ini.',
+    });
   }
   next();
 }
@@ -146,7 +150,11 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 function requireRole(allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Autentikasi diperlukan.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Autentikasi diperlukan.',
+        error: 'Autentikasi diperlukan.',
+      });
     }
     if (!allowedRoles.includes(req.user.role)) {
       auditLogger.log({
@@ -158,7 +166,11 @@ function requireRole(allowedRoles: UserRole[]) {
         status: 'BLOCKED',
         details: `User role '${req.user.role}' attempted to access restricted endpoint requiring [${allowedRoles.join(', ')}]`,
       });
-      return res.status(403).json({ error: 'Akses ditolak: Akun Anda tidak memiliki wewenang untuk tindakan ini.' });
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: Akun Anda tidak memiliki wewenang untuk tindakan ini.',
+        error: 'Akses ditolak: Akun Anda tidak memiliki wewenang untuk tindakan ini.',
+      });
     }
     next();
   };
@@ -280,18 +292,30 @@ async function startServer() {
     const clientKey = req.ip || 'anonymous';
     const rate = authRateLimiter.check(clientKey);
     if (!rate.allowed) {
-      return res.status(429).json({ error: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.' });
+      return res.status(429).json({
+        success: false,
+        message: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.',
+        error: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.',
+      });
     }
 
     const { name, email, phone, password, role: requestedRole, packageId } = req.body;
 
     if (!isValidEmail(email)) {
-      return res.status(400).json({ error: 'Format email tidak valid.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Format email tidak valid.',
+        error: 'Format email tidak valid.',
+      });
     }
 
     const cleanEmail = email.toLowerCase().trim();
     if (serverStore.findUserByEmail(cleanEmail)) {
-      return res.status(409).json({ error: 'Alamat email ini sudah terdaftar. Silakan masuk.' });
+      return res.status(409).json({
+        success: false,
+        message: 'Alamat email ini sudah terdaftar. Silakan masuk.',
+        error: 'Alamat email ini sudah terdaftar. Silakan masuk.',
+      });
     }
 
     const cleanName = sanitizeInputString(name, 60) || cleanEmail.split('@')[0];
@@ -299,7 +323,11 @@ async function startServer() {
 
     // Passwords must be at least 6 characters
     if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ error: 'Kata sandi minimal 6 karakter.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Kata sandi minimal 6 karakter.',
+        error: 'Kata sandi minimal 6 karakter.',
+      });
     }
     const { salt, hash } = hashPassword(password);
 
@@ -353,7 +381,14 @@ async function startServer() {
 
     res.status(201).json({
       success: true,
+      message: 'Pendaftaran berhasil.',
       token,
+      session: {
+        token,
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+      },
       user: {
         id: newUser.id,
         name: newUser.name,
@@ -370,12 +405,20 @@ async function startServer() {
     const clientKey = req.ip || 'anonymous';
     const rate = authRateLimiter.check(clientKey);
     if (!rate.allowed) {
-      return res.status(429).json({ error: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.' });
+      return res.status(429).json({
+        success: false,
+        message: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.',
+        error: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.',
+      });
     }
 
     const { email, password } = req.body;
     if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'Alamat email wajib diisi dengan benar.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Alamat email wajib diisi dengan benar.',
+        error: 'Alamat email wajib diisi dengan benar.',
+      });
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -391,7 +434,11 @@ async function startServer() {
         status: 'FAILED',
         details: 'User not found',
       });
-      return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Email atau password salah',
+        error: 'Email atau kata sandi tidak cocok.',
+      });
     }
 
     // Security requirement: Super Admin cannot log in via the public login endpoint
@@ -406,13 +453,19 @@ async function startServer() {
         details: 'Admin user attempted to authenticate via public login endpoint',
       });
       return res.status(403).json({
+        success: false,
+        message: 'Akses tidak diizinkan. Akun Administrator memiliki pintu masuk autentikasi terpisah yang aman.',
         error: 'Akses tidak diizinkan. Akun Administrator memiliki pintu masuk autentikasi terpisah yang aman.',
       });
     }
 
     // Password is required
     if (!password) {
-      return res.status(400).json({ error: 'Kata sandi wajib diisi.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Kata sandi wajib diisi.',
+        error: 'Kata sandi wajib diisi.',
+      });
     }
 
     // Verify password if user has password credentials set
@@ -428,7 +481,11 @@ async function startServer() {
           status: 'FAILED',
           details: 'Incorrect password',
         });
-        return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
+        return res.status(401).json({
+          success: false,
+          message: 'Email atau password salah',
+          error: 'Email atau kata sandi tidak cocok.',
+        });
       }
     }
 
@@ -459,7 +516,14 @@ async function startServer() {
 
     res.json({
       success: true,
+      message: 'Berhasil masuk.',
       token,
+      session: {
+        token,
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
       user: {
         id: user.id,
         name: user.name,
@@ -475,7 +539,11 @@ async function startServer() {
   app.post('/api/auth/google', (req, res) => {
     const { email, name, role = 'ORGANIZER' } = req.body;
     if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'Email Google tidak valid.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email Google tidak valid.',
+        error: 'Email Google tidak valid.',
+      });
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -486,6 +554,8 @@ async function startServer() {
 
     if (user && user.role === 'ADMIN') {
       return res.status(403).json({
+        success: false,
+        message: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
         error: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
       });
     }
@@ -518,7 +588,14 @@ async function startServer() {
 
     res.json({
       success: true,
+      message: 'Login Google berhasil.',
       token,
+      session: {
+        token,
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
       user: {
         id: user.id,
         name: user.name,
@@ -544,13 +621,19 @@ async function startServer() {
         details: 'Too many admin authentication attempts',
       });
       return res.status(429).json({
+        success: false,
+        message: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
         error: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
       });
     }
 
     const { email, password } = req.body;
     if (!email || !isValidEmail(email) || !password) {
-      return res.status(400).json({ error: 'Kredensial administrator tidak lengkap.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Kredensial administrator tidak lengkap.',
+        error: 'Kredensial administrator tidak lengkap.',
+      });
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -567,12 +650,20 @@ async function startServer() {
         status: 'FAILED',
         details: 'Non-admin or non-existent user attempted to access admin login',
       });
-      return res.status(401).json({ error: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
+        error: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
+      });
     }
 
     // Verify password strictly against salt and hash
     if (!user.passwordSalt || !user.passwordHash) {
-      return res.status(500).json({ error: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.' });
+      return res.status(500).json({
+        success: false,
+        message: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
+        error: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
+      });
     }
 
     const isMatch = verifyPassword(password, user.passwordSalt, user.passwordHash);
@@ -586,7 +677,11 @@ async function startServer() {
         status: 'FAILED',
         details: 'Invalid password for admin user',
       });
-      return res.status(401).json({ error: 'Kredensial administrator tidak sah atau kata sandi salah.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Kredensial administrator tidak sah atau kata sandi salah.',
+        error: 'Kredensial administrator tidak sah atau kata sandi salah.',
+      });
     }
 
     // Sign session token strictly with ADMIN role
@@ -617,7 +712,14 @@ async function startServer() {
 
     res.json({
       success: true,
+      message: 'Autentikasi administrator berhasil.',
       token,
+      session: {
+        token,
+        userId: user.id,
+        email: user.email,
+        role: 'ADMIN',
+      },
       user: {
         id: user.id,
         name: user.name,
@@ -630,7 +732,7 @@ async function startServer() {
   });
 
   // Logout
-  app.post('/api/auth/logout', (req, res) => {
+  app.post('/api/auth/logout', (_req, res) => {
     res.clearCookie('aa_session_token');
     res.json({ success: true, message: 'Berhasil keluar.' });
   });
@@ -638,11 +740,12 @@ async function startServer() {
   // Get current user (me)
   app.get('/api/auth/me', (req, res) => {
     if (!req.user) {
-      return res.status(401).json({ authenticated: false, user: null });
+      return res.status(401).json({ success: false, authenticated: false, user: null });
     }
 
     const storedUser = serverStore.findUserById(req.user.userId);
     res.json({
+      success: true,
       authenticated: true,
       user: storedUser
         ? {
@@ -662,12 +765,20 @@ async function startServer() {
     const clientKey = req.ip || 'anonymous';
     const rate = authRateLimiter.check(clientKey);
     if (!rate.allowed) {
-      return res.status(429).json({ error: 'Terlalu banyak permintaan reset kata sandi.' });
+      return res.status(429).json({
+        success: false,
+        message: 'Terlalu banyak permintaan reset kata sandi.',
+        error: 'Terlalu banyak permintaan reset kata sandi.',
+      });
     }
 
     const { email } = req.body;
     if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'Masukkan alamat email yang valid.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Masukkan alamat email yang valid.',
+        error: 'Masukkan alamat email yang valid.',
+      });
     }
 
     const token = createPasswordResetToken(email);
@@ -701,12 +812,20 @@ async function startServer() {
   app.post('/api/auth/reset-password', (req, res) => {
     const { token, newPassword } = req.body;
     if (!token || !newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'Token tidak valid atau kata sandi minimal 6 karakter.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Token tidak valid atau kata sandi minimal 6 karakter.',
+        error: 'Token tidak valid atau kata sandi minimal 6 karakter.',
+      });
     }
 
     const verifiedEmail = verifyAndConsumePasswordResetToken(token);
     if (!verifiedEmail) {
-      return res.status(400).json({ error: 'Tautan reset kata sandi telah kedaluwarsa atau sudah digunakan.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Tautan reset kata sandi telah kedaluwarsa atau sudah digunakan.',
+        error: 'Tautan reset kata sandi telah kedaluwarsa atau sudah digunakan.',
+      });
     }
 
     const { salt, hash } = hashPassword(newPassword);

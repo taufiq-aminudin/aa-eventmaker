@@ -749,9 +749,20 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+      }
+
+      if (!data) {
+        return { success: false, error: 'Server tidak mengembalikan data respons.' };
+      }
+
       if (!res.ok || !data.success) {
-        return { success: false, error: data.error || 'Autentikasi Google gagal.' };
+        return { success: false, error: data.message || data.error || 'Autentikasi Google gagal.' };
       }
 
       if (data.token) {
@@ -819,9 +830,20 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+      }
+
+      if (!data) {
+        return { success: false, error: 'Server tidak mengembalikan respons autentikasi.' };
+      }
+
       if (!res.ok || !data.success) {
-        return { success: false, error: data.error || 'Email atau kata sandi tidak cocok.' };
+        return { success: false, error: data.message || data.error || 'Email atau kata sandi tidak cocok.' };
       }
 
       if (data.token) {
@@ -872,9 +894,20 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+      }
+
+      if (!data) {
+        return { success: false, error: 'Server tidak mengembalikan respons autentikasi admin.' };
+      }
+
       if (!res.ok || !data.success) {
-        return { success: false, error: data.error || 'Autentikasi admin gagal.' };
+        return { success: false, error: data.message || data.error || 'Autentikasi admin gagal.' };
       }
 
       const adminUser: AppUser = {
@@ -937,9 +970,20 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }),
       });
 
-      const resData = await res.json();
+      let resData: any = null;
+      try {
+        const text = await res.text();
+        resData = text ? JSON.parse(text) : null;
+      } catch {
+        return { success: false, error: 'Format data registrasi dari server tidak valid.' };
+      }
+
+      if (!resData) {
+        return { success: false, error: 'Server tidak mengembalikan respons pendaftaran.' };
+      }
+
       if (!res.ok || !resData.success) {
-        return { success: false, error: resData.error || 'Pendaftaran gagal.' };
+        return { success: false, error: resData.message || resData.error || 'Pendaftaran gagal.' };
       }
 
       if (resData.token) {
@@ -950,7 +994,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         id: resData.user.id,
         name: resData.user.name,
         email: resData.user.email,
-        phone: resData.user.phone,
+        phone: resData.user.phone || cleanPhone,
         role: resData.user.role,
         organizationName: data.organizationName,
         subscriptionTier: resData.user.subscriptionTier || 'starter',

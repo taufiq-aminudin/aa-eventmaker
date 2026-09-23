@@ -115,8 +115,8 @@ class DataStore {
     const orgPass = hashPassword('Organizer@2026!');
     const orgUser: ServerUser = {
       id: 'usr_org_001',
-      name: 'Taufiq Aminudin',
-      email: 'taufiq.aminudin@gmail.com',
+      name: 'Taufiq Aminudin (AA Organizer)',
+      email: 'organizer@aa-eventmaker.my.id',
       phone: '081382000412',
       role: 'ORGANIZER',
       subscriptionTier: 'professional',
@@ -125,13 +125,19 @@ class DataStore {
       createdAt: Date.now() - 15 * 24 * 3600 * 1000,
     };
     this.users.set(orgUser.email.toLowerCase(), orgUser);
+    // Alias for organizer
+    this.users.set('taufiq.aminudin@gmail.com', {
+      ...orgUser,
+      id: 'usr_org_002',
+      email: 'taufiq.aminudin@gmail.com',
+    });
 
-    // 3. Demo Client account
+    // 3. Demo Client / Pengantin account
     const clientPass = hashPassword('Pengantin@2026!');
     const clientUser: ServerUser = {
       id: 'usr_client_001',
-      name: 'Dimas & Ayu',
-      email: 'dimas.ayu.wedding@gmail.com',
+      name: 'Dimas & Ayu (Mempelai)',
+      email: 'pengantin@aa-eventmaker.my.id',
       phone: '081234567890',
       role: 'CLIENT',
       subscriptionTier: 'starter',
@@ -140,6 +146,20 @@ class DataStore {
       createdAt: Date.now() - 5 * 24 * 3600 * 1000,
     };
     this.users.set(clientUser.email.toLowerCase(), clientUser);
+    // Aliases for klien
+    const clientPassAlt = hashPassword('Client@2026!');
+    this.users.set('klien@aa-eventmaker.my.id', {
+      ...clientUser,
+      id: 'usr_client_002',
+      email: 'klien@aa-eventmaker.my.id',
+      passwordSalt: clientPassAlt.salt,
+      passwordHash: clientPassAlt.hash,
+    });
+    this.users.set('dimas.ayu.wedding@gmail.com', {
+      ...clientUser,
+      id: 'usr_client_003',
+      email: 'dimas.ayu.wedding@gmail.com',
+    });
 
     // 4. Vendor account
     const vendorPass = hashPassword('Vendor@2026!');

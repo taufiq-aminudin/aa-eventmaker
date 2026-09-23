@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 
-// Secret key for HMAC token signing (falls back to secure ephemeral random key if not set)
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-const QR_SECRET = process.env.QR_SECRET || crypto.randomBytes(32).toString('hex');
+// Secret key for HMAC token signing (falls back to secure stable key if not set)
+const SESSION_SECRET = process.env.SESSION_SECRET || 'aa_event_maker_session_secret_stable_key_2026';
+const QR_SECRET = process.env.QR_SECRET || 'aa_event_maker_qr_secret_stable_key_2026';
 
-export type UserRole = 'ADMIN' | 'ORGANIZER' | 'CLIENT' | 'GUEST';
+export type UserRole = 'ADMIN' | 'ORGANIZER' | 'CLIENT' | 'VENDOR' | 'GUEST';
 export type SubscriptionTier = 'starter' | 'professional' | 'agency';
 
 export interface TokenPayload {
