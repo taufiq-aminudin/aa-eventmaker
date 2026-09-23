@@ -400,28 +400,66 @@ async function startServer() {
     });
   });
 
-  // Login
-  app.post('/api/auth/login', (req, res) => {
+ // Login
+app.post('/api/auth/login', (req, res) => {
+  try {
+    // Always return JSON from this endpoint
+    res.type('application/json');
+
     const clientKey = req.ip || 'anonymous';
+
+    // Rate limit
     const rate = authRateLimiter.check(clientKey);
+
     if (!rate.allowed) {
       return res.status(429).json({
         success: false,
         message: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.',
-        error: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.',
+        error: 'RATE_LIMITED',
+        retryAfter: rate.retryAfterSec || 300,
       });
     }
 
-    const { email, password } = req.body;
+    // Validate request body
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Data login tidak valid.',
+        error: 'INVALID_REQUEST_BODY',
+      });
+    }
+
+    const email =
+      typeof req.body.email === 'string'
+        ? req.body.email.trim()
+        : '';
+
+    const password =
+      typeof req.body.password === 'string'
+        ? req.body.password
+        : '';
+
+    // Validate email
     if (!email || !isValidEmail(email)) {
       return res.status(400).json({
         success: false,
         message: 'Alamat email wajib diisi dengan benar.',
-        error: 'Alamat email wajib diisi dengan benar.',
+        error: 'INVALID_EMAIL',
       });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    // Validate password
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kata sandi wajib diisi.',
+        error: 'PASSWORD_REQUIRED',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase();
+
+    // Find user
     const user = serverStore.findUserByEmail(cleanEmail);
 
     if (!user) {
@@ -434,14 +472,15 @@ async function startServer() {
         status: 'FAILED',
         details: 'User not found',
       });
+
       return res.status(401).json({
         success: false,
-        message: 'Email atau password salah',
-        error: 'Email atau kata sandi tidak cocok.',
+        message: 'Email atau password salah.',
+        error: 'INVALID_CREDENTIALS',
       });
     }
 
-    // Security requirement: Super Admin cannot log in via the public login endpoint
+    // Public login must never authenticate ADMIN
     if (user.role === 'ADMIN') {
       auditLogger.log({
         actorId: user.id,
@@ -450,71 +489,136 @@ async function startServer() {
         resource: '/api/auth/login',
         ip: req.ip || 'unknown',
         status: 'BLOCKED',
-        details: 'Admin user attempted to authenticate via public login endpoint',
+        details: 'Admin attempted public login',
       });
+
       return res.status(403).json({
         success: false,
-        message: 'Akses tidak diizinkan. Akun Administrator memiliki pintu masuk autentikasi terpisah yang aman.',
-        error: 'Akses tidak diizinkan. Akun Administrator memiliki pintu masuk autentikasi terpisah yang aman.',
+        message: 'Akun Administrator menggunakan halaman login khusus.',
+        error: 'ADMIN_LOGIN_REQUIRED',
       });
     }
 
-    // Password is required
-    if (!password) {
-      return res.status(400).json({
+    // Verify password
+    if (!user.passwordSalt || !user.passwordHash) {
+      console.error('[LOGIN] User has no password credentials:', user.email);
+
+      return res.status(500).json({
         success: false,
-        message: 'Kata sandi wajib diisi.',
-        error: 'Kata sandi wajib diisi.',
+        message: 'Akun belum memiliki kredensial login yang valid.',
+        error: 'PASSWORD_CREDENTIALS_MISSING',
       });
     }
 
-    // Verify password if user has password credentials set
-    if (user.passwordSalt && user.passwordHash) {
-      const isValid = verifyPassword(password, user.passwordSalt, user.passwordHash);
-      if (!isValid) {
-        auditLogger.log({
-          actorId: user.id,
-          actorEmail: user.email,
-          action: 'AUTH_LOGIN_FAILED',
-          resource: '/api/auth/login',
-          ip: req.ip || 'unknown',
-          status: 'FAILED',
-          details: 'Incorrect password',
-        });
-        return res.status(401).json({
-          success: false,
-          message: 'Email atau password salah',
-          error: 'Email atau kata sandi tidak cocok.',
-        });
-      }
+    let passwordValid = false;
+
+    try {
+      passwordValid = verifyPassword(
+        password,
+        user.passwordSalt,
+        user.passwordHash
+      );
+    } catch (passwordError: any) {
+      console.error(
+        '[LOGIN_PASSWORD_VERIFY_ERROR]',
+        passwordError?.message || passwordError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal memverifikasi kata sandi.',
+        error: 'PASSWORD_VERIFICATION_ERROR',
+      });
     }
 
-    const token = signSessionToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      subscriptionTier: user.subscriptionTier,
-    });
+    if (!passwordValid) {
+      auditLogger.log({
+        actorId: user.id,
+        actorEmail: user.email,
+        action: 'AUTH_LOGIN_FAILED',
+        resource: '/api/auth/login',
+        ip: req.ip || 'unknown',
+        status: 'FAILED',
+        details: 'Incorrect password',
+      });
 
-    const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
-    res.cookie('aa_session_token', token, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+      return res.status(401).json({
+        success: false,
+        message: 'Email atau password salah.',
+        error: 'INVALID_CREDENTIALS',
+      });
+    }
 
-    auditLogger.log({
-      actorId: user.id,
-      actorEmail: user.email,
-      action: 'AUTH_LOGIN_SUCCESS',
-      resource: '/api/auth/login',
-      ip: req.ip || 'unknown',
-      status: 'SUCCESS',
-      details: `User logged in with role ${user.role}`,
-    });
+    // Create session token
+    let token: string;
 
-    res.json({
+    try {
+      token = signSessionToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+      });
+    } catch (tokenError: any) {
+      console.error(
+        '[LOGIN_TOKEN_ERROR]',
+        tokenError?.message || tokenError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal membuat sesi login.',
+        error: 'SESSION_CREATION_FAILED',
+      });
+    }
+
+    // Set secure HTTP-only session cookie
+    try {
+      const isHttps =
+        process.env.NODE_ENV === 'production' ||
+        req.headers['x-forwarded-proto'] === 'https';
+
+      res.cookie('aa_session_token', token, {
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+    } catch (cookieError: any) {
+      console.error(
+        '[LOGIN_COOKIE_ERROR]',
+        cookieError?.message || cookieError
+      );
+
+      // Do not continue if the session cannot be established.
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal membuat sesi login.',
+        error: 'SESSION_COOKIE_FAILED',
+      });
+    }
+
+    // Audit logging must NEVER prevent login response
+    try {
+      auditLogger.log({
+        actorId: user.id,
+        actorEmail: user.email,
+        action: 'AUTH_LOGIN_SUCCESS',
+        resource: '/api/auth/login',
+        ip: req.ip || 'unknown',
+        status: 'SUCCESS',
+        details: `User logged in with role ${user.role}`,
+      });
+    } catch (auditError: any) {
+      console.warn(
+        '[LOGIN_AUDIT_WARNING]',
+        auditError?.message || auditError
+      );
+    }
+
+    // IMPORTANT:
+    // Send the login response BEFORE any optional notification work.
+    return res.status(200).json({
       success: true,
       message: 'Berhasil masuk.',
       token,
@@ -533,6 +637,26 @@ async function startServer() {
         subscriptionTier: user.subscriptionTier,
       },
     });
+
+  } catch (error: any) {
+    // CRITICAL:
+    // The login endpoint must NEVER end without a JSON response.
+    console.error(
+      '[LOGIN_UNHANDLED_ERROR]',
+      error?.stack || error?.message || error
+    );
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan pada server saat login.',
+        error: 'LOGIN_SERVER_ERROR',
+      });
+    }
+
+    return;
+  }
+});
   });
 
   // Google Login / OAuth simulation (Normal users only)
