@@ -657,7 +657,6 @@ app.post('/api/auth/login', (req, res) => {
     return;
   }
 });
-  });
 
   // Google Login / OAuth simulation (Normal users only)
   app.post('/api/auth/google', (req, res) => {
