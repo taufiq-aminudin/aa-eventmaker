@@ -217,3 +217,104 @@ async function login() {
     );
   }
 }
+async function login() {
+  const emailInput = document.getElementById('loginEmail');
+  const passwordInput = document.getElementById('loginPassword');
+
+  const email = (emailInput?.value || '').trim();
+  const password = passwordInput?.value || '';
+
+  if (!email) {
+    toast('Email wajib diisi');
+    emailInput?.focus();
+    return;
+  }
+
+  if (!password) {
+    toast('Password wajib diisi');
+    passwordInput?.focus();
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
+
+    // IMPORTANT:
+    // Jangan langsung menggunakan response.json()
+    const raw = await response.text();
+
+    console.log('LOGIN STATUS:', response.status);
+    console.log('LOGIN RESPONSE:', raw);
+
+    let data = null;
+
+    if (raw.trim()) {
+      try {
+        data = JSON.parse(raw);
+      } catch (parseError) {
+        console.error('LOGIN JSON PARSE ERROR:', parseError);
+        throw new Error('Server mengirim response login yang tidak valid.');
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+        data?.error ||
+        `Login gagal (${response.status})`
+      );
+    }
+
+    if (!data) {
+      throw new Error('Server login mengirim response kosong.');
+    }
+
+    if (data.success !== true) {
+      throw new Error(
+        data.message ||
+        data.error ||
+        'Login gagal.'
+      );
+    }
+
+    // Simpan data user
+    if (data.user) {
+      localStorage.setItem(
+        'aaem_auth_user',
+        JSON.stringify(data.user)
+      );
+    }
+
+    // Simpan token sebagai fallback client-side.
+    // Session utama tetap menggunakan HttpOnly cookie dari server.
+    if (data.token) {
+      localStorage.setItem('aaem_auth_token', data.token);
+    }
+
+    toast('Login berhasil');
+
+    // Bersihkan halaman lama dan masuk ke dashboard
+    setTimeout(() => {
+      window.location.href = 'dashboard.html';
+    }, 400);
+
+  } catch (error) {
+    console.error('LOGIN ERROR:', error);
+
+    toast(
+      error?.message ||
+      'Terjadi kesalahan saat login.'
+    );
+  }
+}
