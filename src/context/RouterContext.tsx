@@ -83,6 +83,12 @@ function matchRoute(rawPath: string): RouteMatch {
   if (!path.startsWith('/')) path = '/' + path;
   if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
 
+  // Normalize legacy or direct html extensions
+  if (path === '/login.html' || path === '/web/login.html') path = '/login';
+  if (path === '/signup.html' || path === '/web/signup.html') path = '/signup';
+  if (path === '/dashboard.html' || path === '/web/dashboard.html') path = '/dashboard';
+  if (path === '/templates.html' || path === '/web/templates.html') path = '/templates';
+
   // Check invitation route pattern: /invitation/:slug
   const invitationMatch = path.match(/^\/invitation\/([a-zA-Z0-9_-]+)/);
   if (invitationMatch) {

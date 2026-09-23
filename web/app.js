@@ -119,18 +119,29 @@ document.addEventListener('DOMContentLoaded',()=>{
 async function login() {
   const emailInput = document.getElementById('loginEmail');
   const passwordInput = document.getElementById('loginPassword');
+  const errorEl = document.getElementById('loginError');
+
+  const showError = (msg) => {
+    if (errorEl) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+    toast(msg);
+  };
+
+  if (errorEl) errorEl.style.display = 'none';
 
   const email = (emailInput?.value || '').trim();
   const password = passwordInput?.value || '';
 
   if (!email) {
-    toast('Email wajib diisi');
+    showError('Email wajib diisi');
     emailInput?.focus();
     return;
   }
 
   if (!password) {
-    toast('Password wajib diisi');
+    showError('Password wajib diisi');
     passwordInput?.focus();
     return;
   }
@@ -149,13 +160,7 @@ async function login() {
       })
     });
 
-    // IMPORTANT:
-    // Jangan langsung menggunakan response.json()
     const raw = await response.text();
-
-    console.log('LOGIN STATUS:', response.status);
-    console.log('LOGIN RESPONSE:', raw);
-
     let data = null;
 
     if (raw.trim()) {
@@ -167,7 +172,7 @@ async function login() {
       }
     }
 
-    if (!response.ok) {
+    if (!response.ok || !data?.success) {
       throw new Error(
         data?.message ||
         data?.error ||
@@ -175,69 +180,73 @@ async function login() {
       );
     }
 
-    if (!data) {
-      throw new Error('Server login mengirim response kosong.');
-    }
-
-    if (data.success !== true) {
-      throw new Error(
-        data.message ||
-        data.error ||
-        'Login gagal.'
-      );
-    }
-
-    // Simpan data user
+    // Simpan data user untuk static pages & SPA
     if (data.user) {
-      localStorage.setItem(
-        'aaem_auth_user',
-        JSON.stringify(data.user)
-      );
+      localStorage.setItem('aaem_auth_user', JSON.stringify(data.user));
+      localStorage.setItem('aa_current_user', JSON.stringify(data.user));
+      localStorage.setItem('aa_active_role', data.user.role || 'ORGANIZER');
+      localStorage.setItem('aa_active_subscription_tier', data.user.subscriptionTier || 'starter');
     }
 
-    // Simpan token sebagai fallback client-side.
-    // Session utama tetap menggunakan HttpOnly cookie dari server.
     if (data.token) {
       localStorage.setItem('aaem_auth_token', data.token);
+      localStorage.setItem('aa_session_token', data.token);
     }
 
-    toast('Login berhasil');
+    toast('Login berhasil! Mengalihkan...');
 
-    // Bersihkan halaman lama dan masuk ke dashboard
     setTimeout(() => {
       window.location.href = 'dashboard.html';
     }, 400);
 
   } catch (error) {
     console.error('LOGIN ERROR:', error);
-
-    toast(
-      error?.message ||
-      'Terjadi kesalahan saat login.'
-    );
+    showError(error?.message || 'Terjadi kesalahan saat login.');
   }
 }
-async function login() {
-  const emailInput = document.getElementById('loginEmail');
-  const passwordInput = document.getElementById('loginPassword');
 
+async function signup() {
+  const nameInput = document.getElementById('signupName');
+  const emailInput = document.getElementById('signupEmail');
+  const passwordInput = document.getElementById('signupPassword');
+  const confirmInput = document.getElementById('signupConfirm');
+  const errorEl = document.getElementById('signupError');
+
+  const showError = (msg) => {
+    if (errorEl) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+    toast(msg);
+  };
+
+  if (errorEl) errorEl.style.display = 'none';
+
+  const name = (nameInput?.value || '').trim();
   const email = (emailInput?.value || '').trim();
   const password = passwordInput?.value || '';
+  const confirm = confirmInput?.value || '';
 
-  if (!email) {
-    toast('Email wajib diisi');
+  if (!email || !email.includes('@')) {
+    showError('Mohon masukkan alamat email yang valid.');
     emailInput?.focus();
     return;
   }
 
-  if (!password) {
-    toast('Password wajib diisi');
+  if (password.length < 6) {
+    showError('Kata sandi minimal 6 karakter.');
     passwordInput?.focus();
     return;
   }
 
+  if (password !== confirm) {
+    showError('Konfirmasi kata sandi tidak cocok.');
+    confirmInput?.focus();
+    return;
+  }
+
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -245,76 +254,72 @@ async function login() {
       },
       credentials: 'include',
       body: JSON.stringify({
+        name: name || email.split('@')[0],
         email,
-        password
+        password,
+        role: 'ORGANIZER'
       })
     });
 
-    // IMPORTANT:
-    // Jangan langsung menggunakan response.json()
     const raw = await response.text();
-
-    console.log('LOGIN STATUS:', response.status);
-    console.log('LOGIN RESPONSE:', raw);
-
     let data = null;
 
     if (raw.trim()) {
       try {
         data = JSON.parse(raw);
       } catch (parseError) {
-        console.error('LOGIN JSON PARSE ERROR:', parseError);
-        throw new Error('Server mengirim response login yang tidak valid.');
+        console.error('SIGNUP JSON PARSE ERROR:', parseError);
+        throw new Error('Server mengirim response pendaftaran yang tidak valid.');
       }
     }
 
-    if (!response.ok) {
+    if (!response.ok || !data?.success) {
       throw new Error(
         data?.message ||
         data?.error ||
-        `Login gagal (${response.status})`
+        `Pendaftaran gagal (${response.status})`
       );
     }
 
-    if (!data) {
-      throw new Error('Server login mengirim response kosong.');
-    }
-
-    if (data.success !== true) {
-      throw new Error(
-        data.message ||
-        data.error ||
-        'Login gagal.'
-      );
-    }
-
-    // Simpan data user
+    // Simpan data user untuk static pages & SPA
     if (data.user) {
-      localStorage.setItem(
-        'aaem_auth_user',
-        JSON.stringify(data.user)
-      );
+      localStorage.setItem('aaem_auth_user', JSON.stringify(data.user));
+      localStorage.setItem('aa_current_user', JSON.stringify(data.user));
+      localStorage.setItem('aa_active_role', data.user.role || 'ORGANIZER');
+      localStorage.setItem('aa_active_subscription_tier', data.user.subscriptionTier || 'starter');
     }
 
-    // Simpan token sebagai fallback client-side.
-    // Session utama tetap menggunakan HttpOnly cookie dari server.
     if (data.token) {
       localStorage.setItem('aaem_auth_token', data.token);
+      localStorage.setItem('aa_session_token', data.token);
     }
 
-    toast('Login berhasil');
+    toast('Pendaftaran berhasil! Mengalihkan...');
 
-    // Bersihkan halaman lama dan masuk ke dashboard
     setTimeout(() => {
       window.location.href = 'dashboard.html';
     }, 400);
 
   } catch (error) {
-    console.error('LOGIN ERROR:', error);
-
-    toast(
-      error?.message ||
-      'Terjadi kesalahan saat login.'
-    );
+    console.error('SIGNUP ERROR:', error);
+    showError(error?.message || 'Terjadi kesalahan saat pendaftaran.');
   }
+}
+
+// Global Enter Key listeners for login/signup forms
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginPass = document.getElementById('loginPassword');
+    if (loginPass) {
+      loginPass.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') login();
+      });
+    }
+    const signupConf = document.getElementById('signupConfirm');
+    if (signupConf) {
+      signupConf.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') signup();
+      });
+    }
+  });
 }

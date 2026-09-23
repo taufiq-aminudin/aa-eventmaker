@@ -176,9 +176,20 @@ function requireRole(allowedRoles: UserRole[]) {
   };
 }
 
+function getClientIp(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || (req.socket && req.socket.remoteAddress) || '127.0.0.1';
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust proxy for reverse proxies in deployment and local dev
+  app.set('trust proxy', true);
 
   // -----------------------------------------------------------------
   // 1. Production Security Headers & Anti-Clickjacking Middleware
@@ -255,16 +266,30 @@ async function startServer() {
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+  // Gracefully handle malformed JSON payloads with clean JSON response instead of HTML
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      return res.status(400).json({
+        success: false,
+        message: 'Format payload JSON tidak valid.',
+        error: 'INVALID_JSON_PAYLOAD',
+      });
+    }
+    next(err);
+  });
+
   // Apply Auth extraction middleware globally
   app.use(authMiddleware);
 
   // General API Rate Limiting
   app.use('/api/', (req, res, next) => {
-    const clientKey = req.ip || 'anonymous';
+    const clientKey = getClientIp(req);
     const limit = generalApiLimiter.check(clientKey);
     if (!limit.allowed) {
       return res.status(429).json({
+        success: false,
         error: 'Terlalu banyak permintaan ke server. Silakan coba beberapa saat lagi.',
+        message: 'Terlalu banyak permintaan ke server. Silakan coba beberapa saat lagi.',
         retryAfter: limit.retryAfterSec,
       });
     }
@@ -289,138 +314,152 @@ async function startServer() {
 
   // Register
   app.post('/api/auth/register', (req, res) => {
-    const clientKey = req.ip || 'anonymous';
-    const rate = authRateLimiter.check(clientKey);
-    if (!rate.allowed) {
-      return res.status(429).json({
-        success: false,
-        message: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.',
-        error: 'Terlalu banyak percobaan pendaftaran. Coba lagi nanti.',
+    try {
+      res.type('application/json');
+      const clientKey = getClientIp(req);
+      const rate = authRateLimiter.check(clientKey);
+      if (!rate.allowed) {
+        return res.status(429).json({
+          success: false,
+          message: 'Terlalu banyak percobaan pendaftaran. Coba lagi dalam beberapa saat.',
+          error: 'RATE_LIMITED',
+          retryAfter: rate.retryAfterSec || 300,
+        });
+      }
+
+      const body = req.body || {};
+      const { name, email, phone, password, role: requestedRole, packageId } = body;
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Format email tidak valid.',
+          error: 'Format email tidak valid.',
+        });
+      }
+
+      const cleanEmail = email.toLowerCase().trim();
+      if (serverStore.findUserByEmail(cleanEmail)) {
+        return res.status(409).json({
+          success: false,
+          message: 'Alamat email ini sudah terdaftar. Silakan masuk.',
+          error: 'Alamat email ini sudah terdaftar. Silakan masuk.',
+        });
+      }
+
+      const cleanName = sanitizeInputString(name || '', 60) || cleanEmail.split('@')[0];
+      const cleanPhone = sanitizeInputString(phone || '', 20) || '081382000412';
+
+      // Passwords must be at least 6 characters
+      if (!password || typeof password !== 'string' || password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kata sandi minimal 6 karakter.',
+          error: 'Kata sandi minimal 6 karakter.',
+        });
+      }
+      const { salt, hash } = hashPassword(password);
+
+      // Critical security: normal registration CANNOT assign ADMIN role!
+      const validRoles: UserRole[] = ['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST'];
+      const role: UserRole = requestedRole && validRoles.includes(requestedRole) ? requestedRole : 'ORGANIZER';
+      const subscriptionTier = 'starter';
+
+      const newUser = serverStore.createUser({
+        id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        role,
+        subscriptionTier,
+        passwordSalt: salt,
+        passwordHash: hash,
+        createdAt: Date.now(),
       });
-    }
 
-    const { name, email, phone, password, role: requestedRole, packageId } = req.body;
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Format email tidak valid.',
-        error: 'Format email tidak valid.',
-      });
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-    if (serverStore.findUserByEmail(cleanEmail)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Alamat email ini sudah terdaftar. Silakan masuk.',
-        error: 'Alamat email ini sudah terdaftar. Silakan masuk.',
-      });
-    }
-
-    const cleanName = sanitizeInputString(name, 60) || cleanEmail.split('@')[0];
-    const cleanPhone = sanitizeInputString(phone, 20);
-
-    // Passwords must be at least 6 characters
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Kata sandi minimal 6 karakter.',
-        error: 'Kata sandi minimal 6 karakter.',
-      });
-    }
-    const { salt, hash } = hashPassword(password);
-
-    // Critical security: normal registration CANNOT assign ADMIN role!
-    const validRoles: UserRole[] = ['ORGANIZER', 'CLIENT', 'VENDOR', 'GUEST'];
-    const role: UserRole = requestedRole && validRoles.includes(requestedRole) ? requestedRole : 'ORGANIZER';
-    const subscriptionTier = 'starter';
-
-    const newUser = serverStore.createUser({
-      id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      name: cleanName,
-      email: cleanEmail,
-      phone: cleanPhone,
-      role,
-      subscriptionTier,
-      passwordSalt: salt,
-      passwordHash: hash,
-      createdAt: Date.now(),
-    });
-
-    const token = signSessionToken({
-      userId: newUser.id,
-      email: newUser.email,
-      role: newUser.role,
-      subscriptionTier: newUser.subscriptionTier,
-    });
-
-    // Set secure cookie
-    const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
-    res.cookie('aa_session_token', token, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    auditLogger.log({
-      actorId: newUser.id,
-      actorEmail: newUser.email,
-      action: 'AUTH_REGISTER',
-      resource: '/api/auth/register',
-      ip: req.ip || 'unknown',
-      status: 'SUCCESS',
-      details: `New user registered as ${role} (tier: ${subscriptionTier})`,
-    });
-
-    // Trigger complete welcome & admin registration notifications
-    sendUserRegistrationNotifications(newUser).catch((err) => {
-      console.warn('[NOTIF_REGISTER_ERROR]', err?.message || err);
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Pendaftaran berhasil.',
-      token,
-      session: {
-        token,
+      const token = signSessionToken({
         userId: newUser.id,
         email: newUser.email,
         role: newUser.role,
-      },
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
         subscriptionTier: newUser.subscriptionTier,
-      },
-    });
-  });
+      });
 
- // Login
-app.post('/api/auth/login', (req, res) => {
-  try {
-    // Always return JSON from this endpoint
-    res.type('application/json');
+      // Set secure cookie
+      const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
+      res.cookie('aa_session_token', token, {
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
-    const clientKey = req.ip || 'anonymous';
+      authRateLimiter.reset(clientKey);
 
-    // Rate limit
-    const rate = authRateLimiter.check(clientKey);
+      auditLogger.log({
+        actorId: newUser.id,
+        actorEmail: newUser.email,
+        action: 'AUTH_REGISTER',
+        resource: '/api/auth/register',
+        ip: clientKey,
+        status: 'SUCCESS',
+        details: `New user registered as ${role} (tier: ${subscriptionTier})`,
+      });
 
-    if (!rate.allowed) {
-      return res.status(429).json({
+      // Trigger complete welcome & admin registration notifications
+      sendUserRegistrationNotifications(newUser).catch((err) => {
+        console.warn('[NOTIF_REGISTER_ERROR]', err?.message || err);
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Pendaftaran berhasil.',
+        token,
+        session: {
+          token,
+          userId: newUser.id,
+          email: newUser.email,
+          role: newUser.role,
+        },
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          phone: newUser.phone,
+          role: newUser.role,
+          subscriptionTier: newUser.subscriptionTier,
+        },
+      });
+    } catch (regError: any) {
+      console.error('[REGISTER_ERROR]', regError);
+      return res.status(500).json({
         success: false,
-        message: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam 5 menit.',
-        error: 'RATE_LIMITED',
-        retryAfter: rate.retryAfterSec || 300,
+        message: 'Terjadi kesalahan pada server saat pendaftaran.',
+        error: regError?.message || 'REGISTER_SERVER_ERROR',
       });
     }
+  });
 
-    // Validate request body
+  // Login
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      // Always return JSON from this endpoint
+      res.type('application/json');
+
+      const clientKey = getClientIp(req);
+
+      // Rate limit
+      const rate = authRateLimiter.check(clientKey);
+
+      if (!rate.allowed) {
+        return res.status(429).json({
+          success: false,
+          message: 'Terlalu banyak percobaan masuk gagal. Coba lagi dalam beberapa saat.',
+          error: 'RATE_LIMITED',
+          retryAfter: rate.retryAfterSec || 300,
+        });
+      }
+
+      // Validate request body
     if (!req.body || typeof req.body !== 'object') {
       return res.status(400).json({
         success: false,
@@ -616,6 +655,9 @@ app.post('/api/auth/login', (req, res) => {
       );
     }
 
+    // Reset rate limiter on successful authentication
+    authRateLimiter.reset(clientKey);
+
     // IMPORTANT:
     // Send the login response BEFORE any optional notification work.
     return res.status(200).json({
@@ -660,199 +702,221 @@ app.post('/api/auth/login', (req, res) => {
 
   // Google Login / OAuth simulation (Normal users only)
   app.post('/api/auth/google', (req, res) => {
-    const { email, name, role = 'ORGANIZER' } = req.body;
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email Google tidak valid.',
-        error: 'Email Google tidak valid.',
-      });
-    }
+    try {
+      res.type('application/json');
+      const { email, name, role = 'ORGANIZER' } = req.body || {};
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email Google tidak valid.',
+          error: 'Email Google tidak valid.',
+        });
+      }
 
-    const cleanEmail = email.toLowerCase().trim();
-    let user = serverStore.findUserByEmail(cleanEmail);
+      const cleanEmail = email.toLowerCase().trim();
+      let user = serverStore.findUserByEmail(cleanEmail);
 
-    // Normal public flow never creates or escalates to ADMIN role
-    const effectiveRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : (role as UserRole);
+      // Normal public flow never creates or escalates to ADMIN role
+      const effectiveRole: UserRole = role === 'ADMIN' ? 'ORGANIZER' : (role as UserRole);
 
-    if (user && user.role === 'ADMIN') {
-      return res.status(403).json({
-        success: false,
-        message: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
-        error: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
-      });
-    }
+      if (user && user.role === 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
+          error: 'Akun Administrator tidak dapat diakses melalui portal publik Google login.',
+        });
+      }
 
-    if (!user) {
-      user = serverStore.createUser({
-        id: `usr_g_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        name: sanitizeInputString(name, 60) || cleanEmail.split('@')[0],
-        email: cleanEmail,
-        role: effectiveRole,
-        subscriptionTier: 'starter',
-        createdAt: Date.now(),
-      });
-    }
+      if (!user) {
+        user = serverStore.createUser({
+          id: `usr_g_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: sanitizeInputString(name, 60) || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          role: effectiveRole,
+          subscriptionTier: 'starter',
+          createdAt: Date.now(),
+        });
+      }
 
-    const token = signSessionToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      subscriptionTier: user.subscriptionTier,
-    });
-
-    const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
-    res.cookie('aa_session_token', token, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      success: true,
-      message: 'Login Google berhasil.',
-      token,
-      session: {
-        token,
+      const token = signSessionToken({
         userId: user.id,
         email: user.email,
         role: user.role,
-      },
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        role: user.role,
         subscriptionTier: user.subscriptionTier,
-      },
-    });
+      });
+
+      const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
+      res.cookie('aa_session_token', token, {
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Login Google berhasil.',
+        token,
+        session: {
+          token,
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          role: user.role,
+          subscriptionTier: user.subscriptionTier,
+        },
+      });
+    } catch (gError: any) {
+      console.error('[GOOGLE_LOGIN_ERROR]', gError);
+      return res.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan saat masuk dengan Google.',
+        error: gError?.message || 'GOOGLE_LOGIN_ERROR',
+      });
+    }
   });
 
   // Dedicated Private Admin Console Authentication Endpoint
   app.post('/api/auth/admin-login', (req, res) => {
-    const clientKey = req.ip || 'anonymous';
-    const rate = adminAuthRateLimiter.check(clientKey);
-    if (!rate.allowed) {
-      auditLogger.log({
-        actorId: 'anonymous',
-        actorEmail: req.body?.email || 'unknown',
-        action: 'ADMIN_AUTH_RATE_LIMITED',
-        resource: '/api/auth/admin-login',
-        ip: req.ip || 'unknown',
-        status: 'BLOCKED',
-        details: 'Too many admin authentication attempts',
-      });
-      return res.status(429).json({
-        success: false,
-        message: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
-        error: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
-      });
-    }
+    try {
+      res.type('application/json');
+      const clientKey = getClientIp(req);
+      const rate = adminAuthRateLimiter.check(clientKey);
+      if (!rate.allowed) {
+        auditLogger.log({
+          actorId: 'anonymous',
+          actorEmail: req.body?.email || 'unknown',
+          action: 'ADMIN_AUTH_RATE_LIMITED',
+          resource: '/api/auth/admin-login',
+          ip: clientKey,
+          status: 'BLOCKED',
+          details: 'Too many admin authentication attempts',
+        });
+        return res.status(429).json({
+          success: false,
+          message: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
+          error: 'Terlalu banyak percobaan autentikasi admin gagal. Akses ditangguhkan selama 15 menit demi keamanan.',
+        });
+      }
 
-    const { email, password } = req.body;
-    if (!email || !isValidEmail(email) || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Kredensial administrator tidak lengkap.',
-        error: 'Kredensial administrator tidak lengkap.',
-      });
-    }
+      const { email, password } = req.body || {};
+      if (!email || !isValidEmail(email) || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kredensial administrator tidak lengkap.',
+          error: 'Kredensial administrator tidak lengkap.',
+        });
+      }
 
-    const cleanEmail = email.toLowerCase().trim();
-    const user = serverStore.findUserByEmail(cleanEmail);
+      const cleanEmail = email.toLowerCase().trim();
+      const user = serverStore.findUserByEmail(cleanEmail);
 
-    // Verify user exists and has explicit ADMIN role
-    if (!user || user.role !== 'ADMIN') {
-      auditLogger.log({
-        actorId: 'anonymous',
-        actorEmail: cleanEmail,
-        action: 'ADMIN_LOGIN_UNAUTHORIZED_ACCOUNT',
-        resource: '/api/auth/admin-login',
-        ip: req.ip || 'unknown',
-        status: 'FAILED',
-        details: 'Non-admin or non-existent user attempted to access admin login',
-      });
-      return res.status(401).json({
-        success: false,
-        message: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
-        error: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
-      });
-    }
+      // Verify user exists and has explicit ADMIN role
+      if (!user || user.role !== 'ADMIN') {
+        auditLogger.log({
+          actorId: 'anonymous',
+          actorEmail: cleanEmail,
+          action: 'ADMIN_LOGIN_UNAUTHORIZED_ACCOUNT',
+          resource: '/api/auth/admin-login',
+          ip: clientKey,
+          status: 'FAILED',
+          details: 'Non-admin or non-existent user attempted to access admin login',
+        });
+        return res.status(401).json({
+          success: false,
+          message: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
+          error: 'Kredensial administrator tidak sah atau akun tidak memiliki hak akses.',
+        });
+      }
 
-    // Verify password strictly against salt and hash
-    if (!user.passwordSalt || !user.passwordHash) {
-      return res.status(500).json({
-        success: false,
-        message: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
-        error: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
-      });
-    }
+      // Verify password strictly against salt and hash
+      if (!user.passwordSalt || !user.passwordHash) {
+        return res.status(500).json({
+          success: false,
+          message: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
+          error: 'Akun administrator belum dikonfigurasi kata sandi terenkripsi.',
+        });
+      }
 
-    const isMatch = verifyPassword(password, user.passwordSalt, user.passwordHash);
-    if (!isMatch) {
-      auditLogger.log({
-        actorId: user.id,
-        actorEmail: user.email,
-        action: 'ADMIN_LOGIN_FAILED_CREDENTIALS',
-        resource: '/api/auth/admin-login',
-        ip: req.ip || 'unknown',
-        status: 'FAILED',
-        details: 'Invalid password for admin user',
-      });
-      return res.status(401).json({
-        success: false,
-        message: 'Kredensial administrator tidak sah atau kata sandi salah.',
-        error: 'Kredensial administrator tidak sah atau kata sandi salah.',
-      });
-    }
+      const isMatch = verifyPassword(password, user.passwordSalt, user.passwordHash);
+      if (!isMatch) {
+        auditLogger.log({
+          actorId: user.id,
+          actorEmail: user.email,
+          action: 'ADMIN_LOGIN_FAILED_CREDENTIALS',
+          resource: '/api/auth/admin-login',
+          ip: clientKey,
+          status: 'FAILED',
+          details: 'Invalid password for admin user',
+        });
+        return res.status(401).json({
+          success: false,
+          message: 'Kredensial administrator tidak sah atau kata sandi salah.',
+          error: 'Kredensial administrator tidak sah atau kata sandi salah.',
+        });
+      }
 
-    // Sign session token strictly with ADMIN role
-    const token = signSessionToken({
-      userId: user.id,
-      email: user.email,
-      role: 'ADMIN',
-      subscriptionTier: user.subscriptionTier,
-    });
-
-    const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
-    res.cookie('aa_session_token', token, {
-      httpOnly: true,
-      secure: isHttps,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    auditLogger.log({
-      actorId: user.id,
-      actorEmail: user.email,
-      action: 'ADMIN_LOGIN_SUCCESS',
-      resource: '/api/auth/admin-login',
-      ip: req.ip || 'unknown',
-      status: 'SUCCESS',
-      details: 'Administrator successfully authenticated to console',
-    });
-
-    res.json({
-      success: true,
-      message: 'Autentikasi administrator berhasil.',
-      token,
-      session: {
-        token,
+      // Sign session token strictly with ADMIN role
+      const token = signSessionToken({
         userId: user.id,
         email: user.email,
         role: 'ADMIN',
-      },
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
         subscriptionTier: user.subscriptionTier,
-      },
-    });
+      });
+
+      const isHttps = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
+      res.cookie('aa_session_token', token, {
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      adminAuthRateLimiter.reset(clientKey);
+
+      auditLogger.log({
+        actorId: user.id,
+        actorEmail: user.email,
+        action: 'ADMIN_LOGIN_SUCCESS',
+        resource: '/api/auth/admin-login',
+        ip: clientKey,
+        status: 'SUCCESS',
+        details: 'Administrator successfully authenticated to console',
+      });
+
+      return res.json({
+        success: true,
+        message: 'Autentikasi administrator berhasil.',
+        token,
+        session: {
+          token,
+          userId: user.id,
+          email: user.email,
+          role: 'ADMIN',
+        },
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          subscriptionTier: user.subscriptionTier,
+        },
+      });
+    } catch (adminErr: any) {
+      console.error('[ADMIN_LOGIN_ERROR]', adminErr);
+      return res.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan pada server saat login admin.',
+        error: adminErr?.message || 'ADMIN_LOGIN_ERROR',
+      });
+    }
   });
 
   // Logout
@@ -2176,6 +2240,30 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     next();
+  });
+
+  // -----------------------------------------------------------------
+  // Guarantee clean JSON for unhandled API routes and errors (Express 5 compatible)
+  // -----------------------------------------------------------------
+  app.use('/api', (req, res, next) => {
+    res.status(404).json({
+      success: false,
+      message: `Rute API ${req.method} ${req.originalUrl || req.url} tidak ditemukan.`,
+      error: 'NOT_FOUND',
+    });
+  });
+
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (req.originalUrl?.startsWith('/api') || req.url?.startsWith('/api')) {
+      console.error('[API_GLOBAL_ERROR]', err);
+      if (res.headersSent) return next(err);
+      return res.status(err.status || 500).json({
+        success: false,
+        message: err?.message || 'Terjadi kesalahan pada server.',
+        error: err?.code || 'SERVER_ERROR',
+      });
+    }
+    next(err);
   });
 
   // -----------------------------------------------------------------

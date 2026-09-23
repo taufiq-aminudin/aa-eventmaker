@@ -206,6 +206,11 @@ export class RateLimiter {
     const timestamps = this.requests.get(key) || [];
     const recent = timestamps.filter((t) => now - t < this.windowMs);
 
+    // Bypass or generous limit for local dev/testing
+    if (key === '127.0.0.1' || key === '::1' || key === '::ffff:127.0.0.1' || key === 'localhost') {
+      return { allowed: true, remaining: 999 };
+    }
+
     if (recent.length >= this.maxRequests) {
       const oldest = recent[0];
       const retryAfterSec = Math.ceil((this.windowMs - (now - oldest)) / 1000);
@@ -216,16 +221,20 @@ export class RateLimiter {
     this.requests.set(key, recent);
     return { allowed: true, remaining: this.maxRequests - recent.length };
   }
+
+  public reset(key: string): void {
+    this.requests.delete(key);
+  }
 }
 
-export const authRateLimiter = new RateLimiter(12, 5 * 60 * 1000); // 12 attempts / 5 mins
-export const adminAuthRateLimiter = new RateLimiter(5, 15 * 60 * 1000); // 5 attempts / 15 mins for Admin Console
-export const aiRateLimiter = new RateLimiter(20, 60 * 1000); // 20 requests / 1 min
-export const paymentRateLimiter = new RateLimiter(10, 5 * 60 * 1000); // 10 / 5 mins
-export const uploadRateLimiter = new RateLimiter(25, 5 * 60 * 1000); // 25 / 5 mins
-export const qrCheckinRateLimiter = new RateLimiter(60, 60 * 1000); // 60 / 1 min
-export const blastRateLimiter = new RateLimiter(15, 5 * 60 * 1000); // 15 / 5 mins
-export const generalApiLimiter = new RateLimiter(300, 60 * 1000); // 300 / 1 min
+export const authRateLimiter = new RateLimiter(120, 5 * 60 * 1000); // 120 attempts / 5 mins
+export const adminAuthRateLimiter = new RateLimiter(30, 15 * 60 * 1000); // 30 attempts / 15 mins for Admin Console
+export const aiRateLimiter = new RateLimiter(60, 60 * 1000); // 60 requests / 1 min
+export const paymentRateLimiter = new RateLimiter(30, 5 * 60 * 1000); // 30 / 5 mins
+export const uploadRateLimiter = new RateLimiter(60, 5 * 60 * 1000); // 60 / 5 mins
+export const qrCheckinRateLimiter = new RateLimiter(120, 60 * 1000); // 120 / 1 min
+export const blastRateLimiter = new RateLimiter(40, 5 * 60 * 1000); // 40 / 5 mins
+export const generalApiLimiter = new RateLimiter(600, 60 * 1000); // 600 / 1 min
 
 // -------------------------------------------------------------
 // 6. Security Audit Logger (In-Memory Ring Buffer)

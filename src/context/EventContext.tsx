@@ -587,6 +587,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('aa_active_role');
     localStorage.removeItem('aa_user_role');
     localStorage.removeItem('aa_active_subscription_tier');
+    localStorage.removeItem('aaem_auth_token');
+    localStorage.removeItem('aaem_auth_user');
 
     if (typeof document !== 'undefined') {
       document.cookie = 'aa_user_role=; path=/; max-age=0; SameSite=Lax';
@@ -754,7 +756,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const text = await res.text();
         data = text ? JSON.parse(text) : null;
       } catch {
-        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+        if (res.status === 429) {
+          return { success: false, error: 'Terlalu banyak percobaan. Silakan tunggu beberapa saat.' };
+        }
+        if (res.status >= 500) {
+          return { success: false, error: 'Server sedang sibuk. Silakan coba beberapa saat lagi.' };
+        }
+        return { success: false, error: 'Gagal memproses respons dari server.' };
       }
 
       if (!data) {
@@ -767,6 +775,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (data.token) {
         localStorage.setItem('aa_session_token', data.token);
+        localStorage.setItem('aaem_auth_token', data.token);
       }
 
       const googleUser: AppUser = {
@@ -784,6 +793,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setActiveRole(googleUser.role);
       setActiveSubscriptionTier(googleUser.subscriptionTier || 'starter');
       localStorage.setItem('aa_current_user', JSON.stringify(googleUser));
+      localStorage.setItem('aaem_auth_user', JSON.stringify(googleUser));
       localStorage.setItem('aa_active_role', googleUser.role);
       localStorage.setItem('aa_active_subscription_tier', googleUser.subscriptionTier || 'starter');
 
@@ -835,7 +845,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const text = await res.text();
         data = text ? JSON.parse(text) : null;
       } catch {
-        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+        if (res.status === 429) {
+          return { success: false, error: 'Terlalu banyak percobaan masuk. Silakan tunggu beberapa saat.' };
+        }
+        if (res.status >= 500) {
+          return { success: false, error: 'Server sedang sibuk. Silakan coba beberapa saat lagi.' };
+        }
+        return { success: false, error: 'Gagal memproses respons server saat masuk.' };
       }
 
       if (!data) {
@@ -848,6 +864,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (data.token) {
         localStorage.setItem('aa_session_token', data.token);
+        localStorage.setItem('aaem_auth_token', data.token);
       }
 
       const loggedUser: AppUser = {
@@ -864,6 +881,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setActiveRole(loggedUser.role);
       setActiveSubscriptionTier(loggedUser.subscriptionTier || 'starter');
       localStorage.setItem('aa_current_user', JSON.stringify(loggedUser));
+      localStorage.setItem('aaem_auth_user', JSON.stringify(loggedUser));
       localStorage.setItem('aa_active_role', loggedUser.role);
       localStorage.setItem('aa_active_subscription_tier', loggedUser.subscriptionTier || 'starter');
 
@@ -899,7 +917,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const text = await res.text();
         data = text ? JSON.parse(text) : null;
       } catch {
-        return { success: false, error: 'Format data dari server tidak valid (bukan JSON).' };
+        if (res.status === 429) {
+          return { success: false, error: 'Terlalu banyak percobaan autentikasi admin. Akses ditangguhkan sementara.' };
+        }
+        if (res.status >= 500) {
+          return { success: false, error: 'Server sedang sibuk. Silakan coba beberapa saat lagi.' };
+        }
+        return { success: false, error: 'Gagal memproses respons server saat masuk admin.' };
       }
 
       if (!data) {
@@ -923,11 +947,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (data.token) {
         localStorage.setItem('aa_session_token', data.token);
+        localStorage.setItem('aaem_auth_token', data.token);
       }
       setCurrentUser(adminUser);
       setActiveRole('ADMIN');
       setActiveSubscriptionTier('agency');
       localStorage.setItem('aa_current_user', JSON.stringify(adminUser));
+      localStorage.setItem('aaem_auth_user', JSON.stringify(adminUser));
       localStorage.setItem('aa_active_role', 'ADMIN');
       if (typeof document !== 'undefined') {
         document.cookie = `aa_user_role=ADMIN; path=/; max-age=604800; SameSite=Lax`;
@@ -975,7 +1001,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const text = await res.text();
         resData = text ? JSON.parse(text) : null;
       } catch {
-        return { success: false, error: 'Format data registrasi dari server tidak valid.' };
+        if (res.status === 429) {
+          return { success: false, error: 'Terlalu banyak percobaan pendaftaran. Silakan tunggu beberapa saat.' };
+        }
+        if (res.status >= 500) {
+          return { success: false, error: 'Server sedang sibuk. Silakan coba beberapa saat lagi.' };
+        }
+        return { success: false, error: 'Gagal memproses respons server saat pendaftaran.' };
       }
 
       if (!resData) {
@@ -988,6 +1020,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (resData.token) {
         localStorage.setItem('aa_session_token', resData.token);
+        localStorage.setItem('aaem_auth_token', resData.token);
       }
 
       const newUser: AppUser = {
@@ -1007,6 +1040,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLastRegisteredUser(newUser);
 
       localStorage.setItem('aa_current_user', JSON.stringify(newUser));
+      localStorage.setItem('aaem_auth_user', JSON.stringify(newUser));
       localStorage.setItem('aa_active_role', newUser.role);
       localStorage.setItem('aa_active_subscription_tier', newUser.subscriptionTier || 'starter');
 
