@@ -13,7 +13,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
-import { UserRole } from '../types';
+import { UserRole, SavedDeviceAccount } from '../types';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -22,6 +22,8 @@ export const AuthModal: React.FC = () => {
     loginWithGoogle,
     currentUser,
     setShowPublicLanding,
+    deviceAccounts,
+    removeDeviceAccount,
   } = useEvent();
 
   const [customEmail, setCustomEmail] = useState('');
@@ -32,38 +34,7 @@ export const AuthModal: React.FC = () => {
 
   if (!showAuthModal) return null;
 
-  const quickGoogleAccounts = [
-    {
-      name: 'International Surya Utama',
-      email: 'internationalsuryautama@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      role: 'ORGANIZER' as UserRole,
-      badge: 'Admin EO',
-    },
-    {
-      name: 'Taufiq Aminudin',
-      email: 'taufiq.aminudin@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      role: 'ORGANIZER' as UserRole,
-      badge: 'Organizer',
-    },
-    {
-      name: 'Dimas & Ayu Maharani',
-      email: 'dimas.ayu.wedding@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=120&q=80',
-      role: 'CLIENT' as UserRole,
-      badge: 'Pengantin',
-    },
-    {
-      name: 'Mahkota Creative & Catering',
-      email: 'vendor@aa-eventmaker.my.id',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-      role: 'VENDOR' as UserRole,
-      badge: 'Vendor',
-    },
-  ];
-
-  const handleGoogleSignIn = async (account?: (typeof quickGoogleAccounts)[0]) => {
+  const handleGoogleSignIn = async (account?: SavedDeviceAccount) => {
     setIsProcessing(true);
     try {
       if (account) {
@@ -183,52 +154,75 @@ export const AuthModal: React.FC = () => {
             </button>
           </div>
 
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 w-full" />
-            <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-              Pilih Akun Google Tersedia
-            </span>
-            <div className="border-t border-slate-200 w-full" />
-          </div>
+          {deviceAccounts.length > 0 && (
+            <>
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+                  Akun di Perangkat Ini
+                </span>
+                <div className="border-t border-slate-200 w-full" />
+              </div>
 
-          {/* Quick Google Profile Accounts */}
-          <div className="space-y-2">
-            {quickGoogleAccounts.map((acc, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleGoogleSignIn(acc)}
-                disabled={isProcessing}
-                className="w-full text-left p-2.5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className="relative">
-                    <img
-                      src={acc.avatar}
-                      alt={acc.name}
-                      className="w-9 h-9 rounded-full object-cover border border-slate-200"
-                    />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-xs">
-                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0z"/>
-                      </svg>
+              {/* Accounts on this device */}
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
+                {deviceAccounts.map((acc) => (
+                  <div
+                    key={acc.email}
+                    className="w-full text-left p-2.5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all flex items-center justify-between group"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleSignIn(acc)}
+                      disabled={isProcessing}
+                      className="flex items-center space-x-3 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <div className="relative shrink-0">
+                        {acc.avatar ? (
+                          <img
+                            src={acc.avatar}
+                            alt={acc.name}
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center border border-slate-200">
+                            {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-xs">
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0z"/>
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                          {acc.name || acc.email}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">{acc.email}</div>
+                      </div>
+                    </button>
+                    <div className="shrink-0 flex items-center space-x-1.5 pl-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-800">
+                        {acc.role}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeDeviceAccount(acc.email);
+                        }}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Hapus dari perangkat"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
-                      {acc.name}
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">{acc.email}</div>
-                  </div>
-                </div>
-                <div className="shrink-0 flex items-center space-x-1.5 pl-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-800">
-                    {acc.badge}
-                  </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-colors" />
-                </div>
-              </button>
-            ))}
-          </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Toggle Custom Google Account Option */}
           <div className="pt-1">

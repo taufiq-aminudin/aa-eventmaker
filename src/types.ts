@@ -59,6 +59,17 @@ export interface AppUser {
   createdAt: number;
 }
 
+export interface SavedDeviceAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: UserRole;
+  avatar?: string;
+  subscriptionTier?: SubscriptionTier;
+  lastLoginAt: number;
+}
+
 export type EventType =
   | 'Wedding'
   | 'Birthday'

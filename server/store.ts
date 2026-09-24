@@ -96,7 +96,7 @@ class DataStore {
   }
 
   private seedDefaultUsers() {
-    // 1. Admin account with hashed credentials
+    // 1. Admin account with hashed credentials for private admin console
     const adminPass = hashPassword('Admin@AaEvent2026!');
     const adminUser: ServerUser = {
       id: 'usr_admin_001',
@@ -110,112 +110,6 @@ class DataStore {
       createdAt: Date.now() - 30 * 24 * 3600 * 1000,
     };
     this.users.set(adminUser.email.toLowerCase(), adminUser);
-
-    // 2. Demo Organizer account
-    const orgPass = hashPassword('Organizer@2026!');
-    const orgUser: ServerUser = {
-      id: 'usr_org_001',
-      name: 'Taufiq Aminudin (AA Organizer)',
-      email: 'organizer@aa-eventmaker.my.id',
-      phone: '081382000412',
-      role: 'ORGANIZER',
-      subscriptionTier: 'professional',
-      passwordSalt: orgPass.salt,
-      passwordHash: orgPass.hash,
-      createdAt: Date.now() - 15 * 24 * 3600 * 1000,
-    };
-    this.users.set(orgUser.email.toLowerCase(), orgUser);
-    // Alias for organizer
-    this.users.set('taufiq.aminudin@gmail.com', {
-      ...orgUser,
-      id: 'usr_org_002',
-      email: 'taufiq.aminudin@gmail.com',
-    });
-
-    // 3. Demo Client / Pengantin account
-    const clientPass = hashPassword('Pengantin@2026!');
-    const clientUser: ServerUser = {
-      id: 'usr_client_001',
-      name: 'Dimas & Ayu (Mempelai)',
-      email: 'pengantin@aa-eventmaker.my.id',
-      phone: '081234567890',
-      role: 'CLIENT',
-      subscriptionTier: 'starter',
-      passwordSalt: clientPass.salt,
-      passwordHash: clientPass.hash,
-      createdAt: Date.now() - 5 * 24 * 3600 * 1000,
-    };
-    this.users.set(clientUser.email.toLowerCase(), clientUser);
-    // Aliases for klien
-    const clientPassAlt = hashPassword('Client@2026!');
-    this.users.set('klien@aa-eventmaker.my.id', {
-      ...clientUser,
-      id: 'usr_client_002',
-      email: 'klien@aa-eventmaker.my.id',
-      passwordSalt: clientPassAlt.salt,
-      passwordHash: clientPassAlt.hash,
-    });
-    this.users.set('dimas.ayu.wedding@gmail.com', {
-      ...clientUser,
-      id: 'usr_client_003',
-      email: 'dimas.ayu.wedding@gmail.com',
-    });
-
-    // 4. Vendor account
-    const vendorPass = hashPassword('Vendor@2026!');
-    const vendorUser: ServerUser = {
-      id: 'usr_vendor_001',
-      name: 'Mahkota Fotografi & Catering',
-      email: 'vendor@aa-eventmaker.my.id',
-      phone: '085712345678',
-      role: 'VENDOR',
-      subscriptionTier: 'starter',
-      passwordSalt: vendorPass.salt,
-      passwordHash: vendorPass.hash,
-      createdAt: Date.now() - 4 * 24 * 3600 * 1000,
-    };
-    this.users.set(vendorUser.email.toLowerCase(), vendorUser);
-
-    // 5. Guest account
-    const guestPass = hashPassword('Tamu@2026!');
-    const guestUser: ServerUser = {
-      id: 'usr_guest_001',
-      name: 'Bpk. Hendra Gunawan',
-      email: 'tamu@aa-eventmaker.my.id',
-      phone: '081398765432',
-      role: 'GUEST',
-      subscriptionTier: 'starter',
-      passwordSalt: guestPass.salt,
-      passwordHash: guestPass.hash,
-      createdAt: Date.now() - 3 * 24 * 3600 * 1000,
-    };
-    this.users.set(guestUser.email.toLowerCase(), guestUser);
-
-    // 6. Active Session Account (internationalsuryautama@gmail.com)
-    const suryaPass = hashPassword('Surya@2026!');
-    const suryaUser: ServerUser = {
-      id: 'usr_org_surya_001',
-      name: 'International Surya Utama',
-      email: 'internationalsuryautama@gmail.com',
-      phone: '081382000412',
-      role: 'ORGANIZER',
-      subscriptionTier: 'professional',
-      passwordSalt: suryaPass.salt,
-      passwordHash: suryaPass.hash,
-      createdAt: Date.now() - 1 * 24 * 3600 * 1000,
-    };
-    this.users.set(suryaUser.email.toLowerCase(), suryaUser);
-
-    // Seed initial project for orgUser
-    const initialProject: ServerProject = {
-      id: 'evt_andi_ayu_wedding',
-      ownerId: orgUser.id,
-      name: 'The Wedding of Andi & Ayu',
-      date: '2026-10-24',
-      location: 'Grand Ballroom Hotel Kempinski Jakarta',
-      createdAt: Date.now() - 10 * 24 * 3600 * 1000,
-    };
-    this.projects.set(initialProject.id, initialProject);
   }
 
   // --- Users ---

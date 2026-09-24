@@ -27,7 +27,7 @@ interface AuthPageProps {
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
-  const { login, register, loginWithGoogle, showToast } = useEvent();
+  const { login, register, loginWithGoogle, showToast, deviceAccounts, removeDeviceAccount } = useEvent();
   const { navigate, queryParams } = useRouter();
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
@@ -50,37 +50,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const selectedPackageId = queryParams.package as string | undefined;
   const redirectTarget = queryParams.redirect as string | undefined;
   const authRequiredNotice = queryParams.auth === 'required' || queryParams.error === 'auth_required';
-
-  const quickGoogleAccounts = [
-    {
-      name: 'International Surya Utama',
-      email: 'internationalsuryautama@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      role: 'ORGANIZER' as UserRole,
-      badge: 'Sesi Aktif (EO)',
-    },
-    {
-      name: 'Taufiq Aminudin',
-      email: 'taufiq.aminudin@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      role: 'ORGANIZER' as UserRole,
-      badge: 'Admin EO',
-    },
-    {
-      name: 'Dimas & Ayu Maharani',
-      email: 'dimas.ayu.wedding@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=120&q=80',
-      role: 'CLIENT' as UserRole,
-      badge: 'Pengantin',
-    },
-    {
-      name: 'Mahkota Creative Studio',
-      email: 'vendor@aa-eventmaker.my.id',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-      role: 'VENDOR' as UserRole,
-      badge: 'Vendor Mitra',
-    },
-  ];
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,26 +143,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
 
     // Otherwise open Google Account Chooser
     setShowGooglePicker(true);
-  };
-
-  const handleQuickLogin = async (demoRole: UserRole, demoEmail: string, demoPass: string) => {
-    setAuthError(null);
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setRole(demoRole);
-    setLoading(true);
-
-    const safeRole: UserRole = demoRole === 'ADMIN' ? 'ORGANIZER' : demoRole;
-    const res = await login(demoEmail, demoPass, safeRole);
-    setLoading(false);
-
-    if (!res.success) {
-      setAuthError(res.error || 'Akses demo gagal.');
-      return;
-    }
-
-    const dest = redirectTarget && !redirectTarget.startsWith('/admin') ? redirectTarget : '/dashboard';
-    navigate(dest);
   };
 
   return (
@@ -472,41 +421,62 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             </button>
           </form>
 
-          {/* Quick Demo Access Bar */}
-          <div className="pt-4 border-t border-slate-100 space-y-2.5">
-            <span className="text-[11px] font-bold text-slate-500 block text-center uppercase tracking-wider">
-              Akses Cepat Pengujian (1-Klik):
-            </span>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleQuickLogin('ORGANIZER', 'organizer@aa-eventmaker.my.id', 'Organizer@2026!')}
-                className="py-2 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold border border-blue-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
-                title="Masuk sebagai Event Organizer"
-              >
-                <span>📋 Organizer</span>
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleQuickLogin('CLIENT', 'klien@aa-eventmaker.my.id', 'Client@2026!')}
-                className="py-2 px-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold border border-rose-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
-                title="Masuk sebagai Calon Pengantin"
-              >
-                <span>💍 Pengantin</span>
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleQuickLogin('VENDOR', 'vendor@aa-eventmaker.my.id', 'Vendor@2026!')}
-                className="py-2 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors text-center cursor-pointer flex items-center justify-center space-x-1"
-                title="Masuk sebagai Vendor Mitra"
-              >
-                <span>🏢 Vendor</span>
-              </button>
+          {/* Akun Tersimpan di Perangkat Ini */}
+          {deviceAccounts.length > 0 && (
+            <div className="pt-4 border-t border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Akun di Perangkat Ini:
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {deviceAccounts.length} tersimpan
+                </span>
+              </div>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                {deviceAccounts.map((acc) => (
+                  <div
+                    key={acc.email}
+                    className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 transition-colors flex items-center justify-between group"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail(acc.email);
+                        setRole(acc.role);
+                        setMode('login');
+                        showToast(`Email ${acc.email} dipilih.`);
+                      }}
+                      className="flex items-center space-x-2.5 min-w-0 text-left cursor-pointer flex-1"
+                      title={`Gunakan akun ${acc.email}`}
+                    >
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700">
+                          {acc.name || acc.email}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {acc.email} • <span className="font-semibold text-blue-600">{acc.role}</span>
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeDeviceAccount(acc.email);
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-1 cursor-pointer shrink-0"
+                      title="Hapus dari perangkat"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -548,47 +518,70 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
               <p className="text-xs text-slate-500 mt-0.5">Pilih akun Google untuk melanjutkan ke AA Event Maker</p>
             </div>
 
-            {/* Quick Profiles */}
+            {/* Device Accounts / Input */}
             <div className="p-6 space-y-3">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Akun Terdeteksi:
-              </div>
-              <div className="space-y-2">
-                {quickGoogleAccounts.map((acc, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => executeGoogleAuth(acc)}
-                    disabled={loading}
-                    className="w-full text-left p-3 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all flex items-center justify-between group cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3 min-w-0">
-                      <img
-                        src={acc.avatar}
-                        alt={acc.name}
-                        className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
-                          {acc.name}
+              {deviceAccounts.length > 0 ? (
+                <>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Akun di Perangkat Ini:
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {deviceAccounts.map((acc) => (
+                      <div
+                        key={acc.email}
+                        className="w-full text-left p-2.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all flex items-center justify-between group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role })}
+                          disabled={loading}
+                          className="flex items-center space-x-3 min-w-0 flex-1 text-left cursor-pointer"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center shrink-0 border border-slate-200">
+                            {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                              {acc.name || acc.email}
+                            </div>
+                            <div className="text-[11px] text-slate-500 truncate">{acc.email}</div>
+                          </div>
+                        </button>
+                        <div className="shrink-0 flex items-center space-x-1 pl-2">
+                          <button
+                            type="button"
+                            onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role })}
+                            disabled={loading}
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                          >
+                            Pilih
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeDeviceAccount(acc.email);
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Hapus dari perangkat"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate">{acc.email}</div>
                       </div>
-                    </div>
-                    <div className="shrink-0 flex items-center space-x-1.5 pl-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-800">
-                        {acc.badge}
-                      </span>
-                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-colors" />
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
+                  Belum ada akun tersimpan di perangkat ini. Silakan masukkan email Google Anda di bawah.
+                </div>
+              )}
 
               {/* Custom Google Email Input */}
               <div className="pt-3 border-t border-slate-100">
                 <div className="text-xs font-bold text-slate-700 mb-2">
-                  Atau gunakan alamat Google lainnya:
+                  {deviceAccounts.length > 0 ? 'Atau gunakan alamat Google lainnya:' : 'Masukkan email Google Anda:'}
                 </div>
                 <div className="space-y-2">
                   <input

@@ -27,6 +27,7 @@ import {
   SubscriptionTier,
   EventCategoryDefinition,
   EventTypeDefinition,
+  SavedDeviceAccount,
 } from '../types';
 import {
   INITIAL_PROJECT,
@@ -88,6 +89,8 @@ interface EventContextType {
   logout: () => void;
   switchAccount: () => void;
   switchRole: (role: UserRole) => void;
+  deviceAccounts: SavedDeviceAccount[];
+  removeDeviceAccount: (email: string) => void;
 
   // Project
   currentProject: EventProject;
@@ -262,55 +265,15 @@ interface EventContextType {
   deletePayment: (paymentId: string) => void;
 }
 
-export const DEFAULT_USERS: Record<UserRole, AppUser> = {
-  ORGANIZER: {
-    id: 'user_eo_01',
-    name: 'Dimas & Sinta Wedding Organizer',
-    email: 'organizer@aa-eventmaker.my.id',
-    phone: '+6281382000412',
-    role: 'ORGANIZER',
-    organizationName: 'Pratama Event & Wedding Planner',
-    associatedEventId: 'proj-1',
-    createdAt: 1715000000000,
-  },
-  CLIENT: {
-    id: 'user_client_01',
-    name: 'Dimas & Sinta (Calon Pengantin)',
-    email: 'klien@aa-eventmaker.my.id',
-    phone: '+6281987654321',
-    role: 'CLIENT',
-    associatedEventId: 'proj-1',
-    createdAt: 1716000000000,
-  },
-  VENDOR: {
-    id: 'user_vendor_01',
-    name: 'Mahkota Fotografi & Catering',
-    email: 'vendor@aa-eventmaker.my.id',
-    phone: '+6285712345678',
-    role: 'VENDOR',
-    organizationName: 'Mahkota Wedding Artistry & Culinary',
-    associatedEventId: 'proj-1',
-    createdAt: 1715500000000,
-  },
-  GUEST: {
-    id: 'user_guest_01',
-    name: 'Bpk. Hendra Gunawan & Partner',
-    email: 'tamu@aa-eventmaker.my.id',
-    phone: '+6281398765432',
-    role: 'GUEST',
-    associatedEventId: 'proj-1',
-    createdAt: 1717000000000,
-  },
-  ADMIN: {
-    id: 'user_admin_01',
-    name: 'AA Event Maker Super Admin',
-    email: 'admin@aa-eventmaker.my.id',
-    phone: '+6281100009999',
-    role: 'ADMIN',
-    organizationName: 'AA Event Maker Platform HQ',
-    createdAt: 1714000000000,
-  },
-};
+export const DEMO_EMAILS = [
+  'organizer@aa-eventmaker.my.id',
+  'taufiq.aminudin@gmail.com',
+  'pengantin@aa-eventmaker.my.id',
+  'klien@aa-eventmaker.my.id',
+  'dimas.ayu.wedding@gmail.com',
+  'vendor@aa-eventmaker.my.id',
+  'tamu@aa-eventmaker.my.id',
+];
 
 export const PACKAGE_LIMITS = {
   starter: {
@@ -388,13 +351,81 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('aa_current_user');
     if (token && saved) {
       try {
-        return JSON.parse(saved);
+        const u = JSON.parse(saved);
+        if (u?.email && DEMO_EMAILS.includes(u.email.toLowerCase())) {
+          localStorage.removeItem('aa_session_token');
+          localStorage.removeItem('aa_current_user');
+          localStorage.removeItem('aa_active_role');
+          localStorage.removeItem('aa_user_role');
+          return null;
+        }
+        return u;
       } catch (e) {
         return null;
       }
     }
     return null;
   });
+
+  // Track accounts that have actually logged in or registered on this device
+  const [deviceAccounts, setDeviceAccounts] = useState<SavedDeviceAccount[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('aa_device_accounts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(
+            (acc: any) => acc?.email && !DEMO_EMAILS.includes(acc.email.toLowerCase())
+          );
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem('aa_device_accounts', JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const persistDeviceAccount = (user: AppUser) => {
+    if (!user || !user.email) return;
+    const cleanEmail = user.email.toLowerCase().trim();
+    if (DEMO_EMAILS.includes(cleanEmail)) return;
+
+    setDeviceAccounts((prev) => {
+      const updated: SavedDeviceAccount[] = [
+        {
+          id: user.id,
+          name: user.name,
+          email: cleanEmail,
+          phone: user.phone,
+          role: user.role,
+          avatar: user.avatar,
+          subscriptionTier: user.subscriptionTier,
+          lastLoginAt: Date.now(),
+        },
+        ...prev.filter((a) => a.email.toLowerCase() !== cleanEmail),
+      ].slice(0, 10);
+
+      try {
+        localStorage.setItem('aa_device_accounts', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const removeDeviceAccount = (email: string) => {
+    const cleanEmail = email.toLowerCase().trim();
+    setDeviceAccounts((prev) => {
+      const updated = prev.filter((a) => a.email.toLowerCase() !== cleanEmail);
+      try {
+        localStorage.setItem('aa_device_accounts', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Akun ${cleanEmail} telah dihapus dari perangkat ini.`);
+  };
 
   const [activeRole, setActiveRole] = useState<UserRole>(() => {
     if (typeof window === 'undefined') return 'ORGANIZER';
@@ -436,9 +467,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
       }
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return [{ ...INITIAL_PROJECT, ownerId: u.id }];
-      }
     } catch (e) {}
     return [];
   });
@@ -457,9 +485,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
       }
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return { ...INITIAL_PROJECT, ownerId: u.id };
-      }
     } catch (e) {}
     return INITIAL_PROJECT;
   });
@@ -477,9 +502,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!token || !savedUser) return [];
     try {
       const u = JSON.parse(savedUser);
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return INITIAL_GUESTS;
-      }
       const saved = localStorage.getItem(`aa_guests_user_${u.id}`);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
@@ -494,9 +516,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!token || !savedUser) return [];
     try {
       const u = JSON.parse(savedUser);
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return INITIAL_TASKS;
-      }
       const saved = localStorage.getItem(`aa_tasks_user_${u.id}`);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
@@ -511,9 +530,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!token || !savedUser) return [];
     try {
       const u = JSON.parse(savedUser);
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return INITIAL_BUDGETS;
-      }
       const saved = localStorage.getItem(`aa_budgets_user_${u.id}`);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
@@ -528,9 +544,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!token || !savedUser) return [];
     try {
       const u = JSON.parse(savedUser);
-      if (u.email?.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-        return INITIAL_WEEKLY_EXPENSES;
-      }
       const saved = localStorage.getItem(`aa_weekly_expenses_user_${u.id}`);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
@@ -656,23 +669,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (e) {}
     }
 
-    // Default seed project for organizer demo account
-    if (user.email.toLowerCase() === 'taufiq.aminudin@gmail.com') {
-      const initialWithUser: EventProject = {
-        ...INITIAL_PROJECT,
-        ownerId: user.id,
-      };
-      setProjects([initialWithUser]);
-      setCurrentProject(initialWithUser);
-      setGuests(INITIAL_GUESTS);
-      setTasks(INITIAL_TASKS);
-      setBudgets(INITIAL_BUDGETS);
-      setWeeklyExpenses(INITIAL_WEEKLY_EXPENSES);
-      localStorage.setItem(userProjectsKey, JSON.stringify([initialWithUser]));
-      return;
-    }
-
-    // Clean initial state for new user
+    // Clean initial state for user
     setProjects([]);
     setCurrentProject(INITIAL_PROJECT);
     setGuests([]);
@@ -683,6 +680,18 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Sync session on mount with server /api/auth/me
   useEffect(() => {
+    // Cleanup any legacy demo accounts from localStorage on startup
+    try {
+      const rawUser = localStorage.getItem('aa_current_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (u?.email && DEMO_EMAILS.includes(u.email.toLowerCase())) {
+          clearAuthenticationState();
+          return;
+        }
+      }
+    } catch (e) {}
+
     const token = localStorage.getItem('aa_session_token');
     if (token) {
       fetch('/api/auth/me', {
@@ -710,6 +719,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (verifiedUser.subscriptionTier) {
               setActiveSubscriptionTier(verifiedUser.subscriptionTier);
             }
+            persistDeviceAccount(verifiedUser);
             loadUserSpecificData(verifiedUser);
           } else {
             clearAuthenticationState();
@@ -776,6 +786,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(userObj))}; path=/; max-age=604800; SameSite=Lax`;
       }
 
+      persistDeviceAccount(userObj);
       await loadUserSpecificData(userObj);
       setShowAuthModal(false);
       setShowPublicLanding(false);
@@ -892,6 +903,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(userObj))}; path=/; max-age=604800; SameSite=Lax`;
       }
 
+      persistDeviceAccount(userObj);
       await loadUserSpecificData(userObj);
       setShowAuthModal(false);
       setShowPublicLanding(false);
@@ -1073,6 +1085,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           document.cookie = `aa_current_user=${encodeURIComponent(JSON.stringify(newUser))}; path=/; max-age=604800; SameSite=Lax`;
         }
 
+        persistDeviceAccount(newUser);
         await loadUserSpecificData(newUser);
         setShowAuthModal(false);
         setShowPublicLanding(false);
@@ -2296,6 +2309,8 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         logout,
         switchAccount,
         switchRole,
+        deviceAccounts,
+        removeDeviceAccount,
 
         currentProject,
         projects,
