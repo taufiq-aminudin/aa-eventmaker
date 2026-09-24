@@ -45,7 +45,6 @@ export const SettingsPage: React.FC = () => {
     { role: 'CLIENT', title: 'Calon Pengantin / Tuan Rumah', desc: 'Fokus pada personalisasi undangan, foto, daftar tamu VIP, dan buku tamu.' },
     { role: 'VENDOR', title: 'Vendor Acara', desc: 'Fokus pada timeline rundown, daftar kebutuhan katering/dekorasi, dan koordinasi.' },
     { role: 'GUEST', title: 'Tamu Undangan', desc: 'Akses ke konfirmasi RSVP, peta lokasi venue, dan tiket E-Pass QR.' },
-    { role: 'ADMIN', title: 'Platform Super Admin', desc: 'Akses kontrol penuh ke katalog kategori A-L, tipe acara, templat rekomendasi, dan pengaturan sistem.' },
   ];
 
   const handleLogout = () => {
@@ -146,7 +145,7 @@ export const SettingsPage: React.FC = () => {
               <span>Peran Pengguna Aktif (Role Simulator)</span>
             </h2>
             <p className="text-xs text-slate-500">
-              Ubah sudut pandang dasbor untuk melihat fitur sesuai akses Penyelenggara, Pengantin, Vendor, Tamu, atau Platform Admin.
+              Ubah sudut pandang dasbor untuk melihat fitur sesuai akses Penyelenggara, Pengantin, Vendor, atau Tamu.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

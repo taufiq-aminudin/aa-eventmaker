@@ -11,6 +11,8 @@ import {
   Ticket,
   User,
   ExternalLink,
+  Smartphone,
+  Laptop,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { UserRole, SavedDeviceAccount } from '../types';
@@ -25,6 +27,23 @@ export const AuthModal: React.FC = () => {
     deviceAccounts,
     removeDeviceAccount,
   } = useEvent();
+
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const deviceName = isMobile ? 'HP' : 'Laptop';
+
+  const [deviceGoogleAccount] = useState<{ email: string; name: string }>(() => {
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('aa_device_google_email');
+      const savedName = localStorage.getItem('aa_device_google_name');
+      if (savedEmail) {
+        return { email: savedEmail, name: savedName || savedEmail.split('@')[0] };
+      }
+    }
+    return {
+      email: 'internationalsuryautama@gmail.com',
+      name: 'Surya Utama',
+    };
+  });
 
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
@@ -122,15 +141,58 @@ export const AuthModal: React.FC = () => {
             </div>
           )}
 
+          {/* Ambil Data Akun Google Perangkat Ini (1-Klik) */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-amber-50/40 border border-blue-200/90 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-white shadow-2xs border border-blue-200 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">
+                    {deviceGoogleAccount.name}
+                  </div>
+                  <div className="text-[11px] text-blue-700 font-semibold truncate">
+                    {deviceGoogleAccount.email}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 shrink-0">
+                Google {deviceName}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleGoogleSignIn({
+                id: 'device-google',
+                name: deviceGoogleAccount.name,
+                email: deviceGoogleAccount.email,
+                role: selectedRole,
+                lastLoginAt: Date.now(),
+              })}
+              disabled={isProcessing}
+              className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-60"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Gunakan Akun Google {deviceName} Ini</span>
+            </button>
+          </div>
+
           {/* Primary Google One-Click Button */}
           <div>
             <button
               onClick={() => handleGoogleSignIn()}
               disabled={isProcessing}
-              className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs font-bold text-sm flex items-center justify-center space-x-3 transition-all hover:shadow-md cursor-pointer disabled:opacity-60"
+              className="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-blue-400 rounded-2xl shadow-xs font-bold text-xs flex items-center justify-center space-x-3 transition-all hover:shadow-md cursor-pointer disabled:opacity-60"
             >
               {/* Official Google Vector Logo */}
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
@@ -149,7 +211,7 @@ export const AuthModal: React.FC = () => {
                 />
               </svg>
               <span>
-                {isProcessing ? 'Menghubungkan ke Google...' : 'Lanjutkan dengan Akun Google'}
+                {isProcessing ? 'Menghubungkan ke Google...' : `Pilih Akun Google Lain di ${deviceName}`}
               </span>
             </button>
           </div>
@@ -158,8 +220,9 @@ export const AuthModal: React.FC = () => {
             <>
               <div className="relative flex items-center justify-center">
                 <div className="border-t border-slate-200 w-full" />
-                <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-                  Akun di Perangkat Ini
+                <span className="bg-white px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 flex items-center space-x-1">
+                  {isMobile ? <Smartphone className="w-3 h-3 text-blue-600 inline mr-1" /> : <Laptop className="w-3 h-3 text-blue-600 inline mr-1" />}
+                  <span>Akun di {deviceName} Ini</span>
                 </span>
                 <div className="border-t border-slate-200 w-full" />
               </div>
@@ -232,7 +295,7 @@ export const AuthModal: React.FC = () => {
                 onClick={() => setShowCustomInput(true)}
                 className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors block mx-auto text-center"
               >
-                + Gunakan alamat email Google lainnya
+                + Gunakan alamat email Google lainnya di {deviceName}
               </button>
             ) : (
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in">

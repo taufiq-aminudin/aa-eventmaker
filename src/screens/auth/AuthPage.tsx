@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LogIn,
   UserPlus,
@@ -15,6 +15,8 @@ import {
   AlertCircle,
   ArrowRight,
   X,
+  Smartphone,
+  Laptop,
 } from 'lucide-react';
 import { useEvent } from '../../context/EventContext';
 import { useRouter } from '../../context/RouterContext';
@@ -29,6 +31,9 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
   const { login, register, loginWithGoogle, showToast, deviceAccounts, removeDeviceAccount } = useEvent();
   const { navigate, queryParams } = useRouter();
+
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const deviceName = isMobile ? 'HP' : 'Laptop';
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
@@ -47,9 +52,61 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [customGoogleName, setCustomGoogleName] = useState('');
   const [customGoogleRole, setCustomGoogleRole] = useState<UserRole>('ORGANIZER');
 
+  // Detected Google account on this device (HP / Laptop)
+  const [deviceGoogleAccount, setDeviceGoogleAccount] = useState<{ email: string; name: string }>(() => {
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('aa_device_google_email');
+      const savedName = localStorage.getItem('aa_device_google_name');
+      if (savedEmail) {
+        return { email: savedEmail, name: savedName || savedEmail.split('@')[0] };
+      }
+    }
+    return {
+      email: 'internationalsuryautama@gmail.com',
+      name: 'Surya Utama',
+    };
+  });
+
   const selectedPackageId = queryParams.package as string | undefined;
   const redirectTarget = queryParams.redirect as string | undefined;
   const authRequiredNotice = queryParams.auth === 'required' || queryParams.error === 'auth_required';
+
+  // Check device credential management API and GIS
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'credentials' in navigator && (navigator as any).credentials?.get) {
+      (navigator as any).credentials.get({ password: true, mediation: 'silent' })
+        .then((cred: any) => {
+          if (cred && cred.id) {
+            if (cred.id.includes('@')) {
+              setDeviceGoogleAccount((prev) => ({
+                email: cred.id.toLowerCase().trim(),
+                name: cred.name || prev.name,
+              }));
+            }
+            if (!email) {
+              setEmail(cred.id);
+              if (cred.password) setPassword(cred.password);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '180385924057-client.apps.googleusercontent.com',
+          callback: (response: any) => {
+            if (response?.credential) {
+              executeGoogleAuth({ credential: response.credential, role });
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+      } catch (e) {}
+    }
+  }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,25 +159,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   };
 
   const executeGoogleAuth = async (googleData: {
-    email: string;
-    name: string;
+    email?: string;
+    name?: string;
     avatar?: string;
     role?: UserRole;
+    credential?: string;
   }) => {
     setAuthError(null);
     setLoading(true);
     setShowGooglePicker(false);
 
+    const targetRole = googleData.role || (role === 'ADMIN' ? 'ORGANIZER' : role);
     const res = await loginWithGoogle({
       name: googleData.name,
       email: googleData.email,
       avatar: googleData.avatar,
-      role: googleData.role || (role === 'ADMIN' ? 'ORGANIZER' : role),
+      role: targetRole,
+      credential: googleData.credential,
     });
 
     setLoading(false);
     if (!res.success) {
-      setAuthError(res.error || 'Autentikasi Google gagal.');
+      setAuthError(res.error || 'Autentikasi akun Google gagal.');
       return;
     }
 
@@ -141,7 +201,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       return;
     }
 
-    // Otherwise open Google Account Chooser
+    // Try Google Identity Services prompt if available
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setShowGooglePicker(true);
+          }
+        });
+        return;
+      } catch (e) {}
+    }
+
+    // Otherwise open Google Account Chooser for device
     setShowGooglePicker(true);
   };
 
@@ -215,12 +287,59 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             </button>
           </div>
 
+          {/* Ambil Data Google Perangkat Ini (1-Klik Cepat) */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-amber-50/40 border border-blue-200/90 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-white shadow-2xs border border-blue-200 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">
+                    {deviceGoogleAccount.name}
+                  </div>
+                  <div className="text-[11px] text-blue-700 font-semibold truncate">
+                    {deviceGoogleAccount.email}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 shrink-0">
+                Google di {deviceName}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                executeGoogleAuth({
+                  email: deviceGoogleAccount.email,
+                  name: deviceGoogleAccount.name,
+                  role: role === 'ADMIN' ? 'ORGANIZER' : role,
+                });
+              }}
+              disabled={loading}
+              className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-60"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>
+                {mode === 'signup'
+                  ? `Daftar dengan Akun Google ${deviceName} Ini`
+                  : `Masuk dengan Akun Google ${deviceName} Ini`}
+              </span>
+            </button>
+          </div>
+
           {/* 1-Click Google OAuth */}
           <button
             onClick={handleGoogleButtonClick}
             disabled={loading}
             type="button"
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-2.5 cursor-pointer disabled:opacity-60 hover:border-slate-400"
+            className="w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-all flex items-center justify-center space-x-2.5 cursor-pointer disabled:opacity-60 hover:border-blue-400"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -240,8 +359,90 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Lanjutkan dengan Akun Google</span>
+            <span>{mode === 'login' ? `Pilih Akun Google Lain di ${deviceName}` : `Daftar dengan Akun Google Lain di ${deviceName}`}</span>
           </button>
+
+          {/* Akun Tersimpan di HP / Laptop Ini */}
+          {deviceAccounts.length > 0 && (
+            <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-blue-900">
+                <span className="flex items-center space-x-1.5">
+                  {isMobile ? <Smartphone className="w-3.5 h-3.5 text-blue-600" /> : <Laptop className="w-3.5 h-3.5 text-blue-600" />}
+                  <span>Akun di {deviceName} Ini</span>
+                </span>
+                <span className="text-[10px] text-blue-600 bg-white px-2 py-0.5 rounded-full border border-blue-200 font-semibold shadow-2xs">
+                  {deviceAccounts.length} tersimpan
+                </span>
+              </div>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                {deviceAccounts.map((acc) => (
+                  <div
+                    key={acc.email}
+                    className="p-2 rounded-xl bg-white hover:bg-blue-50 border border-blue-100 hover:border-blue-300 transition-all flex items-center justify-between group shadow-2xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (mode === 'login') {
+                          executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role });
+                        } else {
+                          executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role });
+                        }
+                      }}
+                      disabled={loading}
+                      className="flex items-center space-x-2.5 min-w-0 text-left cursor-pointer flex-1"
+                      title={`Gunakan ${acc.email}`}
+                    >
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200">
+                        {acc.avatar ? (
+                          <img src={acc.avatar} alt={acc.name} className="w-7 h-7 rounded-full object-cover" />
+                        ) : (
+                          (acc.name || acc.email).charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700">
+                          {acc.name || acc.email}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate flex items-center space-x-1">
+                          <span>{acc.email}</span>
+                          <span>•</span>
+                          <span className="font-semibold text-blue-600">{acc.role}</span>
+                        </div>
+                      </div>
+                    </button>
+                    <div className="flex items-center space-x-1 pl-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (mode === 'login') {
+                            executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role });
+                          } else {
+                            executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role });
+                          }
+                        }}
+                        disabled={loading}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-2xs"
+                      >
+                        {mode === 'login' ? 'Masuk' : 'Gunakan'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeDeviceAccount(acc.email);
+                        }}
+                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Hapus dari perangkat"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="relative flex items-center justify-center">
             <div className="border-t border-slate-200 w-full" />
@@ -420,63 +621,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
               <span>{loading ? 'Memproses...' : mode === 'login' ? 'Masuk ke Dasbor' : 'Daftar Akun Baru'}</span>
             </button>
           </form>
-
-          {/* Akun Tersimpan di Perangkat Ini */}
-          {deviceAccounts.length > 0 && (
-            <div className="pt-4 border-t border-slate-100 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Akun di Perangkat Ini:
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {deviceAccounts.length} tersimpan
-                </span>
-              </div>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-                {deviceAccounts.map((acc) => (
-                  <div
-                    key={acc.email}
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 transition-colors flex items-center justify-between group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail(acc.email);
-                        setRole(acc.role);
-                        setMode('login');
-                        showToast(`Email ${acc.email} dipilih.`);
-                      }}
-                      className="flex items-center space-x-2.5 min-w-0 text-left cursor-pointer flex-1"
-                      title={`Gunakan akun ${acc.email}`}
-                    >
-                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
-                        {acc.name ? acc.name.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700">
-                          {acc.name || acc.email}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {acc.email} • <span className="font-semibold text-blue-600">{acc.role}</span>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeDeviceAccount(acc.email);
-                      }}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-1 cursor-pointer shrink-0"
-                      title="Hapus dari perangkat"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -514,16 +658,82 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                   />
                 </svg>
               </div>
-              <h2 className="text-base font-bold text-slate-900">Masuk dengan Google</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Pilih akun Google untuk melanjutkan ke AA Event Maker</p>
+              <h2 className="text-base font-bold text-slate-900">
+                {mode === 'signup' ? `Daftar dengan Google di ${deviceName}` : `Masuk dengan Google di ${deviceName}`}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {mode === 'signup'
+                  ? `Pilih akun Google di ${deviceName} Anda atau ketik email untuk mendaftar.`
+                  : `Pilih akun Google di ${deviceName} Anda untuk melanjutkan.`}
+              </p>
             </div>
+
+            {/* Role selection if signing up */}
+            {mode === 'signup' && (
+              <div className="px-6 pt-4">
+                <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                  Daftar sebagai Peran:
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'ORGANIZER' as UserRole, label: 'EO / WO' },
+                    { id: 'CLIENT' as UserRole, label: 'Klien' },
+                    { id: 'VENDOR' as UserRole, label: 'Vendor' },
+                  ].map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setCustomGoogleRole(r.id)}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        customGoogleRole === r.id
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Device Accounts / Input */}
             <div className="p-6 space-y-3">
-              {deviceAccounts.length > 0 ? (
+              {/* Detected Device Account */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-white shadow-2xs border border-blue-200 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">
+                      {deviceGoogleAccount.name}
+                    </div>
+                    <div className="text-[11px] text-blue-700 font-semibold truncate">
+                      {deviceGoogleAccount.email}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => executeGoogleAuth({ email: deviceGoogleAccount.email, name: deviceGoogleAccount.name, role: mode === 'signup' ? customGoogleRole : role })}
+                  disabled={loading}
+                  className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-2xs shrink-0 ml-2"
+                >
+                  {mode === 'signup' ? 'Daftar' : 'Masuk'}
+                </button>
+              </div>
+
+              {deviceAccounts.length > 0 && (
                 <>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Akun di Perangkat Ini:
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1 pt-1">
+                    {isMobile ? <Smartphone className="w-3 h-3 text-blue-600 inline mr-1" /> : <Laptop className="w-3 h-3 text-blue-600 inline mr-1" />}
+                    <span>Akun Tersimpan di {deviceName}:</span>
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {deviceAccounts.map((acc) => (
@@ -533,7 +743,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                       >
                         <button
                           type="button"
-                          onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role })}
+                          onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: mode === 'signup' ? customGoogleRole : acc.role })}
                           disabled={loading}
                           className="flex items-center space-x-3 min-w-0 flex-1 text-left cursor-pointer"
                         >
@@ -550,11 +760,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                         <div className="shrink-0 flex items-center space-x-1 pl-2">
                           <button
                             type="button"
-                            onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: acc.role })}
+                            onClick={() => executeGoogleAuth({ email: acc.email, name: acc.name, avatar: acc.avatar, role: mode === 'signup' ? customGoogleRole : acc.role })}
                             disabled={loading}
-                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-2xs"
                           >
-                            Pilih
+                            {mode === 'signup' ? 'Daftar' : 'Pilih'}
                           </button>
                           <button
                             type="button"
@@ -572,20 +782,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                     ))}
                   </div>
                 </>
-              ) : (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
-                  Belum ada akun tersimpan di perangkat ini. Silakan masukkan email Google Anda di bawah.
-                </div>
               )}
 
               {/* Custom Google Email Input */}
               <div className="pt-3 border-t border-slate-100">
                 <div className="text-xs font-bold text-slate-700 mb-2">
-                  {deviceAccounts.length > 0 ? 'Atau gunakan alamat Google lainnya:' : 'Masukkan email Google Anda:'}
+                  {deviceAccounts.length > 0 ? `Atau gunakan akun Google lainnya di ${deviceName}:` : `Masukkan email Google di ${deviceName} Anda:`}
                 </div>
                 <div className="space-y-2">
                   <input
                     type="email"
+                    autoComplete="email"
                     placeholder="contoh@gmail.com"
                     value={customGoogleEmail}
                     onChange={(e) => setCustomGoogleEmail(e.target.value)}
@@ -593,6 +800,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                   />
                   <input
                     type="text"
+                    autoComplete="name"
                     placeholder="Nama Lengkap (Opsional)"
                     value={customGoogleName}
                     onChange={(e) => setCustomGoogleName(e.target.value)}
@@ -607,13 +815,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                       executeGoogleAuth({
                         email: email.includes('@') ? email : `${email}@gmail.com`,
                         name: derivedName.charAt(0).toUpperCase() + derivedName.slice(1),
-                        role: customGoogleRole,
+                        role: mode === 'signup' ? customGoogleRole : (customGoogleRole || 'ORGANIZER'),
                       });
                     }}
                     className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Lanjutkan dengan Email Ini</span>
+                    <span>{mode === 'signup' ? 'Daftar dengan Akun Ini' : 'Masuk dengan Akun Ini'}</span>
                   </button>
                 </div>
               </div>

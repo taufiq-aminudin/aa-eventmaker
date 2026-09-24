@@ -75,7 +75,7 @@ interface EventContextType {
   setShowPublicLanding: (show: boolean) => void;
   lastRegisteredUser: AppUser | null;
   login: (email: string, passwordOrRole?: string | UserRole, fallbackRole?: UserRole) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
-  loginWithGoogle: (googleProfile?: { name: string; email: string; avatar?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
+  loginWithGoogle: (googleProfile?: { name?: string; email?: string; avatar?: string; role?: UserRole; credential?: string }) => Promise<{ success: boolean; error?: string; user?: AppUser }>;
   loginAdmin: (password: string, email?: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     name: string;
@@ -753,19 +753,50 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const loginWithGoogle = async (googleProfile?: {
-    name: string;
-    email: string;
+    name?: string;
+    email?: string;
     avatar?: string;
     role?: UserRole;
+    credential?: string;
   }): Promise<{ success: boolean; error?: string; user?: AppUser }> => {
-    const profile = googleProfile || {
-      name: 'Pengguna Google',
-      email: 'user.google@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      role: 'ORGANIZER' as UserRole,
-    };
+    let email = googleProfile?.email?.trim().toLowerCase();
+    let name = googleProfile?.name?.trim();
+    let avatar = googleProfile?.avatar;
+    let targetRole: UserRole = googleProfile?.role === 'ADMIN' ? 'ORGANIZER' : (googleProfile?.role || 'ORGANIZER');
+    const credential = googleProfile?.credential;
 
-    const targetRole: UserRole = profile.role === 'ADMIN' ? 'ORGANIZER' : profile.role || 'ORGANIZER';
+    // If ID token was provided, decode email & name from JWT
+    if (credential && !email) {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const base64Url = parts[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+          if (payload?.email) {
+            const clean = String(payload.email).toLowerCase().trim();
+            email = clean;
+            name = name || payload.name || clean.split('@')[0];
+            avatar = avatar || payload.picture;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // If no email provided, use the last active account saved on this device (HP / Laptop)
+    if (!email && deviceAccounts.length > 0) {
+      const topAcc = deviceAccounts[0];
+      email = topAcc.email.toLowerCase().trim();
+      name = name || topAcc.name || email.split('@')[0];
+      avatar = avatar || topAcc.avatar;
+      targetRole = topAcc.role;
+    }
+
+    if (!email && !credential) {
+      return { success: false, error: 'Silakan pilih atau masukkan akun yang ada di perangkat Anda.' };
+    }
+
+    const resolvedName = name || (email ? email.split('@')[0] : 'Pengguna Google');
 
     // Helper to construct and commit local Google session
     const setupGoogleSession = async (userObj: AppUser, token?: string) => {
@@ -802,10 +833,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         },
         credentials: 'include',
         body: JSON.stringify({
-          email: profile.email,
-          name: profile.name,
-          avatar: profile.avatar,
+          email: email || '',
+          name: resolvedName,
+          avatar: avatar || '',
           role: targetRole,
+          credential: credential || undefined,
         }),
       });
 
@@ -815,11 +847,11 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const u = data.user || {};
         const googleUser: AppUser = {
           id: u.id || `usr_g_${Date.now()}`,
-          name: u.name || profile.name,
-          email: u.email || profile.email,
+          name: u.name || resolvedName,
+          email: u.email || email || '',
           phone: u.phone || '+6281234567890',
           role: u.role || targetRole,
-          avatar: profile.avatar,
+          avatar: avatar,
           subscriptionTier: u.subscriptionTier || 'starter',
           createdAt: Date.now(),
         };
@@ -833,15 +865,19 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return { success: false, error: data.message || data.error || `Autentikasi Google gagal (${res.status}).` };
       }
 
+      if (!email) {
+        return { success: false, error: 'Email akun tidak valid.' };
+      }
+
       // Fallback: If network or proxy blocked response body but request reached or preview environment
-      const cleanEmail = profile.email.toLowerCase().trim();
+      const cleanEmail = email.toLowerCase().trim();
       const fallbackGoogleUser: AppUser = {
         id: `usr_g_${Date.now()}`,
-        name: profile.name || cleanEmail.split('@')[0],
+        name: resolvedName,
         email: cleanEmail,
         phone: '+6281234567890',
         role: targetRole,
-        avatar: profile.avatar,
+        avatar: avatar,
         subscriptionTier: 'starter',
         createdAt: Date.now(),
       };
@@ -850,15 +886,17 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     } catch (err: any) {
       console.warn('API Google auth error, using client-authenticated fallback:', err);
-      // Fallback: Allow user to proceed with valid Google identity even if network glitch occurs
-      const cleanEmail = profile.email.toLowerCase().trim();
+      if (!email) {
+        return { success: false, error: 'Gagal menghubungkan akun Google perangkat.' };
+      }
+      const cleanEmail = email.toLowerCase().trim();
       const fallbackGoogleUser: AppUser = {
         id: `usr_g_${Date.now()}`,
-        name: profile.name || cleanEmail.split('@')[0],
+        name: resolvedName,
         email: cleanEmail,
         phone: '+6281234567890',
         role: targetRole,
-        avatar: profile.avatar,
+        avatar: avatar,
         subscriptionTier: 'starter',
         createdAt: Date.now(),
       };

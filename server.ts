@@ -213,12 +213,13 @@ async function startServer() {
     // Frame-ancestors allows embedding in AI Studio and Cloud Run preview while blocking clickjacking
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://aa-eventmaker.my.id",
+      "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://*.google.com https://aa-eventmaker.my.id",
       "media-src 'self' data: blob:",
-      "connect-src 'self' https://aa-eventmaker.my.id https://generativelanguage.googleapis.com",
+      "connect-src 'self' https://aa-eventmaker.my.id https://generativelanguage.googleapis.com https://accounts.google.com",
+      "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.run.app https://ai.studio https://*.aistudio.google.com",
     ].join('; ');
     res.setHeader('Content-Security-Policy', csp);
@@ -704,7 +705,24 @@ async function startServer() {
   app.post('/api/auth/google', (req, res) => {
     try {
       res.type('application/json');
-      const { email, name, role = 'ORGANIZER' } = req.body || {};
+      let { email, name, role = 'ORGANIZER', credential } = req.body || {};
+
+      // If a Google ID token was passed from Google Identity Services
+      if (credential && typeof credential === 'string') {
+        try {
+          const parts = credential.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+            if (payload?.email) {
+              email = payload.email;
+              name = payload.name || name || payload.email.split('@')[0];
+            }
+          }
+        } catch (e) {
+          console.error('[GOOGLE_ID_TOKEN_PARSE_ERR]', e);
+        }
+      }
+
       if (!email || !isValidEmail(email)) {
         return res.status(400).json({
           success: false,
