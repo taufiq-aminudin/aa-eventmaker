@@ -40,7 +40,7 @@ export const AuthModal: React.FC = () => {
       }
     }
     return {
-      email: 'internationalsuryautama@gmail.com',
+      email: 'suryautama0001@gmail.com',
       name: 'Surya Utama',
     };
   });
@@ -72,8 +72,12 @@ export const AuthModal: React.FC = () => {
           role: selectedRole,
         });
       } else {
-        // Default Google Login
-        await loginWithGoogle();
+        // Fallback to detected device Google account
+        await loginWithGoogle({
+          name: deviceGoogleAccount.name,
+          email: deviceGoogleAccount.email,
+          role: selectedRole,
+        });
       }
       setShowAuthModal(false);
       setShowPublicLanding(false);
@@ -187,7 +191,8 @@ export const AuthModal: React.FC = () => {
           {/* Primary Google One-Click Button */}
           <div>
             <button
-              onClick={() => handleGoogleSignIn()}
+              type="button"
+              onClick={() => setShowCustomInput((prev) => !prev)}
               disabled={isProcessing}
               className="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-blue-400 rounded-2xl shadow-xs font-bold text-xs flex items-center justify-center space-x-3 transition-all hover:shadow-md cursor-pointer disabled:opacity-60"
             >
@@ -211,7 +216,9 @@ export const AuthModal: React.FC = () => {
                 />
               </svg>
               <span>
-                {isProcessing ? 'Menghubungkan ke Google...' : `Pilih Akun Google Lain di ${deviceName}`}
+                {showCustomInput
+                  ? `Tutup Pilihan Akun Lain`
+                  : `Pilih / Masukkan Akun Google Lain di ${deviceName}`}
               </span>
             </button>
           </div>

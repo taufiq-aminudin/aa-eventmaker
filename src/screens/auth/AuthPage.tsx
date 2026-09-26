@@ -62,7 +62,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       }
     }
     return {
-      email: 'internationalsuryautama@gmail.com',
+      email: 'suryautama0001@gmail.com',
       name: 'Surya Utama',
     };
   });
@@ -92,10 +92,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
         .catch(() => {});
     }
 
-    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+    const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    const isRealGoogleClientId =
+      typeof clientId === 'string' &&
+      clientId.trim().length > 20 &&
+      clientId.includes('.apps.googleusercontent.com') &&
+      !clientId.startsWith('180385924057-client');
+
+    // Only initialize Google Identity Services if a valid client_id is explicitly configured
+    if (isRealGoogleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       try {
         (window as any).google.accounts.id.initialize({
-          client_id: (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '180385924057-client.apps.googleusercontent.com',
+          client_id: clientId.trim(),
           callback: (response: any) => {
             if (response?.credential) {
               executeGoogleAuth({ credential: response.credential, role });
@@ -104,7 +112,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[GIS_INIT_WARNING]', e);
+      }
     }
   }, []);
 
@@ -201,8 +211,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       return;
     }
 
-    // Try Google Identity Services prompt if available
-    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+    const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    const isRealGoogleClientId =
+      typeof clientId === 'string' &&
+      clientId.trim().length > 20 &&
+      clientId.includes('.apps.googleusercontent.com') &&
+      !clientId.startsWith('180385924057-client');
+
+    // Try Google Identity Services prompt ONLY if a real Google Client ID is configured
+    if (isRealGoogleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       try {
         (window as any).google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
@@ -210,10 +227,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           }
         });
         return;
-      } catch (e) {}
+      } catch (e) {
+        setShowGooglePicker(true);
+        return;
+      }
     }
 
-    // Otherwise open Google Account Chooser for device
+    // Otherwise open Google Account Chooser for device immediately without error
     setShowGooglePicker(true);
   };
 
