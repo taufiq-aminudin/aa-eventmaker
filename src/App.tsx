@@ -87,7 +87,32 @@ const PageLoaderFallback: React.FC = () => (
   </div>
 );
 
-const AppWorkspace: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Top Route Navigation Progress Bar
+const NavigationProgressBar: React.FC = () => {
+  const { currentPath } = useRouter();
+  const [navigating, setNavigating] = useState(false);
+
+  useEffect(() => {
+    setNavigating(true);
+    const timer = setTimeout(() => {
+      setNavigating(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [currentPath]);
+
+  if (!navigating) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-[3px] pointer-events-none overflow-hidden">
+      <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-500 shadow-[0_0_10px_rgba(99,102,241,0.65)] animate-route-progress" />
+    </div>
+  );
+};
+
+const AppWorkspace: React.FC<{ children: React.ReactNode; pageKey?: string }> = ({
+  children,
+  pageKey,
+}) => {
   const { activeRole } = useEvent();
   const [themeMood, setThemeMood] = useState<ThemeMood>('indigo');
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
@@ -103,7 +128,9 @@ const AppWorkspace: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <Navbar />
 
       <main className="flex-1 pb-28 lg:pb-16 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        <Suspense fallback={<PageLoaderFallback />}>{children}</Suspense>
+        <div key={pageKey} className="animate-page-fade w-full">
+          <Suspense fallback={<PageLoaderFallback />}>{children}</Suspense>
+        </div>
       </main>
 
       <MobileBottomNav
@@ -130,13 +157,12 @@ const AppWorkspace: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 const MainRouter: React.FC = () => {
-  const { currentRoute } = useRouter();
+  const { currentRoute, currentPath } = useRouter();
   const {
     activeTab,
     activeRole,
     showPublicPreview,
     setShowPublicPreview,
-    toastMessage,
   } = useEvent();
 
   const [themeMood, setThemeMood] = useState<ThemeMood>('indigo');
@@ -159,138 +185,146 @@ const MainRouter: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHash);
   }, [setShowPublicPreview]);
 
-  // Route: Public Invitation View by slug or hash
-  if (currentRoute === '/invitation/:slug' || showPublicPreview) {
-    return (
-      <Suspense fallback={<PageLoaderFallback />}>
-        <PublicInvitationView />
-      </Suspense>
-    );
-  }
-
-  // Public Marketing & Informational Pages
-  switch (currentRoute) {
-    case '/':
-      return <HomePage />;
-    case '/templates':
-      return <TemplatesPage />;
-    case '/features':
-      return <FeaturesPage />;
-    case '/guest-pass':
-      return <GuestPassPage />;
-    case '/pricing':
-      return <PricingPage />;
-    case '/payment':
-      return <PaymentPage />;
-    case '/about':
-      return <AboutPage />;
-    case '/contact':
-      return <ContactPage />;
-    case '/help':
-      return <HelpPage />;
-    case '/privacy':
-      return <PrivacyPolicyPage />;
-    case '/terms':
-      return <TermsOfServicePage />;
-    case '/login':
-      return <AuthPage initialMode="login" />;
-    case '/signup':
-      return <AuthPage initialMode="signup" />;
-    case '/forgot-password':
-      return <ForgotPasswordPage />;
-    case '/reset-password':
-      return <ResetPasswordPage />;
-
-    // Dedicated Isolated Admin Authentication Route
-    case '/admin/login':
-      return <AdminLoginScreen />;
-
-    // Admin Console Pages (Full Admin Suite with strict access control)
-    case '/admin':
-    case '/admin/dashboard':
-      return <AdminSuiteScreen initialTab="dashboard" />;
-    case '/admin/payments':
-    case '/admin/payment-verification':
-      return <AdminSuiteScreen initialTab="payments" />;
-    case '/admin/transactions':
-      return <AdminSuiteScreen initialTab="transactions" />;
-    case '/admin/customers':
-      return <AdminSuiteScreen initialTab="customers" />;
-    case '/admin/invitations':
-      return <AdminSuiteScreen initialTab="invitations" />;
-    case '/admin/packages':
-      return <AdminSuiteScreen initialTab="packages" />;
-    case '/admin/templates':
-    case '/admin/categories':
-      return <AdminSuiteScreen initialTab="templates" />;
-    case '/admin/revenue':
-    case '/admin/reports':
-      return <AdminSuiteScreen initialTab="revenue" />;
-    case '/admin/settings':
-      return <AdminSuiteScreen initialTab="settings" />;
-
-    // App & Workspace Dedicated Pages
-    case '/projects':
+  const renderRouteContent = () => {
+    // Route: Public Invitation View by slug or hash
+    if (currentRoute === '/invitation/:slug' || showPublicPreview) {
       return (
-        <AppWorkspace>
-          <ProjectsPage />
-        </AppWorkspace>
+        <Suspense fallback={<PageLoaderFallback />}>
+          <PublicInvitationView />
+        </Suspense>
       );
-    case '/create':
-      return (
-        <AppWorkspace>
-          <CreateEventPage />
-        </AppWorkspace>
-      );
-    case '/settings':
-      return (
-        <AppWorkspace>
-          <SettingsPage />
-        </AppWorkspace>
-      );
-    case '/editor':
-      return (
-        <AppWorkspace>
-          <InvitationScreen />
-        </AppWorkspace>
-      );
-    case '/guests':
-      return (
-        <AppWorkspace>
-          <GuestScreen />
-        </AppWorkspace>
-      );
+    }
 
-    // Main App Dashboard / Role Views
-    case '/dashboard':
-    default:
-      return (
-        <AppWorkspace>
-          {activeRole === 'ORGANIZER' && (
-            <>
-              {activeTab === 0 && (
-                <HomeScreen
-                  currentThemeMood={themeMood}
-                  onSelectThemeMood={setThemeMood}
-                  isPlayingMusic={isPlayingMusic}
-                  onToggleMusic={handleToggleMusic}
-                />
-              )}
-              {activeTab === 1 && <InvitationScreen />}
-              {activeTab === 2 && <GuestScreen />}
-              {activeTab === 3 && <PlannerScreen />}
-              {activeTab === 4 && <BudgetScreen />}
-              {activeTab === 5 && <StudioScreen />}
-              {activeTab === 6 && <LocationMemoriesScreen />}
-            </>
-          )}
+    // Public Marketing & Informational Pages
+    switch (currentRoute) {
+      case '/':
+        return <HomePage />;
+      case '/templates':
+        return <TemplatesPage />;
+      case '/features':
+        return <FeaturesPage />;
+      case '/guest-pass':
+        return <GuestPassPage />;
+      case '/pricing':
+        return <PricingPage />;
+      case '/payment':
+        return <PaymentPage />;
+      case '/about':
+        return <AboutPage />;
+      case '/contact':
+        return <ContactPage />;
+      case '/help':
+        return <HelpPage />;
+      case '/privacy':
+        return <PrivacyPolicyPage />;
+      case '/terms':
+        return <TermsOfServicePage />;
+      case '/login':
+        return <AuthPage initialMode="login" />;
+      case '/signup':
+        return <AuthPage initialMode="signup" />;
+      case '/forgot-password':
+        return <ForgotPasswordPage />;
+      case '/reset-password':
+        return <ResetPasswordPage />;
 
-          {activeRole === 'CLIENT' && <ClientDashboardScreen />}
-          {activeRole === 'VENDOR' && <VendorDashboardScreen />}
-          {activeRole === 'GUEST' && <GuestDashboardScreen />}
-        </AppWorkspace>
-      );
-  }
+      // Dedicated Isolated Admin Authentication Route
+      case '/admin/login':
+        return <AdminLoginScreen />;
+
+      // Admin Console Pages (Full Admin Suite with strict access control)
+      case '/admin':
+      case '/admin/dashboard':
+        return <AdminSuiteScreen initialTab="dashboard" />;
+      case '/admin/payments':
+      case '/admin/payment-verification':
+        return <AdminSuiteScreen initialTab="payments" />;
+      case '/admin/transactions':
+        return <AdminSuiteScreen initialTab="transactions" />;
+      case '/admin/customers':
+        return <AdminSuiteScreen initialTab="customers" />;
+      case '/admin/invitations':
+        return <AdminSuiteScreen initialTab="invitations" />;
+      case '/admin/packages':
+        return <AdminSuiteScreen initialTab="packages" />;
+      case '/admin/templates':
+      case '/admin/categories':
+        return <AdminSuiteScreen initialTab="templates" />;
+      case '/admin/revenue':
+      case '/admin/reports':
+        return <AdminSuiteScreen initialTab="revenue" />;
+      case '/admin/settings':
+        return <AdminSuiteScreen initialTab="settings" />;
+
+      // App & Workspace Dedicated Pages
+      case '/projects':
+        return (
+          <AppWorkspace pageKey={currentPath}>
+            <ProjectsPage />
+          </AppWorkspace>
+        );
+      case '/create':
+        return (
+          <AppWorkspace pageKey={currentPath}>
+            <CreateEventPage />
+          </AppWorkspace>
+        );
+      case '/settings':
+        return (
+          <AppWorkspace pageKey={currentPath}>
+            <SettingsPage />
+          </AppWorkspace>
+        );
+      case '/editor':
+        return (
+          <AppWorkspace pageKey={currentPath}>
+            <InvitationScreen />
+          </AppWorkspace>
+        );
+      case '/guests':
+        return (
+          <AppWorkspace pageKey={currentPath}>
+            <GuestScreen />
+          </AppWorkspace>
+        );
+
+      // Main App Dashboard / Role Views
+      case '/dashboard':
+      default:
+        return (
+          <AppWorkspace pageKey={`dash-${activeRole}-${activeTab}`}>
+            {activeRole === 'ORGANIZER' && (
+              <>
+                {activeTab === 0 && (
+                  <HomeScreen
+                    currentThemeMood={themeMood}
+                    onSelectThemeMood={setThemeMood}
+                    isPlayingMusic={isPlayingMusic}
+                    onToggleMusic={handleToggleMusic}
+                  />
+                )}
+                {activeTab === 1 && <InvitationScreen />}
+                {activeTab === 2 && <GuestScreen />}
+                {activeTab === 3 && <PlannerScreen />}
+                {activeTab === 4 && <BudgetScreen />}
+                {activeTab === 5 && <StudioScreen />}
+                {activeTab === 6 && <LocationMemoriesScreen />}
+              </>
+            )}
+
+            {activeRole === 'CLIENT' && <ClientDashboardScreen />}
+            {activeRole === 'VENDOR' && <VendorDashboardScreen />}
+            {activeRole === 'GUEST' && <GuestDashboardScreen />}
+          </AppWorkspace>
+        );
+    }
+  };
+
+  return (
+    <div key={currentPath} className="animate-page-fade w-full min-h-screen">
+      {renderRouteContent()}
+    </div>
+  );
 };
 
 export const App: React.FC = () => {
@@ -298,6 +332,7 @@ export const App: React.FC = () => {
 
   return (
     <RouterProvider>
+      <NavigationProgressBar />
       <MainRouter />
 
       {/* Global Modals loaded lazily */}
