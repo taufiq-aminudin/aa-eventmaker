@@ -30,6 +30,7 @@ import { SettingsPage } from './screens/app/SettingsPage';
 import { AdminSuiteScreen } from './screens/admin/AdminSuiteScreen';
 import { AdminLoginScreen } from './screens/admin/AdminLoginScreen';
 import { AdminTab } from './components/admin/AdminLayout';
+import { PageLoaderFallback } from './components/PageLoaderFallback';
 
 // Lazy Loaded Workspace Screens & Modals for performance
 const HomeScreen = React.lazy(() =>
@@ -78,13 +79,6 @@ const AuthModal = React.lazy(() =>
 );
 const UpgradeModal = React.lazy(() =>
   import('./components/UpgradeModal').then((m) => ({ default: m.UpgradeModal }))
-);
-
-const PageLoaderFallback: React.FC = () => (
-  <div className="min-h-[400px] flex flex-col items-center justify-center p-8 space-y-3">
-    <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-    <span className="text-xs font-bold text-slate-400">Memuat modul acara...</span>
-  </div>
 );
 
 // Top Route Navigation Progress Bar
@@ -189,7 +183,7 @@ const MainRouter: React.FC = () => {
     // Route: Public Invitation View by slug or hash
     if (currentRoute === '/invitation/:slug' || showPublicPreview) {
       return (
-        <Suspense fallback={<PageLoaderFallback />}>
+        <Suspense fallback={<PageLoaderFallback variant="invitation" />}>
           <PublicInvitationView />
         </Suspense>
       );

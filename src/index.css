@@ -175,9 +175,67 @@
   .animate-page-fade,
   .animate-route-progress,
   .animate-float,
-  .animate-float-delayed {
+  .animate-float-delayed,
+  .skeleton-shimmer::after,
+  .skeleton-dark::after {
     animation: none !important;
     transform: none !important;
   }
+}
+
+/* Modern High-Fidelity Skeleton Shimmer */
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #f1f5f9;
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmerSweep 1.8s infinite ease-in-out;
+  content: '';
+  pointer-events: none;
+}
+
+.skeleton-dark {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.skeleton-dark::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmerSweep 1.8s infinite ease-in-out;
+  content: '';
+  pointer-events: none;
 }
 
