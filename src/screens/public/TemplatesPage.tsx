@@ -186,9 +186,9 @@ export const TemplatesPage: React.FC = () => {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer btn-tactile ${
                       selectedCategory === cat
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-102'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     }`}
                   >
@@ -208,9 +208,9 @@ export const TemplatesPage: React.FC = () => {
                   <button
                     key={style}
                     onClick={() => setSelectedStyle(style)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer btn-tactile ${
                       selectedStyle === style
-                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25 scale-102'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     }`}
                   >
@@ -235,9 +235,9 @@ export const TemplatesPage: React.FC = () => {
                   <button
                     key={tier.id}
                     onClick={() => setSelectedTier(tier.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer btn-tactile ${
                       selectedTier === tier.id
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25 scale-102'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     }`}
                   >
@@ -368,7 +368,7 @@ export const TemplatesPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivePreviewTemplate(tmpl)}
-                        className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer btn-tactile"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Preview Realistis</span>
@@ -378,7 +378,7 @@ export const TemplatesPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleUseTemplate(tmpl)}
-                          className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                          className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer btn-tactile"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                           <span>Gunakan</span>
@@ -387,7 +387,7 @@ export const TemplatesPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleUseTemplate(tmpl)}
-                          className="flex-1 py-2.5 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                          className="flex-1 py-2.5 px-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer btn-tactile"
                           title="Klik untuk membuka paket langganan"
                         >
                           <Lock className="w-3.5 h-3.5 text-amber-200" />

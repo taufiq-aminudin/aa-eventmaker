@@ -141,25 +141,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* RSVP Card */}
         <div
           onClick={() => setActiveTab(2)}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-purple-300 transition-all cursor-pointer group"
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 transition-all duration-300 cursor-pointer group btn-tactile"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               RSVP & Hadir
             </span>
-            <div className="p-2 rounded-xl bg-purple-50 text-[#6d28d9] group-hover:bg-purple-100 transition-colors">
+            <div className="p-2.5 rounded-xl bg-purple-50 text-[#6d28d9] group-hover:bg-purple-100 transition-colors shadow-xs">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline space-x-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <span className="text-2xl sm:text-3xl font-mono tabular-nums font-black text-slate-900">
               {confirmedPax}
             </span>
             <span className="text-xs text-slate-500 font-medium">/ {totalPax} Pax Hadir</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-slate-600 border-t border-slate-100 pt-2.5">
             <span>Check-in Hari-H:</span>
-            <span className="font-bold text-emerald-600">
+            <span className="font-bold text-emerald-600 font-mono tabular-nums">
               {checkedInCount} Tamu ({checkedInPax} Pax)
             </span>
           </div>
@@ -168,25 +168,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Budget Card */}
         <div
           onClick={() => setActiveTab(4)}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-300 transition-all cursor-pointer group"
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 hover:border-emerald-300 transition-all duration-300 cursor-pointer group btn-tactile"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Realisasi Biaya
             </span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors shadow-xs">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline space-x-2">
-            <span className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            <span className="text-xl sm:text-2xl font-mono tabular-nums font-black text-slate-900">
               {formatCost(totalActualBudget)}
             </span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-slate-600 border-t border-slate-100 pt-2.5">
-            <span>Rencana: {formatCost(totalPlannedBudget)}</span>
+            <span className="tabular-nums">Rencana: {formatCost(totalPlannedBudget)}</span>
             <span
-              className={`font-bold ${
+              className={`font-bold font-mono tabular-nums ${
                 budgetPercentage <= 100 ? 'text-emerald-600' : 'text-rose-600'
               }`}
             >
@@ -198,18 +198,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Tasks Card */}
         <div
           onClick={() => setActiveTab(3)}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-300 transition-all cursor-pointer group"
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 hover:border-amber-300 transition-all duration-300 cursor-pointer group btn-tactile"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Kesiapan Acara
             </span>
-            <div className="p-2 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition-colors">
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition-colors shadow-xs">
               <CheckSquare className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline space-x-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <span className="text-2xl sm:text-3xl font-mono tabular-nums font-black text-slate-900">
               {completedTasks}
             </span>
             <span className="text-xs text-slate-500 font-medium">
@@ -240,16 +240,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 key={card.id}
                 id={`feature-card-${card.id}`}
                 onClick={() => setActiveTab(card.tab)}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md hover:border-purple-300 transition-all cursor-pointer flex flex-col justify-between group"
+                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 transition-all duration-300 cursor-pointer flex flex-col justify-between group btn-tactile"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${card.color} text-white flex items-center justify-center shadow-xs`}
+                      className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${card.color} text-white flex items-center justify-center shadow-md shadow-purple-500/10 group-hover:scale-105 transition-transform duration-300`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
                       {card.badge}
                     </span>
                   </div>
@@ -259,7 +259,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.desc}</p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#6d28d9] group-hover:translate-x-0.5 transition-transform">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#6d28d9] group-hover:translate-x-1 transition-transform">
                   <span>Buka Modul</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>

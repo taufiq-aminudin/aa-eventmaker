@@ -205,8 +205,8 @@ export const HomePage: React.FC = () => {
 
               <div className="relative flex items-center justify-center">
                 {/* Floating Elements on Desktop */}
-                <div className="hidden md:flex absolute -left-6 top-12 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                <div className="hidden md:flex absolute -left-6 top-12 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100 animate-float">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
                     <Share2 className="w-5 h-5" />
                   </div>
                   <div className="text-left">
@@ -215,8 +215,8 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="hidden md:flex absolute -right-6 top-16 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100">
-                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md">
+                <div className="hidden md:flex absolute -right-6 top-16 z-20 items-center space-x-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100 animate-float-delayed">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/25">
                     <Users className="w-5 h-5" />
                   </div>
                   <div className="text-left">
@@ -226,14 +226,20 @@ export const HomePage: React.FC = () => {
                 </div>
 
                 {/* Central Smartphone Container */}
-                <div className="relative w-[300px] sm:w-[340px] h-[580px] sm:h-[620px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800">
-                  <div className="w-full h-full rounded-[36px] bg-gradient-to-b text-white p-5 flex flex-col justify-between overflow-hidden relative shadow-inner"
+                <div className="relative w-[300px] sm:w-[340px] h-[580px] sm:h-[620px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 shadow-slate-900/40">
+                  {/* Dynamic Island / Camera Notch */}
+                  <div className="w-24 h-4 bg-slate-900 rounded-full mx-auto mb-1 z-30 flex items-center justify-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-800" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-900/60" />
+                  </div>
+
+                  <div className="w-full h-[calc(100%-20px)] rounded-[34px] bg-gradient-to-b text-white p-5 flex flex-col justify-between overflow-hidden relative shadow-inner"
                        style={{ backgroundImage: 'linear-gradient(to bottom, #0f172a, #1e1b4b, #312e81)' }}>
-                    <div className="relative z-10 pt-6 text-center">
+                    <div className="relative z-10 pt-2 text-center">
                       <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white">
                         {heroThemes[heroThemeIndex].badge}
                       </span>
-                      <div className="text-[11px] uppercase tracking-widest text-slate-200 mt-3">The Wedding Of</div>
+                      <div className="text-[11px] uppercase tracking-widest text-slate-200 mt-2">The Wedding Of</div>
                       <h3 className="text-xl sm:text-2xl font-serif font-bold text-white mt-1 leading-snug">
                         {heroThemes[heroThemeIndex].couple}
                       </h3>
@@ -244,7 +250,7 @@ export const HomePage: React.FC = () => {
                         <img
                           src={heroThemes[heroThemeIndex].photo}
                           alt="Couple Portrait"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                         />
                       </div>
                     </div>
@@ -258,7 +264,7 @@ export const HomePage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => setShowPublicPreview(true)}
-                        className="w-full py-2.5 rounded-xl bg-white text-slate-900 text-xs font-black shadow-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                        className="w-full py-2.5 rounded-xl bg-white text-slate-900 text-xs font-black shadow-lg hover:bg-slate-100 transition-colors cursor-pointer btn-tactile"
                       >
                         Buka Undangan Digital
                       </button>

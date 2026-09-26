@@ -38,7 +38,7 @@ export const PublicHeader: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-40 glass-header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <AALogo
@@ -55,13 +55,16 @@ export const PublicHeader: React.FC = () => {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`transition-colors py-1 ${
+                className={`transition-colors py-1.5 px-1 relative ${
                   isActive
-                    ? 'text-blue-600 font-extrabold border-b-2 border-blue-600'
+                    ? 'text-blue-600 font-extrabold'
                     : 'hover:text-blue-600'
                 }`}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
               </Link>
             );
           })}
@@ -74,7 +77,7 @@ export const PublicHeader: React.FC = () => {
           {currentUser ? (
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer btn-tactile"
             >
               <span>Dasbor Saya</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -83,7 +86,7 @@ export const PublicHeader: React.FC = () => {
             <>
               <Link
                 to="/login"
-                className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 transition-colors btn-tactile"
               >
                 <LogIn className="w-3.5 h-3.5 text-blue-600" />
                 <span>Masuk</span>
@@ -91,7 +94,7 @@ export const PublicHeader: React.FC = () => {
 
               <button
                 onClick={() => navigate('/create')}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:opacity-95 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:opacity-95 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer btn-tactile shadow-blue-500/15"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>Buat Undangan</span>
@@ -102,17 +105,17 @@ export const PublicHeader: React.FC = () => {
           {/* Mobile Menu Hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="md:hidden p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer btn-tactile min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Buka Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-5 h-5 text-rose-600" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 shadow-xl animate-in slide-in-from-top-2">
+        <div className="md:hidden bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 pt-2">
             Menu Utama
           </div>

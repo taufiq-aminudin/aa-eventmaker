@@ -222,7 +222,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
             {/* Music Toggle */}
             <button
               onClick={() => setIsPlayingMusic(!isPlayingMusic)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer btn-tactile min-h-[40px] min-w-[40px] flex items-center justify-center"
               title="Musik Tema"
             >
               {isPlayingMusic ? (
@@ -237,7 +237,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleApplyTemplate}
-                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer btn-tactile"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>Gunakan</span>
@@ -246,7 +246,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleApplyTemplate}
-                className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer btn-tactile"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-200" />
                 <span>Buka Paket {accessCheck.requiredTier === 'agency' ? 'Agency' : 'Pro'}</span>
@@ -257,7 +257,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer btn-tactile min-h-[40px] min-w-[40px] flex items-center justify-center"
               aria-label="Tutup Preview"
             >
               <X className="w-5 h-5" />

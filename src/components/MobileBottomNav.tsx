@@ -87,24 +87,24 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <>
       {/* Quick Floating Action Button on Mobile (Scan QR) */}
-      <div className="lg:hidden fixed bottom-[76px] right-4 z-40">
+      <div className="lg:hidden fixed bottom-[74px] right-3.5 z-40">
         <button
           onClick={() => {
             soundManager.playTapSound();
             setShowQrCheckinModal(true);
           }}
-          className={`flex items-center space-x-2 px-3.5 py-2.5 rounded-full shadow-lg text-white font-bold text-xs ${currentTheme.buttonClass} active:scale-95 transition-transform backdrop-blur-md`}
+          className={`flex items-center space-x-2 px-3.5 py-2.5 rounded-full shadow-xl shadow-purple-500/25 text-white font-bold text-xs ${currentTheme.buttonClass} btn-tactile backdrop-blur-md border border-white/20`}
           aria-label="Scan QR Tamu Cepat"
         >
           <QrCode className="w-4 h-4" />
-          <span className="text-[11px] tracking-wide">Scan QR</span>
+          <span className="text-[11px] font-bold tracking-wide">Scan QR</span>
         </button>
       </div>
 
       {/* Fixed Bottom Dock Navigation Bar */}
       <nav
         aria-label="Navigasi Mobile"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-2xl safe-area-bottom"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-dock safe-area-bottom"
       >
         <div className="grid grid-cols-5 h-16 max-w-md mx-auto px-1 items-center">
           {/* Tab 0: Home */}
@@ -115,22 +115,22 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               setActiveTab(0);
               setIsMenuOpen(false);
             }}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
+            className={`min-h-[48px] flex flex-col items-center justify-center h-full transition-all duration-200 active:scale-90 relative ${
               (currentPath === '/dashboard' || activeTab === 0) && !isMenuOpen
-                ? 'text-slate-900 font-extrabold'
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'text-slate-950 font-black'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
             <div className="relative">
-              <Home className="w-5 h-5" />
+              <Home className={`w-5 h-5 transition-transform duration-200 ${(currentPath === '/dashboard' || activeTab === 0) && !isMenuOpen ? 'scale-110' : ''}`} />
               {(currentPath === '/dashboard' || activeTab === 0) && !isMenuOpen && (
                 <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full shadow-xs transition-all"
                   style={{ backgroundColor: currentTheme.accentColor }}
                 />
               )}
             </div>
-            <span className="text-[10px] mt-1">Beranda</span>
+            <span className="text-[10px] mt-1 tracking-tight">Beranda</span>
           </button>
 
           {/* Tab 1: Templates */}
@@ -140,22 +140,22 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               navigate('/templates');
               setIsMenuOpen(false);
             }}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
+            className={`min-h-[48px] flex flex-col items-center justify-center h-full transition-all duration-200 active:scale-90 relative ${
               currentPath === '/templates' && !isMenuOpen
-                ? 'text-slate-900 font-extrabold'
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'text-slate-950 font-black'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
             <div className="relative">
-              <Palette className="w-5 h-5" />
+              <Palette className={`w-5 h-5 transition-transform duration-200 ${currentPath === '/templates' && !isMenuOpen ? 'scale-110' : ''}`} />
               {currentPath === '/templates' && !isMenuOpen && (
                 <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full shadow-xs transition-all"
                   style={{ backgroundColor: currentTheme.accentColor }}
                 />
               )}
             </div>
-            <span className="text-[10px] mt-1">Template</span>
+            <span className="text-[10px] mt-1 tracking-tight">Template</span>
           </button>
 
           {/* Tab 2: Proyek */}
@@ -165,22 +165,22 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               navigate('/projects');
               setIsMenuOpen(false);
             }}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
+            className={`min-h-[48px] flex flex-col items-center justify-center h-full transition-all duration-200 active:scale-90 relative ${
               currentPath === '/projects' && !isMenuOpen
-                ? 'text-slate-900 font-extrabold'
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'text-slate-950 font-black'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
             <div className="relative">
-              <FolderKanban className="w-5 h-5" />
+              <FolderKanban className={`w-5 h-5 transition-transform duration-200 ${currentPath === '/projects' && !isMenuOpen ? 'scale-110' : ''}`} />
               {currentPath === '/projects' && !isMenuOpen && (
                 <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full shadow-xs transition-all"
                   style={{ backgroundColor: currentTheme.accentColor }}
                 />
               )}
             </div>
-            <span className="text-[10px] mt-1">Proyek</span>
+            <span className="text-[10px] mt-1 tracking-tight">Proyek</span>
           </button>
 
           {/* Tab 3: Tamu */}
@@ -191,27 +191,27 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               setActiveTab(2);
               setIsMenuOpen(false);
             }}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
+            className={`min-h-[48px] flex flex-col items-center justify-center h-full transition-all duration-200 active:scale-90 relative ${
               (currentPath === '/guests' || activeTab === 2) && !isMenuOpen
-                ? 'text-slate-900 font-extrabold'
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'text-slate-950 font-black'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
             <div className="relative">
-              <Users className="w-5 h-5" />
+              <Users className={`w-5 h-5 transition-transform duration-200 ${(currentPath === '/guests' || activeTab === 2) && !isMenuOpen ? 'scale-110' : ''}`} />
               {pendingRsvpCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-amber-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 min-w-4 text-center">
+                <span className="absolute -top-1 -right-2 bg-amber-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.2 min-w-4 text-center tabular-nums shadow-xs">
                   {pendingRsvpCount}
                 </span>
               )}
               {(currentPath === '/guests' || activeTab === 2) && !isMenuOpen && (
                 <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full shadow-xs transition-all"
                   style={{ backgroundColor: currentTheme.accentColor }}
                 />
               )}
             </div>
-            <span className="text-[10px] mt-1">Tamu</span>
+            <span className="text-[10px] mt-1 tracking-tight">Tamu</span>
           </button>
 
           {/* Tab 4: More / Menu */}
@@ -220,69 +220,78 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               soundManager.playTapSound();
               setIsMenuOpen(!isMenuOpen);
             }}
-            className={`flex flex-col items-center justify-center h-full transition-all active:scale-90 relative ${
-              isMenuOpen ? 'text-slate-900 font-extrabold' : 'text-slate-400 hover:text-slate-600'
+            className={`min-h-[48px] flex flex-col items-center justify-center h-full transition-all duration-200 active:scale-90 relative ${
+              isMenuOpen ? 'text-rose-600 font-black' : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
             <div className="relative">
-              {isMenuOpen ? <X className="w-5 h-5 text-rose-600" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? <X className="w-5 h-5 text-rose-600 scale-110 transition-transform" /> : <Menu className="w-5 h-5" />}
             </div>
-            <span className="text-[10px] mt-1">{isMenuOpen ? 'Tutup' : 'Menu'}</span>
+            <span className="text-[10px] mt-1 tracking-tight">{isMenuOpen ? 'Tutup' : 'Menu'}</span>
           </button>
         </div>
       </nav>
 
       {/* Mobile Drawer / Bottom Sheet */}
       {isMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div 
+          className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setIsMenuOpen(false)}
+        >
           <div
-            className="w-full bg-white rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4 border-t border-slate-100"
+            className="w-full bg-white rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4 border-t border-slate-100 safe-area-bottom animate-in slide-in-from-bottom duration-300 ease-out"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer Handle */}
+            {/* Drawer Pull Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-1" />
+
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentTheme.accentColor }} />
-                <span className="font-extrabold text-sm text-slate-900">Menu & Fitur Acara</span>
+                <span className="font-extrabold text-sm text-slate-900 tracking-tight">Menu & Fitur Acara</span>
               </div>
               <button
                 onClick={() => setIsMenuOpen(false)}
-                className="p-1 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800"
+                className="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors btn-tactile"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Quick Audio & Ambient Mood Atmosphere */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-50 to-purple-50/50 border border-slate-200/80 flex items-center justify-between">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-50 via-purple-50/30 to-blue-50/30 border border-slate-200/80 flex items-center justify-between shadow-xs">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={onToggleMusic}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all btn-tactile ${
                     isPlayingMusic
-                      ? 'bg-purple-600 text-white shadow-md animate-pulse'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25 ring-2 ring-purple-300'
                       : 'bg-white text-slate-600 border border-slate-200'
                   }`}
                   aria-label="Toggle Musik Suasana"
                 >
-                  <Music className="w-5 h-5" />
+                  <Music className={`w-5 h-5 ${isPlayingMusic ? 'animate-pulse' : ''}`} />
                 </button>
                 <div>
                   <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                     <span>Musik Suasana Acara</span>
                     {isPlayingMusic && (
-                      <span className="text-[10px] text-purple-600 font-normal animate-pulse">● Berputar</span>
+                      <span className="flex items-end space-x-0.5 h-3">
+                        <span className="w-0.5 bg-purple-600 rounded-full animate-eq-1" />
+                        <span className="w-0.5 bg-purple-600 rounded-full animate-eq-2" />
+                        <span className="w-0.5 bg-purple-600 rounded-full animate-eq-3" />
+                      </span>
                     )}
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    {isPlayingMusic ? 'Melodi akustik pengiring' : 'Ketuk ikon untuk memutar'}
+                    {isPlayingMusic ? 'Melodi akustik pengiring aktif' : 'Ketuk ikon untuk memutar'}
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowThemePicker(!showThemePicker)}
-                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors btn-tactile"
               >
                 <Palette className="w-3.5 h-3.5 text-purple-600" />
                 <span className="text-[11px]">Tema</span>
