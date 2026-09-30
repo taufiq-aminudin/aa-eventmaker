@@ -174,7 +174,7 @@ interface EventContextType {
 
   // Tasks / Planner
   tasks: TaskItem[];
-  addTask: (title: string, category: string, dueDate: string, assignee: string) => void;
+  addTask: (title: string, category: string, dueDate: string, assignee: string, dependsOnTaskId?: string) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
   toggleTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
@@ -1798,7 +1798,13 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Planner functions
-  const addTask = (title: string, category: string, dueDate: string, assignee: string) => {
+  const addTask = (
+    title: string,
+    category: string,
+    dueDate: string,
+    assignee: string,
+    dependsOnTaskId?: string
+  ) => {
     const newTask: TaskItem = {
       id: `task-${Date.now()}`,
       projectId: currentProject.id,
@@ -1807,8 +1813,18 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dueDate: dueDate || 'Segera',
       assignee: assignee || 'Unassigned',
       isCompleted: false,
+      order: tasks.length,
+      dependsOnTaskId: dependsOnTaskId || undefined,
     };
-    setTasks((prev) => [...prev, newTask]);
+    setTasks((prev) => {
+      const updated = [...prev, newTask];
+      if (currentUser?.id) {
+        localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('aa_tasks', JSON.stringify(updated));
+      }
+      return updated;
+    });
     showToast(`Tugas "${title}" berhasil ditambahkan.`);
   };
 

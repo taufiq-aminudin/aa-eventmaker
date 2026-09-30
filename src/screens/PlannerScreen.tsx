@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -47,6 +47,12 @@ import {
   Edit2,
   Tag,
   Check,
+  Lock,
+  Unlock,
+  Link2,
+  GitFork,
+  AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { TaskItem } from '../types';
@@ -224,6 +230,44 @@ export const ALL_CATEGORY_KEYS = [
   'Logistics',
 ];
 
+export interface TaskDependencyInfo {
+  parentTask?: TaskItem;
+  isBlocked: boolean;
+  dependentTasks: TaskItem[];
+}
+
+export function getTaskDependencyInfo(task: TaskItem, allTasks: TaskItem[]): TaskDependencyInfo {
+  const parentTask = task.dependsOnTaskId
+    ? allTasks.find((t) => t.id === task.dependsOnTaskId)
+    : undefined;
+
+  // A task is blocked if it has a parent task, the parent task is not yet completed, and the current task is not completed
+  const isBlocked = Boolean(parentTask && !parentTask.isCompleted && !task.isCompleted);
+
+  const dependentTasks = allTasks.filter((t) => t.dependsOnTaskId === task.id);
+
+  return { parentTask, isBlocked, dependentTasks };
+}
+
+export function isCircularDependency(
+  taskId: string,
+  potentialParentId: string,
+  allTasks: TaskItem[]
+): boolean {
+  if (!potentialParentId || !taskId) return false;
+  if (taskId === potentialParentId) return true;
+  let currentParentId: string | undefined = potentialParentId;
+  const visited = new Set<string>();
+  while (currentParentId) {
+    if (visited.has(currentParentId)) break;
+    visited.add(currentParentId);
+    if (currentParentId === taskId) return true;
+    const parent = allTasks.find((t) => t.id === currentParentId);
+    currentParentId = parent?.dependsOnTaskId;
+  }
+  return false;
+}
+
 // Visual Category Badge Component
 interface CategoryVisualTagProps {
   category: string;
@@ -284,6 +328,7 @@ export const CategoryVisualTag: React.FC<CategoryVisualTagProps> = ({
 
 interface SortableTaskItemProps {
   task: TaskItem;
+  allTasks: TaskItem[];
   index: number;
   isFirst: boolean;
   isLast: boolean;
@@ -293,10 +338,13 @@ interface SortableTaskItemProps {
   onMoveDown: () => void;
   onEdit: () => void;
   onSelectCategory: (newCategory: string) => void;
+  onCompleteParent: (parentId: string) => void;
+  onShowBlockedNotice: (parentTaskTitle: string) => void;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   task,
+  allTasks,
   index,
   isFirst,
   isLast,
@@ -306,6 +354,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   onMoveDown,
   onEdit,
   onSelectCategory,
+  onCompleteParent,
+  onShowBlockedNotice,
 }) => {
   const {
     attributes,
@@ -323,22 +373,36 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
   };
 
-  const meta = getCategoryMeta(task.category);
+  const { parentTask, isBlocked, dependentTasks } = useMemo(
+    () => getTaskDependencyInfo(task, allTasks),
+    [task, allTasks]
+  );
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isBlocked) {
+      onShowBlockedNotice(parentTask?.title || 'Tugas prasyarat');
+      return;
+    }
+    onToggle();
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative p-3.5 sm:p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+      className={`relative p-3.5 sm:p-4 rounded-2xl border transition-all flex items-start sm:items-center justify-between gap-3 ${
         isDragging
           ? 'opacity-35 border-dashed border-amber-400 bg-amber-50/70 shadow-inner'
+          : isBlocked
+          ? 'bg-rose-50/30 border-rose-200/90 text-slate-900 shadow-2xs hover:border-rose-300'
           : task.isCompleted
           ? 'bg-slate-50/80 border-slate-200 text-slate-400'
           : 'bg-white border-slate-200/80 text-slate-900 shadow-xs hover:border-amber-300 hover:shadow-sm'
       }`}
     >
-      {/* Left priority index & Drag Handle */}
-      <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+      {/* Left Priority Index & Drag Handle */}
+      <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0 mt-0.5 sm:mt-0">
         <button
           type="button"
           {...attributes}
@@ -352,7 +416,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
         <span
           className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md min-w-[24px] text-center select-none ${
-            task.isCompleted
+            isBlocked
+              ? 'bg-rose-100 text-rose-800'
+              : task.isCompleted
               ? 'bg-slate-200/80 text-slate-500'
               : 'bg-amber-100 text-amber-800'
           }`}
@@ -363,29 +429,90 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       </div>
 
       {/* Checkbox & Task Content */}
-      <div
-        onClick={onToggle}
-        className="flex items-start space-x-3 cursor-pointer flex-1 min-w-0 pr-2 select-none"
-      >
-        <div className="mt-0.5 shrink-0">
+      <div className="flex items-start space-x-3 flex-1 min-w-0 pr-1 select-none">
+        {/* Interactive Checkbox (or Lock Icon if Blocked) */}
+        <div onClick={handleCheckboxClick} className="mt-0.5 shrink-0 cursor-pointer">
           {task.isCompleted ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          ) : isBlocked ? (
+            <div
+              title={`Tugas Terblokir! Harap selesaikan tugas prasyarat "${parentTask?.title}" terlebih dahulu.`}
+              className="w-5 h-5 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600 hover:bg-rose-200 hover:scale-105 transition-all shadow-2xs"
+            >
+              <Lock className="w-3 h-3 text-rose-700" />
+            </div>
           ) : (
             <Circle className="w-5 h-5 text-slate-300 hover:text-amber-500 transition-colors" />
           )}
         </div>
 
-        <div className="min-w-0">
-          <div
-            className={`text-xs sm:text-sm font-bold leading-snug break-words ${
-              task.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
-            }`}
-          >
-            {task.title}
+        {/* Task Details */}
+        <div
+          onClick={() => {
+            if (isBlocked) {
+              onShowBlockedNotice(parentTask?.title || 'Tugas prasyarat');
+            } else {
+              onToggle();
+            }
+          }}
+          className="min-w-0 flex-1 cursor-pointer"
+        >
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span
+              className={`text-xs sm:text-sm font-bold leading-snug break-words ${
+                task.isCompleted
+                  ? 'line-through text-slate-400'
+                  : isBlocked
+                  ? 'text-slate-900 font-semibold'
+                  : 'text-slate-900'
+              }`}
+            >
+              {task.title}
+            </span>
+
+            {/* Blocked Status Badge */}
+            {isBlocked && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-rose-100/90 text-rose-800 border border-rose-200 text-[10px] font-bold tracking-wide shrink-0">
+                <Lock className="w-3 h-3 text-rose-600" />
+                <span>TERBLOKIR</span>
+              </span>
+            )}
           </div>
 
+          {/* Dependency Parent Callout Banner */}
+          {parentTask && (
+            <div
+              className={`flex flex-wrap items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg mt-1.5 border ${
+                isBlocked
+                  ? 'bg-rose-50/80 border-rose-200 text-rose-900'
+                  : 'bg-emerald-50/60 border-emerald-200/70 text-emerald-800'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center space-x-1 font-semibold shrink-0">
+                <Link2 className={`w-3.5 h-3.5 ${isBlocked ? 'text-rose-600' : 'text-emerald-600'}`} />
+                <span>{isBlocked ? 'Menunggu Tugas:' : 'Prasyarat Terpenuhi:'}</span>
+              </div>
+              <span className="font-bold underline decoration-dotted truncate max-w-[200px] sm:max-w-xs">
+                {parentTask.title}
+              </span>
+
+              {isBlocked && (
+                <button
+                  type="button"
+                  onClick={() => onCompleteParent(parentTask.id)}
+                  className="ml-auto text-[10px] text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded font-bold shrink-0 transition-colors shadow-2xs"
+                  title="Tandai tugas prasyarat selesai sekarang untuk membuka blokir tugas ini"
+                >
+                  Selesaikan Prasyarat →
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Tags & Metadata Toolbar */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-[11px] text-slate-500 mt-1.5">
-            {/* Visual Category Tag with click-to-change menu */}
+            {/* Visual Category Tag */}
             <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
               <CategoryVisualTag
                 category={task.category}
@@ -442,19 +569,27 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
               <User className="w-3 h-3 text-slate-400" />
               <span>PIC: {task.assignee}</span>
             </span>
+
+            {/* Child dependency count if other tasks are waiting on this */}
+            {dependentTasks.length > 0 && (
+              <span className="inline-flex items-center space-x-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">
+                <GitFork className="w-3 h-3 text-indigo-500" />
+                <span>Prasyarat {dependentTasks.length} tugas lain</span>
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Up/Down Quick Reorder Buttons, Edit, & Delete */}
-      <div className="flex items-center space-x-0.5 shrink-0">
+      <div className="flex items-center space-x-0.5 shrink-0 mt-0.5 sm:mt-0">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
-          title="Edit detail tugas"
+          title="Edit detail tugas & prasyarat"
           className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors mr-0.5"
         >
           <Edit2 className="w-3.5 h-3.5" />
@@ -503,7 +638,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   );
 };
 
-const TaskOverlayCard: React.FC<{ task: TaskItem }> = ({ task }) => {
+const TaskOverlayCard: React.FC<{ task: TaskItem; allTasks: TaskItem[] }> = ({ task, allTasks }) => {
+  const { parentTask, isBlocked } = getTaskDependencyInfo(task, allTasks);
+
   return (
     <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-amber-400 bg-white text-slate-900 shadow-2xl flex items-center justify-between gap-3 rotate-1 scale-[1.02] cursor-grabbing">
       <div className="flex items-center space-x-2 shrink-0">
@@ -519,18 +656,32 @@ const TaskOverlayCard: React.FC<{ task: TaskItem }> = ({ task }) => {
         <div className="mt-0.5 shrink-0">
           {task.isCompleted ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          ) : isBlocked ? (
+            <div className="w-5 h-5 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600">
+              <Lock className="w-3 h-3" />
+            </div>
           ) : (
             <Circle className="w-5 h-5 text-slate-300" />
           )}
         </div>
         <div className="min-w-0">
-          <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-            {task.title}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+              {task.title}
+            </span>
+            {isBlocked && (
+              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-700 shrink-0">
+                TERBLOKIR
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
             <span>{task.dueDate}</span>
             <span>•</span>
             <span>PIC: {task.assignee}</span>
+            {parentTask && (
+              <span className="text-amber-700 font-semibold">• Menunggu: {parentTask.title}</span>
+            )}
           </div>
         </div>
       </div>
@@ -555,21 +706,25 @@ export const PlannerScreen: React.FC = () => {
   } = useEvent();
 
   const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'blocked' | 'ready' | 'completed'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [blockedAlertNotice, setBlockedAlertNotice] = useState<string | null>(null);
 
   // New task form state
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('Venue');
   const [newDueDate, setNewDueDate] = useState('');
   const [newAssignee, setNewAssignee] = useState('');
+  const [newDependsOnTaskId, setNewDependsOnTaskId] = useState('');
 
   // Edit task form state
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('Venue');
   const [editDueDate, setEditDueDate] = useState('');
   const [editAssignee, setEditAssignee] = useState('');
+  const [editDependsOnTaskId, setEditDependsOnTaskId] = useState('');
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -578,17 +733,48 @@ export const PlannerScreen: React.FC = () => {
   const completedCount = tasks.filter((t) => t.isCompleted).length;
   const percentage = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-  const filteredTasks =
-    filterCategory === 'All'
-      ? tasks
-      : tasks.filter((t) => t.category.toLowerCase() === filterCategory.toLowerCase());
+  // Compute dependency info for all tasks
+  const tasksWithDeps = useMemo(() => {
+    return tasks.map((task) => {
+      const depInfo = getTaskDependencyInfo(task, tasks);
+      return {
+        task,
+        ...depInfo,
+      };
+    });
+  }, [tasks]);
+
+  const blockedCount = tasksWithDeps.filter((t) => t.isBlocked).length;
+  const readyCount = tasksWithDeps.filter((t) => !t.task.isCompleted && !t.isBlocked).length;
+
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+
+    // Filter by Category
+    if (filterCategory !== 'All') {
+      result = result.filter(
+        (t) => t.category.toLowerCase() === filterCategory.toLowerCase()
+      );
+    }
+
+    // Filter by Status (All / Blocked / Ready / Completed)
+    if (filterStatus === 'blocked') {
+      result = result.filter((t) => getTaskDependencyInfo(t, tasks).isBlocked);
+    } else if (filterStatus === 'ready') {
+      result = result.filter((t) => !t.isCompleted && !getTaskDependencyInfo(t, tasks).isBlocked);
+    } else if (filterStatus === 'completed') {
+      result = result.filter((t) => t.isCompleted);
+    }
+
+    return result;
+  }, [tasks, filterCategory, filterStatus]);
 
   const activeTask = tasks.find((t) => t.id === activeId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 4, // 4px distance required before drag starts, avoiding conflicts with clicks
+        distance: 4,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -605,7 +791,7 @@ export const PlannerScreen: React.FC = () => {
     setActiveId(null);
     if (!over || active.id === over.id) return;
 
-    if (filterCategory === 'All') {
+    if (filterCategory === 'All' && filterStatus === 'all') {
       const oldIndex = tasks.findIndex((t) => t.id === active.id);
       const newIndex = tasks.findIndex((t) => t.id === over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
@@ -634,13 +820,15 @@ export const PlannerScreen: React.FC = () => {
       newTitle.trim(),
       newCategory,
       newDueDate.trim() || 'Segera',
-      newAssignee.trim() || 'Unassigned'
+      newAssignee.trim() || 'Unassigned',
+      newDependsOnTaskId || undefined
     );
     setShowAddModal(false);
     setNewTitle('');
     setNewDueDate('');
     setNewAssignee('');
     setNewCategory('Venue');
+    setNewDependsOnTaskId('');
   };
 
   const handleOpenEdit = (task: TaskItem) => {
@@ -649,6 +837,7 @@ export const PlannerScreen: React.FC = () => {
     setEditCategory(task.category);
     setEditDueDate(task.dueDate);
     setEditAssignee(task.assignee);
+    setEditDependsOnTaskId(task.dependsOnTaskId || '');
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -659,12 +848,49 @@ export const PlannerScreen: React.FC = () => {
       category: editCategory,
       dueDate: editDueDate.trim() || 'Segera',
       assignee: editAssignee.trim() || 'Unassigned',
+      dependsOnTaskId: editDependsOnTaskId || undefined,
     });
     setEditingTask(null);
   };
 
+  const handleCompleteParentTask = (parentId: string) => {
+    toggleTask(parentId);
+    setBlockedAlertNotice(null);
+  };
+
   return (
     <div id="planner-screen" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Blocked Alert Banner Notice */}
+      {blockedAlertNotice && (
+        <div className="bg-rose-50 border-2 border-rose-300 text-rose-900 rounded-2xl p-4 shadow-sm flex items-start justify-between gap-3 animate-page-fade">
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 rounded-xl bg-rose-200/80 flex items-center justify-center text-rose-700 shrink-0 mt-0.5">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-rose-950">
+                Tugas Terblokir (Blocked Task)
+              </h4>
+              <p className="text-xs text-rose-800 mt-0.5">
+                Tugas ini tidak dapat diselesaikan karena bergantung pada penyelesaian tugas prasyarat:{' '}
+                <strong className="underline decoration-rose-400 font-bold">
+                  {blockedAlertNotice}
+                </strong>
+                . Selesaikan tugas prasyarat terlebih dahulu untuk membuka kunci.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setBlockedAlertNotice(null)}
+            className="text-xs text-rose-600 hover:text-rose-900 font-bold px-2 py-1 rounded-lg hover:bg-rose-100 transition-colors shrink-0"
+          >
+            Tutup
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
@@ -673,7 +899,7 @@ export const PlannerScreen: React.FC = () => {
             <h1 className="text-lg font-bold text-slate-900">Event Planner & Checklist Acara</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Lacak seluruh agenda dengan visual tags kategori (Venue, Catering, Photography, dll), serta drag-and-drop prioritas tugas.
+            Lacak seluruh agenda dengan visual tags kategori, ketergantungan tugas prasyarat (Task Dependencies), serta status terblokir otomatis.
           </p>
         </div>
 
@@ -725,6 +951,95 @@ export const PlannerScreen: React.FC = () => {
             <span>Tambah Tugas</span>
           </button>
         </div>
+      </div>
+
+      {/* Dependency Status & Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button
+          type="button"
+          onClick={() => setFilterStatus('all')}
+          className={`p-3.5 rounded-2xl border text-left transition-all ${
+            filterStatus === 'all'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-xs font-bold ${filterStatus === 'all' ? 'text-slate-300' : 'text-slate-500'}`}>
+              Total Agenda
+            </span>
+            <CheckSquare className="w-4 h-4" />
+          </div>
+          <div className="text-xl font-extrabold mt-1">{tasks.length} Tugas</div>
+          <div className={`text-[10px] mt-0.5 ${filterStatus === 'all' ? 'text-slate-400' : 'text-slate-500'}`}>
+            Daftar lengkap agenda
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterStatus(filterStatus === 'blocked' ? 'all' : 'blocked')}
+          className={`p-3.5 rounded-2xl border text-left transition-all ${
+            filterStatus === 'blocked'
+              ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-400 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-rose-200'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-rose-700">Terblokir (Blocked)</span>
+            <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600">
+              <Lock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-xl font-extrabold text-rose-900 mt-1">{blockedCount} Tugas</div>
+          <div className="text-[10px] text-rose-700 mt-0.5 font-medium">
+            Menunggu tugas prasyarat
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterStatus(filterStatus === 'ready' ? 'all' : 'ready')}
+          className={`p-3.5 rounded-2xl border text-left transition-all ${
+            filterStatus === 'ready'
+              ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-amber-200'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-800">Siap Dikerjakan</span>
+            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700">
+              <Unlock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-xl font-extrabold text-amber-950 mt-1">{readyCount} Tugas</div>
+          <div className="text-[10px] text-amber-800 mt-0.5 font-medium">
+            Bebas dari hambatan
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterStatus(filterStatus === 'completed' ? 'all' : 'completed')}
+          className={`p-3.5 rounded-2xl border text-left transition-all ${
+            filterStatus === 'completed'
+              ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-emerald-200'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-800">Terselesaikan</span>
+            <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-xl font-extrabold text-emerald-950 mt-1">
+            {completedCount} ({percentage}%)
+          </div>
+          <div className="text-[10px] text-emerald-800 mt-0.5 font-medium">
+            Progres keseluruhan
+          </div>
+        </button>
       </div>
 
       {/* Visual Category Showcase Cards */}
@@ -782,7 +1097,7 @@ export const PlannerScreen: React.FC = () => {
         })}
       </div>
 
-      {/* Progress & Drag Hint Banner */}
+      {/* Progress & Task Dependency Info Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2">
@@ -809,9 +1124,9 @@ export const PlannerScreen: React.FC = () => {
               <ArrowUpDown className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-bold block text-amber-950">Drag-and-Drop Prioritas:</span>
+              <span className="font-bold block text-amber-950">Drag-and-Drop & Dependencies:</span>
               <span className="text-[11px] text-amber-800/90 leading-tight block">
-                Tahan ikon <strong className="font-semibold text-amber-950">⋮⋮</strong> untuk menyusun ulang, atau klik visual tag untuk mengganti kategori tugas secara instan.
+                Tahan ikon <strong className="font-semibold text-amber-950">⋮⋮</strong> untuk menyusun ulang. Tugas dengan prasyarat otomatis menampilkan badge <strong className="text-rose-700 font-bold">TERBLOKIR</strong> hingga tugas induk diselesaikan.
               </span>
             </div>
           </div>
@@ -886,7 +1201,7 @@ export const PlannerScreen: React.FC = () => {
       </div>
 
       {/* Main Checklist Body */}
-      {viewMode === 'grouped' && filterCategory === 'All' ? (
+      {viewMode === 'grouped' && filterCategory === 'All' && filterStatus === 'all' ? (
         /* Grouped by Category View */
         <div className="space-y-6">
           {ALL_CATEGORY_KEYS.map((catKey) => {
@@ -944,67 +1259,107 @@ export const PlannerScreen: React.FC = () => {
 
                 {/* Category Tasks List */}
                 <div className="space-y-2">
-                  {categoryTasks.map((task, idx) => (
-                    <div
-                      key={task.id}
-                      className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
-                        task.isCompleted
-                          ? 'bg-slate-50/70 border-slate-200 text-slate-400'
-                          : 'bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-2xs'
-                      }`}
-                    >
+                  {categoryTasks.map((task) => {
+                    const depInfo = getTaskDependencyInfo(task, tasks);
+                    return (
                       <div
-                        onClick={() => toggleTask(task.id)}
-                        className="flex items-start space-x-3 cursor-pointer flex-1 min-w-0"
+                        key={task.id}
+                        className={`p-3 sm:p-3.5 rounded-xl border flex items-start sm:items-center justify-between gap-3 transition-colors ${
+                          task.isCompleted
+                            ? 'bg-slate-50/70 border-slate-200 text-slate-400'
+                            : depInfo.isBlocked
+                            ? 'bg-rose-50/40 border-rose-200 text-slate-900'
+                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-2xs'
+                        }`}
                       >
-                        <div className="mt-0.5 shrink-0">
-                          {task.isCompleted ? (
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-slate-300 hover:text-amber-500 transition-colors" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div
-                            className={`text-xs sm:text-sm font-bold leading-snug ${
-                              task.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
-                            }`}
-                          >
-                            {task.title}
+                        <div
+                          onClick={() => {
+                            if (depInfo.isBlocked) {
+                              setBlockedAlertNotice(depInfo.parentTask?.title || 'Tugas prasyarat');
+                            } else {
+                              toggleTask(task.id);
+                            }
+                          }}
+                          className="flex items-start space-x-3 cursor-pointer flex-1 min-w-0"
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                            ) : depInfo.isBlocked ? (
+                              <div
+                                title={`Tugas Terblokir! Harap selesaikan "${depInfo.parentTask?.title}" terlebih dahulu.`}
+                                className="w-5 h-5 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600"
+                              >
+                                <Lock className="w-3 h-3" />
+                              </div>
+                            ) : (
+                              <Circle className="w-5 h-5 text-slate-300 hover:text-amber-500 transition-colors" />
+                            )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-1">
-                            <span className="flex items-center space-x-1">
-                              <Calendar className="w-3 h-3 text-slate-400" />
-                              <span>{task.dueDate}</span>
-                            </span>
-                            <span className="flex items-center space-x-1">
-                              <User className="w-3 h-3 text-slate-400" />
-                              <span>PIC: {task.assignee}</span>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className={`text-xs sm:text-sm font-bold leading-snug ${
+                                  task.isCompleted
+                                    ? 'line-through text-slate-400'
+                                    : 'text-slate-900'
+                                }`}
+                              >
+                                {task.title}
+                              </span>
+                              {depInfo.isBlocked && (
+                                <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold">
+                                  <Lock className="w-3 h-3 text-rose-600" />
+                                  <span>TERBLOKIR</span>
+                                </span>
+                              )}
+                            </div>
 
-                      <div className="flex items-center space-x-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(task)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
-                          title="Edit tugas"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteTask(task.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                          title="Hapus tugas"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                            {depInfo.parentTask && (
+                              <div className="text-[11px] text-amber-800 font-medium mt-1 flex items-center space-x-1">
+                                <Link2 className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span>
+                                  Prasyarat:{' '}
+                                  <strong className="font-semibold">{depInfo.parentTask.title}</strong>{' '}
+                                  {depInfo.parentTask.isCompleted ? '(Selesai)' : '(Belum selesai)'}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-1">
+                              <span className="flex items-center space-x-1">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span>{task.dueDate}</span>
+                              </span>
+                              <span className="flex items-center space-x-1">
+                                <User className="w-3 h-3 text-slate-400" />
+                                <span>PIC: {task.assignee}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(task)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
+                            title="Edit tugas"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteTask(task.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                            title="Hapus tugas"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -1029,10 +1384,10 @@ export const PlannerScreen: React.FC = () => {
                     <CheckSquare className="w-6 h-6" />
                   </div>
                   <p className="font-semibold text-slate-600 mb-1">
-                    Belum ada tugas dalam kategori ini.
+                    Tidak ada agenda yang cocok dengan filter.
                   </p>
                   <p className="text-slate-400">
-                    Klik tombol "Tambah Tugas" untuk menambahkan agenda acara dengan visual tag kategori.
+                    Klik tombol "Tambah Tugas" untuk menambahkan agenda acara baru dengan prasyarat dan kategori.
                   </p>
                 </div>
               ) : (
@@ -1040,6 +1395,7 @@ export const PlannerScreen: React.FC = () => {
                   <SortableTaskItem
                     key={task.id}
                     task={task}
+                    allTasks={tasks}
                     index={index}
                     isFirst={index === 0}
                     isLast={index === filteredTasks.length - 1}
@@ -1047,8 +1403,10 @@ export const PlannerScreen: React.FC = () => {
                     onDelete={() => deleteTask(task.id)}
                     onEdit={() => handleOpenEdit(task)}
                     onSelectCategory={(newCat) => updateTask(task.id, { category: newCat })}
+                    onCompleteParent={handleCompleteParentTask}
+                    onShowBlockedNotice={(title) => setBlockedAlertNotice(title)}
                     onMoveUp={() => {
-                      if (filterCategory === 'All') {
+                      if (filterCategory === 'All' && filterStatus === 'all') {
                         moveTask(task.id, 'up');
                       } else {
                         if (index > 0) {
@@ -1062,7 +1420,7 @@ export const PlannerScreen: React.FC = () => {
                       }
                     }}
                     onMoveDown={() => {
-                      if (filterCategory === 'All') {
+                      if (filterCategory === 'All' && filterStatus === 'all') {
                         moveTask(task.id, 'down');
                       } else {
                         if (index < filteredTasks.length - 1) {
@@ -1087,12 +1445,12 @@ export const PlannerScreen: React.FC = () => {
               easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
             }}
           >
-            {activeTask ? <TaskOverlayCard task={activeTask} /> : null}
+            {activeTask ? <TaskOverlayCard task={activeTask} allTasks={tasks} /> : null}
           </DragOverlay>
         </DndContext>
       )}
 
-      {/* ADD TASK MODAL WITH VISUAL CATEGORY PICKER */}
+      {/* ADD TASK MODAL WITH DEPENDENCY SELECTOR */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-page-fade max-h-[90vh] overflow-y-auto">
@@ -1100,7 +1458,7 @@ export const PlannerScreen: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900">Tambah Tugas Planner</h3>
                 <p className="text-xs text-slate-500">
-                  Pilih visual tag kategori dan tentukan penanggung jawab agenda.
+                  Tentukan kategori, batas waktu, dan tugas prasyarat jika ada.
                 </p>
               </div>
               <CategoryVisualTag category={newCategory} size="sm" showDot />
@@ -1154,6 +1512,32 @@ export const PlannerScreen: React.FC = () => {
                 </div>
               </div>
 
+              {/* Parent Task Dependency Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Tugas Prasyarat (Depends On)</span>
+                  </span>
+                  <span className="text-[11px] font-normal text-slate-400">Opsional</span>
+                </label>
+                <select
+                  value={newDependsOnTaskId}
+                  onChange={(e) => setNewDependsOnTaskId(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+                >
+                  <option value="">— Tidak ada prasyarat (Bebas Dikerjakan) —</option>
+                  {tasks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      [{t.category}] {t.title} {t.isCompleted ? '(✓ Selesai)' : '(Belum selesai)'}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Jika dipilih, tugas ini akan berstatus <strong className="text-rose-600 font-bold">TERBLOKIR</strong> sampai tugas prasyarat yang dipilih diselesaikan.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1202,14 +1586,16 @@ export const PlannerScreen: React.FC = () => {
         </div>
       )}
 
-      {/* EDIT TASK MODAL */}
+      {/* EDIT TASK MODAL WITH DEPENDENCY SELECTOR */}
       {editingTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-page-fade max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Edit Tugas Planner</h3>
-                <p className="text-xs text-slate-500">Ubah kategori, nama tugas, atau PIC.</p>
+                <p className="text-xs text-slate-500">
+                  Ubah kategori, nama tugas, PIC, atau tugas prasyarat.
+                </p>
               </div>
               <CategoryVisualTag category={editCategory} size="sm" showDot />
             </div>
@@ -1257,6 +1643,36 @@ export const PlannerScreen: React.FC = () => {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Parent Task Dependency Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Tugas Prasyarat (Depends On)</span>
+                  </span>
+                  <span className="text-[11px] font-normal text-slate-400">
+                    Ketergantungan agenda
+                  </span>
+                </label>
+                <select
+                  value={editDependsOnTaskId}
+                  onChange={(e) => setEditDependsOnTaskId(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#6d28d9]"
+                >
+                  <option value="">— Tidak ada prasyarat (Bebas Dikerjakan) —</option>
+                  {tasks
+                    .filter((t) => t.id !== editingTask.id && !isCircularDependency(editingTask.id, t.id, tasks))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        [{t.category}] {t.title} {t.isCompleted ? '(✓ Selesai)' : '(Belum selesai)'}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Pilih tugas yang harus selesai terlebih dahulu sebelum tugas ini dapat dikerjakan.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

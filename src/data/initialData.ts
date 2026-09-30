@@ -215,6 +215,7 @@ export const INITIAL_TASKS: TaskItem[] = [
     assignee: 'Tim Resepsionis & Penerima Tamu',
     isCompleted: false,
     order: 6,
+    dependsOnTaskId: 'task-6',
   },
 ];
 

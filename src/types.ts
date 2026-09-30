@@ -228,6 +228,7 @@ export interface TaskItem {
   assignee: string;
   isCompleted: boolean;
   order?: number;
+  dependsOnTaskId?: string;
 }
 
 export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'MYR' | 'GBP' | 'AUD' | 'JPY';

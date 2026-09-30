@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_TASKS } from './data/initialData';
 import { TaskItem } from './types';
-import { CATEGORY_CONFIGS, getCategoryMeta, ALL_CATEGORY_KEYS } from './screens/PlannerScreen';
+import {
+  CATEGORY_CONFIGS,
+  getCategoryMeta,
+  ALL_CATEGORY_KEYS,
+  getTaskDependencyInfo,
+  isCircularDependency,
+} from './screens/PlannerScreen';
 
 // Helper reorder function matching the arrayMove logic used in Planner
 function reorderTasksList(list: TaskItem[], fromIndex: number, toIndex: number): TaskItem[] {
@@ -85,5 +91,133 @@ describe('Task Categories & Visual Tags', () => {
     expect(ALL_CATEGORY_KEYS).toContain('Venue');
     expect(ALL_CATEGORY_KEYS).toContain('Catering');
     expect(ALL_CATEGORY_KEYS).toContain('Photography');
+  });
+});
+
+describe('Task Dependencies & Blocked Status', () => {
+  it('should correctly flag a task as blocked when its parent task is incomplete', () => {
+    const testTasks: TaskItem[] = [
+      {
+        id: 'parent-1',
+        projectId: 'p1',
+        title: 'Parent Task Incomplete',
+        category: 'Venue',
+        dueDate: 'Tomorrow',
+        assignee: 'Alice',
+        isCompleted: false,
+      },
+      {
+        id: 'child-1',
+        projectId: 'p1',
+        title: 'Child Task Dependent',
+        category: 'Catering',
+        dueDate: 'Next Week',
+        assignee: 'Bob',
+        isCompleted: false,
+        dependsOnTaskId: 'parent-1',
+      },
+    ];
+
+    const depInfo = getTaskDependencyInfo(testTasks[1], testTasks);
+    expect(depInfo.isBlocked).toBe(true);
+    expect(depInfo.parentTask?.id).toBe('parent-1');
+  });
+
+  it('should automatically unblock a dependent task once the parent task is completed', () => {
+    const testTasks: TaskItem[] = [
+      {
+        id: 'parent-1',
+        projectId: 'p1',
+        title: 'Parent Task Completed',
+        category: 'Venue',
+        dueDate: 'Tomorrow',
+        assignee: 'Alice',
+        isCompleted: true, // Parent is completed
+      },
+      {
+        id: 'child-1',
+        projectId: 'p1',
+        title: 'Child Task Dependent',
+        category: 'Catering',
+        dueDate: 'Next Week',
+        assignee: 'Bob',
+        isCompleted: false,
+        dependsOnTaskId: 'parent-1',
+      },
+    ];
+
+    const depInfo = getTaskDependencyInfo(testTasks[1], testTasks);
+    expect(depInfo.isBlocked).toBe(false);
+    expect(depInfo.parentTask?.id).toBe('parent-1');
+  });
+
+  it('should not mark a task as blocked if the task itself is already completed', () => {
+    const testTasks: TaskItem[] = [
+      {
+        id: 'parent-1',
+        projectId: 'p1',
+        title: 'Parent Task',
+        category: 'Venue',
+        dueDate: 'Tomorrow',
+        assignee: 'Alice',
+        isCompleted: false,
+      },
+      {
+        id: 'child-1',
+        projectId: 'p1',
+        title: 'Child Task',
+        category: 'Catering',
+        dueDate: 'Next Week',
+        assignee: 'Bob',
+        isCompleted: true, // Child is already completed
+        dependsOnTaskId: 'parent-1',
+      },
+    ];
+
+    const depInfo = getTaskDependencyInfo(testTasks[1], testTasks);
+    expect(depInfo.isBlocked).toBe(false);
+  });
+
+  it('should detect circular dependencies and self-dependencies', () => {
+    const testTasks: TaskItem[] = [
+      {
+        id: 'task-a',
+        projectId: 'p1',
+        title: 'Task A',
+        category: 'Venue',
+        dueDate: 'Today',
+        assignee: 'Alice',
+        isCompleted: false,
+        dependsOnTaskId: 'task-b',
+      },
+      {
+        id: 'task-b',
+        projectId: 'p1',
+        title: 'Task B',
+        category: 'Catering',
+        dueDate: 'Tomorrow',
+        assignee: 'Bob',
+        isCompleted: false,
+        dependsOnTaskId: 'task-c',
+      },
+      {
+        id: 'task-c',
+        projectId: 'p1',
+        title: 'Task C',
+        category: 'Photography',
+        dueDate: 'Next Week',
+        assignee: 'Charlie',
+        isCompleted: false,
+      },
+    ];
+
+    // Self dependency
+    expect(isCircularDependency('task-a', 'task-a', testTasks)).toBe(true);
+
+    // task-c cannot depend on task-a because task-a -> task-b -> task-c (would form a loop)
+    expect(isCircularDependency('task-c', 'task-a', testTasks)).toBe(true);
+
+    // But task-c can safely depend on a completely unrelated task
+    expect(isCircularDependency('task-c', 'unrelated-task', testTasks)).toBe(false);
   });
 });
