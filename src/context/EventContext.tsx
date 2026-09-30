@@ -175,6 +175,7 @@ interface EventContextType {
   // Tasks / Planner
   tasks: TaskItem[];
   addTask: (title: string, category: string, dueDate: string, assignee: string) => void;
+  updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
   toggleTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
   reorderTasks: (newTasks: TaskItem[]) => void;
@@ -1811,14 +1812,40 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`Tugas "${title}" berhasil ditambahkan.`);
   };
 
+  const updateTask = (taskId: string, updates: Partial<TaskItem>) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t));
+      if (currentUser?.id) {
+        localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('aa_tasks', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
   const toggleTask = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t))
-    );
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t));
+      if (currentUser?.id) {
+        localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('aa_tasks', JSON.stringify(updated));
+      }
+      return updated;
+    });
   };
 
   const deleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setTasks((prev) => {
+      const updated = prev.filter((t) => t.id !== taskId);
+      if (currentUser?.id) {
+        localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('aa_tasks', JSON.stringify(updated));
+      }
+      return updated;
+    });
     showToast('Tugas dihapus.');
   };
 
@@ -2459,6 +2486,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         tasks,
         addTask,
+        updateTask,
         toggleTask,
         deleteTask,
         reorderTasks,

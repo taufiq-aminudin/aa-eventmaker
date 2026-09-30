@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_TASKS } from './data/initialData';
 import { TaskItem } from './types';
+import { CATEGORY_CONFIGS, getCategoryMeta, ALL_CATEGORY_KEYS } from './screens/PlannerScreen';
 
 // Helper reorder function matching the arrayMove logic used in Planner
 function reorderTasksList(list: TaskItem[], fromIndex: number, toIndex: number): TaskItem[] {
@@ -52,5 +53,37 @@ describe('Planner Checklist & Drag-and-Drop Reordering', () => {
     expect(movedTask.dueDate).toBe(originalItem.dueDate);
     expect(movedTask.assignee).toBe(originalItem.assignee);
     expect(movedTask.isCompleted).toBe(originalItem.isCompleted);
+  });
+});
+
+describe('Task Categories & Visual Tags', () => {
+  it('should have visual tag configs for Venue, Catering, and Photography', () => {
+    expect(CATEGORY_CONFIGS['Venue']).toBeDefined();
+    expect(CATEGORY_CONFIGS['Catering']).toBeDefined();
+    expect(CATEGORY_CONFIGS['Photography']).toBeDefined();
+
+    expect(CATEGORY_CONFIGS['Venue'].accentColor).toBe('#10b981');
+    expect(CATEGORY_CONFIGS['Catering'].accentColor).toBe('#f59e0b');
+    expect(CATEGORY_CONFIGS['Photography'].accentColor).toBe('#6366f1');
+  });
+
+  it('should support case-insensitive category lookup and fallbacks', () => {
+    const venueMeta = getCategoryMeta('venue');
+    expect(venueMeta.key).toBe('Venue');
+
+    const cateringMeta = getCategoryMeta('CATERING');
+    expect(cateringMeta.key).toBe('Catering');
+
+    const photoMeta = getCategoryMeta('photography');
+    expect(photoMeta.key).toBe('Photography');
+
+    const fallbackMeta = getCategoryMeta('CustomUnlistedCategory');
+    expect(fallbackMeta.label).toBe('CustomUnlistedCategory');
+  });
+
+  it('should include key categories in ALL_CATEGORY_KEYS', () => {
+    expect(ALL_CATEGORY_KEYS).toContain('Venue');
+    expect(ALL_CATEGORY_KEYS).toContain('Catering');
+    expect(ALL_CATEGORY_KEYS).toContain('Photography');
   });
 });
