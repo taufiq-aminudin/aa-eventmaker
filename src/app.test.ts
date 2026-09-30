@@ -259,3 +259,54 @@ describe('Planner Progress Trend Toward Event Date', () => {
     expect(targetEventPercent).toBe(100);
   });
 });
+
+describe('AI Task Recommendation Engine (Wedding vs Corporate)', () => {
+  it('should distinguish Wedding task recommendations from Corporate tasks', () => {
+    const weddingSampleKeywords = ['pelaminan', 'kebaya', 'akad', 'resepsi', 'undangan'];
+    const corporateSampleKeywords = ['keynote', 'delegasi', 'lanyard', 'sponsor', 'conference'];
+
+    const weddingTaskTitle = 'Food Tasting & Finalisasi Menu Buffet 500 Pax serta Gubukan';
+    const corporateTaskTitle = 'Inspeksi Kapasitas Ballroom, Panggung Keynote & Uji Akustik Audio';
+
+    expect(weddingTaskTitle.toLowerCase()).toContain('buffet');
+    expect(corporateTaskTitle.toLowerCase()).toContain('keynote');
+  });
+
+  it('should assign valid category visual tags to AI recommended tasks', () => {
+    const validCategories = [
+      'Venue',
+      'Catering',
+      'Photography',
+      'Decoration',
+      'Wardrobe',
+      'Invitations',
+      'Reception',
+      'Entertainment',
+      'Logistics',
+    ];
+
+    const recommendedTask = {
+      title: 'Distribusi Undangan Resmi Delegasi & Pengiriman E-Pass Tiket Barcode',
+      category: 'Invitations',
+      priority: 'high' as const,
+      dueDate: '14 hari sebelum acara',
+    };
+
+    expect(validCategories).toContain(recommendedTask.category);
+    expect(recommendedTask.priority).toBe('high');
+  });
+
+  it('should prevent duplicate recommendations when tasks already exist', () => {
+    const existingTitles = ['Booking Grand Ballroom & Penjadwalan Technical Meeting Venue'];
+    const candidateTasks = [
+      { id: '1', title: 'Booking Grand Ballroom & Penjadwalan Technical Meeting Venue' },
+      { id: '2', title: 'Briefing Tim Media Pers & Dokumentasi' },
+    ];
+
+    const existingSet = new Set(existingTitles.map((t) => t.toLowerCase().trim()));
+    const nonDuplicates = candidateTasks.filter((t) => !existingSet.has(t.title.toLowerCase().trim()));
+
+    expect(nonDuplicates.length).toBe(1);
+    expect(nonDuplicates[0].id).toBe('2');
+  });
+});

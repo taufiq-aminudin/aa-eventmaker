@@ -231,6 +231,18 @@ export interface TaskItem {
   dependsOnTaskId?: string;
 }
 
+export interface AiTaskRecommendation {
+  id: string;
+  title: string;
+  category: string;
+  dueDate: string;
+  assignee: string;
+  priority: 'high' | 'medium' | 'normal';
+  reason: string;
+  suggestedPrerequisite?: string;
+  timelinePhase?: 'Fase Awal' | 'Fase Menengah' | 'Fase Final (H-14)';
+}
+
 export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'MYR' | 'GBP' | 'AUD' | 'JPY';
 
 export interface CurrencyConfig {

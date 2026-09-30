@@ -57,6 +57,7 @@ import {
 import { useEvent } from '../context/EventContext';
 import { TaskItem } from '../types';
 import { PlannerProgressTrendChart } from '../components/PlannerProgressTrendChart';
+import { AiTaskRecommendationsModal } from '../components/AiTaskRecommendationsModal';
 
 export interface CategoryMeta {
   key: string;
@@ -710,6 +711,7 @@ export const PlannerScreen: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'blocked' | 'ready' | 'completed'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAiRecommender, setShowAiRecommender] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [blockedAlertNotice, setBlockedAlertNotice] = useState<string | null>(null);
 
@@ -942,6 +944,15 @@ export const PlannerScreen: React.FC = () => {
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden md:inline">Reset</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowAiRecommender(true)}
+            className="px-3.5 py-2 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-all flex items-center space-x-1.5 shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+            <span>Rekomendasi AI</span>
           </button>
 
           <button
@@ -1724,6 +1735,12 @@ export const PlannerScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* AI Task Recommendations Modal */}
+      <AiTaskRecommendationsModal
+        isOpen={showAiRecommender}
+        onClose={() => setShowAiRecommender(false)}
+      />
     </div>
   );
 };

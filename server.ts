@@ -2186,6 +2186,362 @@ async function startServer() {
     }
   });
 
+  // 5. AI Task Recommendation Engine based on Event Type (Wedding vs Corporate) and Date
+  app.post('/api/ai/recommend-tasks', async (req, res) => {
+    const clientKey = req.ip || 'anonymous';
+    const rate = aiRateLimiter.check(clientKey);
+    if (!rate.allowed) {
+      return res.status(429).json({ error: 'Batas frekuensi AI rekomendasi tugas tercapai. Coba beberapa saat lagi.' });
+    }
+
+    const {
+      eventType = 'Wedding',
+      eventDate = '24 Oktober 2026',
+      existingTasks = [],
+      focusArea = 'All',
+      urgencyPhase = 'All',
+    } = req.body || {};
+
+    const cleanEventType = sanitizeInputString(eventType, 50) || 'Wedding';
+    const isCorporate =
+      cleanEventType.toLowerCase().includes('corporate') ||
+      cleanEventType.toLowerCase().includes('perusahaan') ||
+      cleanEventType.toLowerCase().includes('seminar') ||
+      cleanEventType.toLowerCase().includes('gathering') ||
+      cleanEventType.toLowerCase().includes('conference') ||
+      cleanEventType.toLowerCase().includes('gala');
+
+    const existingTitleSet = new Set(
+      Array.isArray(existingTasks)
+        ? existingTasks.map((t: any) =>
+            (typeof t === 'string' ? t : t?.title || '').toLowerCase().trim()
+          )
+        : []
+    );
+
+    // Rule-based fallback generator for Wedding vs Corporate
+    const generateFallbackRecommendations = () => {
+      const weddingTasks = [
+        {
+          id: 'rec-wed-1',
+          title: 'Booking Grand Ballroom & Penjadwalan Technical Meeting Venue',
+          category: 'Venue',
+          dueDate: '30 hari sebelum acara',
+          assignee: 'Wedding Organizer & Keluarga',
+          priority: 'high',
+          reason: 'Venue ballroom harus dikonfirmasi awal agar vendor dekorasi & audio visual dapat mengukur denah panggung.',
+          timelinePhase: 'Fase Awal',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-wed-2',
+          title: 'Food Tasting & Finalisasi Menu Buffet 500 Pax serta Gubukan',
+          category: 'Catering',
+          dueDate: '21 hari sebelum acara',
+          assignee: 'Keluarga & Vendor Katering',
+          priority: 'high',
+          reason: 'Memastikan kecukupan porsi tamu undangan dan mencicipi cita rasa hidangan utama serta dessert.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: 'Booking Grand Ballroom & Penjadwalan Technical Meeting Venue',
+        },
+        {
+          id: 'rec-wed-3',
+          title: 'Briefing Shot List Sinematik, Liputan Drone & Jadwal Foto Pengantin',
+          category: 'Photography',
+          dueDate: '14 hari sebelum acara',
+          assignee: 'Tim Dokumentasi & WO',
+          priority: 'medium',
+          reason: 'Menyusun daftar momen penting (akad, sungkeman, lempar buket) agar tidak ada momen sakral terlewat.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-wed-4',
+          title: 'Finalisasi Desain Floral Pelaminan, Karpet Masuk & Pencahayaan',
+          category: 'Decoration',
+          dueDate: '10 hari sebelum acara',
+          assignee: 'Vendor Dekorasi & Bride',
+          priority: 'medium',
+          reason: 'Memastikan palet warna bunga segar dan tata letak lampu pelaminan sesuai konsep pernikahan.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: 'Booking Grand Ballroom & Penjadwalan Technical Meeting Venue',
+        },
+        {
+          id: 'rec-wed-5',
+          title: 'Fitting Terakhir Kebaya Akad, Jas Resepsi & Busana Keluarga Inti',
+          category: 'Wardrobe',
+          dueDate: '7 hari sebelum acara',
+          assignee: 'Pengantin & Perancang Busana',
+          priority: 'high',
+          reason: 'Menyesuaikan kenyamanan busana pengantin dan memastikan aksesoris adat lengkap sebelum hari-H.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-wed-6',
+          title: 'Kirim Undangan Digital E-Pass QR via WhatsApp Blast & Email RSVP',
+          category: 'Invitations',
+          dueDate: '14 hari sebelum acara',
+          assignee: 'Tim Sekretariat WO',
+          priority: 'high',
+          reason: 'Memfasilitasi konfirmasi kehadiran (RSVP) tamu dan pemberian QR code untuk percepatan check-in.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-wed-7',
+          title: 'Simulasi Scanner QR E-Pass & Pembagian Souvenir Meja Penerima Tamu',
+          category: 'Reception',
+          dueDate: '2 hari sebelum acara',
+          assignee: 'Tim Penerima Tamu / Usher',
+          priority: 'high',
+          reason: 'Mencegah antrean panjang di meja check-in dan memastikan souvenir tertata rapi sesuai kategori VIP.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: 'Kirim Undangan Digital E-Pass QR via WhatsApp Blast & Email RSVP',
+        },
+        {
+          id: 'rec-wed-8',
+          title: 'Kurasi Songlist Akustik/Band & Pembacaan Rundown dengan MC Resepsi',
+          category: 'Entertainment',
+          dueDate: '5 hari sebelum acara',
+          assignee: 'MC & Koordinator Musik',
+          priority: 'normal',
+          reason: 'Menyelaraskan alur musik saat prosesi masuk pengantin dan memandu susunan sambutan keluarga.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-wed-9',
+          title: 'Pengaturan Izin Masuk Bongkar Muat Vendor & Cadangan Listrik Genset',
+          category: 'Logistics',
+          dueDate: '3 hari sebelum acara',
+          assignee: 'Logistik & Operasional Venue',
+          priority: 'medium',
+          reason: 'Menjamin pasokan daya listrik mencukupi untuk tata lampu & sound system tanpa kendala teknis.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+      ];
+
+      const corporateTasks = [
+        {
+          id: 'rec-corp-1',
+          title: 'Inspeksi Kapasitas Ballroom, Panggung Keynote & Uji Akustik Audio',
+          category: 'Venue',
+          dueDate: '30 hari sebelum acara',
+          assignee: 'Head of Event Production',
+          priority: 'high',
+          reason: 'Memastikan kapasitas teater/round table mencukupi jumlah delegasi dan visibilitas layar presentasi optimal.',
+          timelinePhase: 'Fase Awal',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-corp-2',
+          title: 'Kurasi Paket Executive Coffee Break & Networking Buffet Luncheon',
+          category: 'Catering',
+          dueDate: '20 hari sebelum acara',
+          assignee: 'Hospitality & F&B Manager',
+          priority: 'high',
+          reason: 'Menyediakan pilihan makanan ramah diet/vegetarian serta menjamin alur coffee break cepat untuk 500+ delegasi.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: 'Inspeksi Kapasitas Ballroom, Panggung Keynote & Uji Akustik Audio',
+        },
+        {
+          id: 'rec-corp-3',
+          title: 'Briefing Tim Media Pers, Foto Dokumentasi & Live Stream Multi-Kamera',
+          category: 'Photography',
+          dueDate: '10 hari sebelum acara',
+          assignee: 'Corporate PR & Media Team',
+          priority: 'high',
+          reason: 'Menyiapkan materi siaran pers real-time, rekaman highlight pidato direksi, dan tayangan streaming publik.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-corp-4',
+          title: 'Produksi Main Stage LED Backdrop, Registration Booth & Roll-Up Banners',
+          category: 'Decoration',
+          dueDate: '14 hari sebelum acara',
+          assignee: 'Creative & Stage Designer',
+          priority: 'high',
+          reason: 'Memperkuat citra brand perusahaan dan memastikan penempatan logo sponsor beresolusi tinggi.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: 'Inspeksi Kapasitas Ballroom, Panggung Keynote & Uji Akustik Audio',
+        },
+        {
+          id: 'rec-corp-5',
+          title: 'Standardisasi Seragam Panitia EO & ID Badge Lanyard Panitia Pelaksana',
+          category: 'Wardrobe',
+          dueDate: '5 hari sebelum acara',
+          assignee: 'Divisi Internal & Logistik',
+          priority: 'normal',
+          reason: 'Memudahkan identifikasi staf panggung, liaison officer delegasi VIP, dan tim teknis di lokasi acara.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-corp-6',
+          title: 'Distribusi Undangan Resmi Delegasi & Pengiriman E-Pass Tiket Barcode',
+          category: 'Invitations',
+          dueDate: '18 hari sebelum acara',
+          assignee: 'Marketing & Delegate Relations',
+          priority: 'high',
+          reason: 'Mengonfirmasi absensi eksekutif C-Level, pembicara seminar, dan tamu kehormatan melalui sistem QR terpusat.',
+          timelinePhase: 'Fase Menengah',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-corp-7',
+          title: 'Instalasi Self Check-In Kiosk, Cetak Lanyard ID & Scanner Barcode QR',
+          category: 'Reception',
+          dueDate: '2 hari sebelum acara',
+          assignee: 'Front Office Registration Desk',
+          priority: 'high',
+          reason: 'Mempercepat verifikasi kehadiran peserta corporate dalam hitungan detik tanpa antrean registrasi manual.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: 'Distribusi Undangan Resmi Delegasi & Pengiriman E-Pass Tiket Barcode',
+        },
+        {
+          id: 'rec-corp-8',
+          title: 'Briefing Moderator Seminar, Keynote Speaker & Gladi Resik Cue-to-Cue',
+          category: 'Entertainment',
+          dueDate: '1 hari sebelum acara',
+          assignee: 'Show Director & Moderator',
+          priority: 'high',
+          reason: 'Memastikan durasi paparan materi tepat waktu dan transisi penayangan video pembuka berjalan mulus.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+        {
+          id: 'rec-corp-9',
+          title: 'Uji Beban Genset Cadangan, Sistem Keamanan Gedung & Parkir VIP',
+          category: 'Logistics',
+          dueDate: '3 hari sebelum acara',
+          assignee: 'Security & Facilities Liaison',
+          priority: 'medium',
+          reason: 'Protokol keamanan ketat untuk tamu VIP kementerian/direksi serta stabilitas listrik sistem penyiaran.',
+          timelinePhase: 'Fase Final (H-14)',
+          suggestedPrerequisite: '',
+        },
+      ];
+
+      const pool = isCorporate ? corporateTasks : weddingTasks;
+
+      // Filter out tasks already in user's checklist
+      const filtered = pool.filter(
+        (t) => !existingTitleSet.has(t.title.toLowerCase().trim())
+      );
+
+      // If focus area specified
+      if (focusArea && focusArea !== 'All') {
+        const byArea = filtered.filter(
+          (t) => t.category.toLowerCase() === focusArea.toLowerCase()
+        );
+        return byArea.length > 0 ? byArea : filtered.slice(0, 8);
+      }
+
+      return filtered.slice(0, 8);
+    };
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.json({
+          success: true,
+          source: 'curated-engine',
+          eventType: cleanEventType,
+          isCorporate,
+          recommendations: generateFallbackRecommendations(),
+          modelUsed: 'domain-rules-engine',
+        });
+      }
+
+      const ai = getGenAI();
+      const prompt = `You are a professional event planning director specializing in Indonesian and International events.
+Suggest 6 to 9 concrete, actionable preparation checklist tasks based on:
+- Event Type: ${cleanEventType} (${isCorporate ? 'Corporate Conference / Gala / Seminar' : 'Wedding Celebration'})
+- Target Event Date: ${sanitizeInputString(eventDate, 60)}
+- Existing Tasks to avoid duplicating: ${JSON.stringify(Array.from(existingTitleSet).slice(0, 20))}
+- Focus Area: ${focusArea}
+- Urgency Filter: ${urgencyPhase}
+
+Output strict JSON array with this exact structure:
+[
+  {
+    "id": "rec-1",
+    "title": "Clear task name in Indonesian",
+    "category": "Venue" | "Catering" | "Photography" | "Decoration" | "Wardrobe" | "Invitations" | "Reception" | "Entertainment" | "Logistics",
+    "dueDate": "e.g. 14 hari sebelum acara or specific date",
+    "assignee": "Suggested role / PIC",
+    "priority": "high" | "medium" | "normal",
+    "reason": "Brief 1-sentence reason why this is essential for this event type",
+    "suggestedPrerequisite": "Optional prerequisite task name if any",
+    "timelinePhase": "Fase Awal" | "Fase Menengah" | "Fase Final (H-14)"
+  }
+]`;
+
+      let responseText = '';
+      let usedModel = 'gemini-3.1-flash-lite';
+
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite',
+          contents: prompt,
+          config: {
+            systemInstruction:
+              'You are the AA Event Maker AI Task Recommendation Engine. Always output clean valid JSON array only, without markdown backticks.',
+            responseMimeType: 'application/json',
+          },
+        });
+        responseText = response.text || '[]';
+      } catch (geminiErr: any) {
+        console.warn('[GEMINI_API_QUOTA_OR_ERROR] Falling back to intelligent curated task engine:', geminiErr?.message || geminiErr);
+        responseText = '';
+      }
+
+      let parsed: any[] = [];
+      if (responseText) {
+        try {
+          parsed = JSON.parse(responseText);
+        } catch {
+          parsed = [];
+        }
+      }
+
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        parsed = generateFallbackRecommendations();
+        usedModel = 'domain-rules-engine';
+      } else {
+        // Filter any duplicates that exist
+        parsed = parsed.filter(
+          (t: any) => t && t.title && !existingTitleSet.has(t.title.toLowerCase().trim())
+        );
+        if (parsed.length === 0) {
+          parsed = generateFallbackRecommendations();
+          usedModel = 'domain-rules-engine';
+        }
+      }
+
+      res.json({
+        success: true,
+        source: usedModel.includes('gemini') ? 'gemini-ai' : 'curated-engine',
+        eventType: cleanEventType,
+        isCorporate,
+        recommendations: parsed,
+        modelUsed: usedModel,
+      });
+    } catch (err: any) {
+      console.warn('[AI_TASK_RECOMMENDER_FALLBACK]', err?.message || err);
+      return res.json({
+        success: true,
+        source: 'curated-engine-fallback',
+        eventType: cleanEventType,
+        isCorporate,
+        recommendations: generateFallbackRecommendations(),
+        modelUsed: 'domain-rules-engine',
+      });
+    }
+  });
+
   // -----------------------------------------------------------------
   // 13. Secure Server-side Route Guard for Admin console paths
   // -----------------------------------------------------------------
