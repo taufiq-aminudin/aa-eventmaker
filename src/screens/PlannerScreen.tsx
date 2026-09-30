@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { useEvent } from '../context/EventContext';
 import { TaskItem } from '../types';
+import { PlannerProgressTrendChart } from '../components/PlannerProgressTrendChart';
 
 export interface CategoryMeta {
   key: string;
@@ -1041,6 +1042,9 @@ export const PlannerScreen: React.FC = () => {
           </div>
         </button>
       </div>
+
+      {/* Visual Recharts Progress Trend Line Chart Toward Event Date */}
+      <PlannerProgressTrendChart />
 
       {/* Visual Category Showcase Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">

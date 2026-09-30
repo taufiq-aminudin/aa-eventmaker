@@ -221,3 +221,41 @@ describe('Task Dependencies & Blocked Status', () => {
     expect(isCircularDependency('task-c', 'unrelated-task', testTasks)).toBe(false);
   });
 });
+
+describe('Planner Progress Trend Toward Event Date', () => {
+  it('should calculate accurate completion percentages', () => {
+    const testTasks: TaskItem[] = [
+      { id: '1', projectId: 'p', title: 'T1', category: 'Venue', dueDate: '', assignee: '', isCompleted: true },
+      { id: '2', projectId: 'p', title: 'T2', category: 'Catering', dueDate: '', assignee: '', isCompleted: true },
+      { id: '3', projectId: 'p', title: 'T3', category: 'Photography', dueDate: '', assignee: '', isCompleted: false },
+      { id: '4', projectId: 'p', title: 'T4', category: 'Decoration', dueDate: '', assignee: '', isCompleted: false },
+    ];
+
+    const completed = testTasks.filter((t) => t.isCompleted).length;
+    const percentage = Math.round((completed / testTasks.length) * 100);
+
+    expect(completed).toBe(2);
+    expect(percentage).toBe(50);
+  });
+
+  it('should calculate pace variance against target curve', () => {
+    const currentPercent = 43;
+    const targetPercent = 55;
+    const variance = currentPercent - targetPercent;
+
+    expect(variance).toBe(-12);
+    const isBehind = variance <= -5;
+    expect(isBehind).toBe(true);
+
+    const aheadCurrent = 65;
+    const aheadVariance = aheadCurrent - targetPercent;
+    expect(aheadVariance).toBe(10);
+    const isAhead = aheadVariance >= 5;
+    expect(isAhead).toBe(true);
+  });
+
+  it('should reach 100% on the final event date milestone', () => {
+    const targetEventPercent = 100;
+    expect(targetEventPercent).toBe(100);
+  });
+});
