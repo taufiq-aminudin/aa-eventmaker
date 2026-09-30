@@ -177,6 +177,9 @@ interface EventContextType {
   addTask: (title: string, category: string, dueDate: string, assignee: string) => void;
   toggleTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
+  reorderTasks: (newTasks: TaskItem[]) => void;
+  moveTask: (taskId: string, direction: 'up' | 'down') => void;
+  resetTasksToDefault: () => void;
 
   // Budget
   budgets: BudgetItem[];
@@ -510,16 +513,29 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return INITIAL_TASKS;
     const token = localStorage.getItem('aa_session_token');
     const savedUser = localStorage.getItem('aa_current_user');
-    if (!token || !savedUser) return [];
+    if (!token || !savedUser) {
+      const savedGeneral = localStorage.getItem('aa_tasks');
+      if (savedGeneral) {
+        try {
+          const parsed = JSON.parse(savedGeneral);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+      return INITIAL_TASKS;
+    }
     try {
       const u = JSON.parse(savedUser);
       const saved = localStorage.getItem(`aa_tasks_user_${u.id}`);
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return INITIAL_TASKS;
     } catch (e) {
-      return [];
+      return INITIAL_TASKS;
     }
   });
 
@@ -616,7 +632,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setProjects([]);
     setCurrentProject(INITIAL_PROJECT);
     setGuests([]);
-    setTasks([]);
+    setTasks(INITIAL_TASKS);
     setBudgets([]);
     setWeeklyExpenses([]);
     setMemories([]);
@@ -673,7 +689,22 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setProjects([]);
     setCurrentProject(INITIAL_PROJECT);
     setGuests([]);
-    setTasks([]);
+    const userTasksKey = `aa_tasks_user_${user.id}`;
+    const savedTasks = localStorage.getItem(userTasksKey);
+    if (savedTasks) {
+      try {
+        const parsed = JSON.parse(savedTasks);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTasks(parsed);
+        } else {
+          setTasks(INITIAL_TASKS);
+        }
+      } catch (e) {
+        setTasks(INITIAL_TASKS);
+      }
+    } else {
+      setTasks(INITIAL_TASKS);
+    }
     setBudgets([]);
     setWeeklyExpenses([]);
   };
@@ -1791,6 +1822,43 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Tugas dihapus.');
   };
 
+  const reorderTasks = (newTasks: TaskItem[]) => {
+    setTasks(newTasks);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(newTasks));
+    } else {
+      localStorage.setItem('aa_tasks', JSON.stringify(newTasks));
+    }
+  };
+
+  const moveTask = (taskId: string, direction: 'up' | 'down') => {
+    setTasks((prev) => {
+      const idx = prev.findIndex((t) => t.id === taskId);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const updated = [...prev];
+      const [moved] = updated.splice(idx, 1);
+      updated.splice(targetIdx, 0, moved);
+      if (currentUser?.id) {
+        localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('aa_tasks', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  const resetTasksToDefault = () => {
+    setTasks(INITIAL_TASKS);
+    if (currentUser?.id) {
+      localStorage.setItem(`aa_tasks_user_${currentUser.id}`, JSON.stringify(INITIAL_TASKS));
+    } else {
+      localStorage.setItem('aa_tasks', JSON.stringify(INITIAL_TASKS));
+    }
+    showToast('Daftar tugas dikembalikan ke urutan default.');
+  };
+
   // Budget functions
   const addBudgetItem = (category: string, planned: number, actual: number, notes: string) => {
     const item: BudgetItem = {
@@ -2393,6 +2461,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addTask,
         toggleTask,
         deleteTask,
+        reorderTasks,
+        moveTask,
+        resetTasksToDefault,
 
         budgets,
         addBudgetItem,

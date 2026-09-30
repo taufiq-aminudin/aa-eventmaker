@@ -227,6 +227,7 @@ export interface TaskItem {
   dueDate: string;
   assignee: string;
   isCompleted: boolean;
+  order?: number;
 }
 
 export type CurrencyCode = 'IDR' | 'USD' | 'EUR' | 'SGD' | 'MYR' | 'GBP' | 'AUD' | 'JPY';
